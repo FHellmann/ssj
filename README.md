@@ -1,6 +1,12 @@
 ![Logo](assets/logo_w100.png) 
 ### Social Signal Processing for Android
 
+[![Build Status](https://travis-ci.org/FHellmann/ssj.svg?branch=master)](https://travis-ci.org/FHellmann/ssj)
+[![codecov](https://codecov.io/gh/FHellmann/Uniatron/branch/master/graph/badge.svg)](https://codecov.io/gh/FHellmann/Uniatron)
+<!-- [![Codacy Badge](https://api.codacy.com/project/badge/Grade/59acfe0f478548479a3213daf8d78d1b)](https://www.codacy.com/app/fhellmann93/Uniatron?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FHellmann/Uniatron&amp;utm_campaign=Badge_Grade) -->
+[![BCH compliance](https://bettercodehub.com/edge/badge/FHellmann/ssj?branch=master)](https://bettercodehub.com/)
+
+
 SSJ is an extensible android framework for social signal processing in an out of lab envirnoment. It packages common signal processing tools in a flexible, mobile friendly Java library which can be easily integrated into Android Apps.
 
 <img align="right" width="220" src="assets/screen_ssj.png"/>

@@ -1,0 +1,28 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+        base: auto
+      frontend:
+        flags: frontend
+      backend:
+        target: 90%
+        flags: backend
+    patch:
+      default:
+        enabled: no
+
+flags:
+  frontend:
+    paths:
+      - ssjcreator/src/main
+  backend:
+    paths:
+      - libssj/src/main
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: new
+  require_changes: false
