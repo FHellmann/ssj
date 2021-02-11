@@ -47,67 +47,62 @@ import hcm.ssj.test.Logger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class NV21ToRGBDecoderTest
-{
-	@Test
-	public void decodeNV21() throws Exception
-	{
-		final float BUFFER_SIZE = 10f;
+public class NV21ToRGBDecoderTest {
+    @Test
+    public void decodeNV21() throws Exception {
+        final float BUFFER_SIZE = 10f;
 
-		final int CROP_SIZE = 224;
-		final int MIN_FPS = 15;
-		final int MAX_FPS = 15;
-		final int DATA_WINDOW_SIZE = 1;
-		final int DATA_OVERLAP = 0;
+        final int CROP_SIZE = 224;
+        final int MIN_FPS = 15;
+        final int MAX_FPS = 15;
+        final int DATA_WINDOW_SIZE = 1;
+        final int DATA_OVERLAP = 0;
 
-		// Option parameters for camera sensor
-		double sampleRate = 1;
-		int width = 320;
-		int height = 240;
+        // Option parameters for camera sensor
+        double sampleRate = 1;
+        int width = 320;
+        int height = 240;
 
-		// Get pipeline instance
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(BUFFER_SIZE);
+        // Get pipeline instance
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(BUFFER_SIZE);
 
-		// Instantiate camera sensor and set options
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
-		cameraSensor.options.width.set(width);
-		cameraSensor.options.height.set(height);
-		cameraSensor.options.previewFpsRangeMin.set(MIN_FPS);
-		cameraSensor.options.previewFpsRangeMax.set(MAX_FPS);
+        // Instantiate camera sensor and set options
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
+        cameraSensor.options.width.set(width);
+        cameraSensor.options.height.set(height);
+        cameraSensor.options.previewFpsRangeMin.set(MIN_FPS);
+        cameraSensor.options.previewFpsRangeMax.set(MAX_FPS);
 
-		// Add sensor to the pipeline
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set(sampleRate);
-		frame.addSensor(cameraSensor, cameraChannel);
+        // Add sensor to the pipeline
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set(sampleRate);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		// Set up a NV21 decoder
-		NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
-		frame.addTransformer(decoder, cameraChannel, DATA_WINDOW_SIZE, DATA_OVERLAP);
+        // Set up a NV21 decoder
+        NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
+        frame.addTransformer(decoder, cameraChannel, DATA_WINDOW_SIZE, DATA_OVERLAP);
 
-		ImageResizer resizer = new ImageResizer();
-		resizer.options.size.set(CROP_SIZE);
-		frame.addTransformer(resizer, decoder, DATA_WINDOW_SIZE, DATA_OVERLAP);
+        ImageResizer resizer = new ImageResizer();
+        resizer.options.size.set(CROP_SIZE);
+        frame.addTransformer(resizer, decoder, DATA_WINDOW_SIZE, DATA_OVERLAP);
 
-		// Add consumer to the pipeline
-		Logger logger = new Logger();
-		frame.addConsumer(logger, resizer, 1.0 / sampleRate, DATA_OVERLAP);
+        // Add consumer to the pipeline
+        Logger logger = new Logger();
+        frame.addConsumer(logger, resizer, 1.0 / sampleRate, DATA_OVERLAP);
 
-		// Start pipeline
-		frame.start();
+        // Start pipeline
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_SHORT);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_SHORT);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		frame.release();
-	}
+        frame.stop();
+        frame.release();
+    }
 }

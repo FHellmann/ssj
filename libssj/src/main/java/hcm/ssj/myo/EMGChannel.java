@@ -38,16 +38,68 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 01.04.2015.
  */
-public class EMGChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class EMGChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected MyoListener _listener;
 
-	public class Options extends OptionList
-    {
+    public EMGChannel() {
+        _name = "Myo_EMG";
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((Myo) _sensor).listener;
+
+        if (stream_out.num != 1) {
+            Log.w("unsupported stream format. sample number = " + stream_out.num);
+        }
+    }
+
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        int[] out = stream_out.ptrI();
+
+        for (int j = 0; j < stream_out.dim; j++) {
+            out[j] = _listener.emg[j];
+        }
+
+        return true;
+    }
+
+    @Override
+    public double getSampleRate() {
+        return options.sampleRate.get();
+    }
+
+    @Override
+    public int getSampleDimension() {
+        return 8;
+    }
+
+    @Override
+    public int getSampleBytes() {
+        return 4;
+    }
+
+    @Override
+    public Cons.Type getSampleType() {
+        return Cons.Type.INT;
+    }
+
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+
+        for (int j = 0; j < stream_out.dim; j++)
+            stream_out.desc[j] = "EMG";
+    }
+
+    public class Options extends OptionList {
         public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "");
 
         /**
@@ -57,69 +109,4 @@ public class EMGChannel extends SensorChannel
             addOptions();
         }
     }
-    public final Options options = new Options();
-
-    protected MyoListener _listener;
-
-	public EMGChannel()
-	{
-        _name = "Myo_EMG";
-	}
-
-    @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-    {
-        _listener = ((Myo)_sensor).listener;
-
-		if (stream_out.num != 1)
-		{
-			Log.w("unsupported stream format. sample number = " + stream_out.num);
-		}
-    }
-
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		int[] out = stream_out.ptrI();
-
-		for (int j = 0; j < stream_out.dim; j++)
-		{
-			out[j] = _listener.emg[j];
-		}
-
-        return true;
-	}
-
-    @Override
-    public double getSampleRate()
-    {
-        return options.sampleRate.get();
-    }
-
-    @Override
-    public int getSampleDimension()
-    {
-        return 8;
-    }
-
-    @Override
-    public int getSampleBytes()
-    {
-        return 4;
-    }
-
-    @Override
-    public Cons.Type getSampleType()
-    {
-        return Cons.Type.INT;
-    }
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-
-        for (int j = 0; j < stream_out.dim; j++)
-		    stream_out.desc[j] = "EMG";
-	}
 }

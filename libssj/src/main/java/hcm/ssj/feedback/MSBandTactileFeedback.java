@@ -38,51 +38,44 @@ import hcm.ssj.core.option.Option;
  * Created by Antonio Grieco on 06.09.2017.
  */
 
-public class MSBandTactileFeedback extends Feedback
-{
-	public class Options extends Feedback.Options
-	{
+public class MSBandTactileFeedback extends Feedback {
+    public final Options options = new Options();
+    private BandComm msband = null;
 
-		public final Option<int[]> duration = new Option<>("duration", new int[]{500}, int[].class, "duration of tactile feedback");
-		public final Option<VibrationType> vibrationType = new Option<>("vibrationType", VibrationType.NOTIFICATION_ONE_TONE, VibrationType.class, "vibration type");
-		public final Option<Integer> deviceId = new Option<>("deviceId", 0, Integer.class, "device Id");
-		private Options()
-		{
-			super();
-			addOptions();
-		}
+    public MSBandTactileFeedback() {
+        _name = "MSBandTactileFeedback";
+        Log.d("Instantiated MSBandTactileFeedback " + this.hashCode());
+    }
 
-	}
-	public final Options options = new Options();
+    @Override
+    public Feedback.Options getOptions() {
+        return options;
+    }
 
-	private BandComm msband = null;
+    @Override
+    public void enterFeedback() throws SSJFatalException {
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new SSJFatalException("no input channels");
+        }
+        msband = new BandComm(options.deviceId.get());
+    }
 
-	public MSBandTactileFeedback()
-	{
-		_name = "MSBandTactileFeedback";
-		Log.d("Instantiated MSBandTactileFeedback " + this.hashCode());
-	}
+    @Override
+    public void notifyFeedback(Event event) {
+        Log.i("vibration " + options.vibrationType.get());
+        msband.vibrate(options.vibrationType.get());
+    }
 
-	@Override
-	public Feedback.Options getOptions()
-	{
-		return options;
-	}
+    public class Options extends Feedback.Options {
 
-	@Override
-	public void enterFeedback() throws SSJFatalException
-	{
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new SSJFatalException("no input channels");
-		}
-		msband = new BandComm(options.deviceId.get());
-	}
+        public final Option<int[]> duration = new Option<>("duration", new int[]{500}, int[].class, "duration of tactile feedback");
+        public final Option<VibrationType> vibrationType = new Option<>("vibrationType", VibrationType.NOTIFICATION_ONE_TONE, VibrationType.class, "vibration type");
+        public final Option<Integer> deviceId = new Option<>("deviceId", 0, Integer.class, "device Id");
 
-	@Override
-	public void notifyFeedback(Event event)
-	{
-		Log.i("vibration " + options.vibrationType.get());
-		msband.vibrate(options.vibrationType.get());
-	}
+        private Options() {
+            super();
+            addOptions();
+        }
+
+    }
 }

@@ -43,45 +43,36 @@ import hcm.ssj.core.Log;
 /**
  * Created by Michael Dietz on 01.04.2015.
  */
-public class MyoListener implements DeviceListener
-{
-	boolean onArm;
-	boolean isUnlocked;
-
-	float accelerationX;
-	float accelerationY;
-	float accelerationZ;
-
+public class MyoListener implements DeviceListener {
+    private static final String TAG = "MyoListener";
+    boolean onArm;
+    boolean isUnlocked;
+    float accelerationX;
+    float accelerationY;
+    float accelerationZ;
     double orientationX;
     double orientationY;
     double orientationZ;
     double orientationW;
-
     int rollW;
     int yawW;
     int pitchW;
+    Pose currentPose;
+    Arm whichArm;
+    int[] emg = new int[16];
 
-	Pose currentPose;
-	Arm  whichArm;
+    public MyoListener() {
+        reset();
+    }
 
-	int emg[] = new int[16];
+    public void reset() {
+        onArm = false;
+        whichArm = Arm.UNKNOWN;
+        currentPose = Pose.UNKNOWN;
 
-	private static final String TAG = "MyoListener";
-
-	public MyoListener()
-	{
-		reset();
-	}
-
-	public void reset()
-	{
-		onArm = false;
-		whichArm = Arm.UNKNOWN;
-		currentPose = Pose.UNKNOWN;
-
-		accelerationX = 0;
-		accelerationY = 0;
-		accelerationZ = 0;
+        accelerationX = 0;
+        accelerationY = 0;
+        accelerationZ = 0;
 
         orientationX = 0;
         orientationY = 0;
@@ -92,107 +83,93 @@ public class MyoListener implements DeviceListener
         yawW = 0;
         pitchW = 0;
 
-		Arrays.fill(emg, 0);
-	}
+        Arrays.fill(emg, 0);
+    }
 
-	@Override
-	public void onAttach(Myo myo, long l)
-	{
-	}
+    @Override
+    public void onAttach(Myo myo, long l) {
+    }
 
-	@Override
-	public void onDetach(Myo myo, long l)
-	{
-		reset();
-	}
+    @Override
+    public void onDetach(Myo myo, long l) {
+        reset();
+    }
 
-	@Override
-	public void onConnect(Myo myo, long l)
-	{
-		Log.i("Successfully connected to Myo with MAC: " + myo.getMacAddress());
-	}
+    @Override
+    public void onConnect(Myo myo, long l) {
+        Log.i("Successfully connected to Myo with MAC: " + myo.getMacAddress());
+    }
 
-	@Override
-	public void onDisconnect(Myo myo, long l)
-	{
-		Log.i("Disconnected from Myo");
+    @Override
+    public void onDisconnect(Myo myo, long l) {
+        Log.i("Disconnected from Myo");
 
-		reset();
-	}
+        reset();
+    }
 
-	@Override
-	public void onArmSync(Myo myo, long l, Arm arm, XDirection xDirection)
-	{
-		onArm = true;
-		whichArm = arm;
-	}
+    @Override
+    public void onArmSync(Myo myo, long l, Arm arm, XDirection xDirection) {
+        onArm = true;
+        whichArm = arm;
+    }
 
-	@Override
-	public void onArmUnsync(Myo myo, long l)
-	{
-		onArm = false;
-	}
+    @Override
+    public void onArmUnsync(Myo myo, long l) {
+        onArm = false;
+    }
 
-	@Override
-	public void onUnlock(Myo myo, long l)
-	{
-		isUnlocked = true;
-	}
+    @Override
+    public void onUnlock(Myo myo, long l) {
+        isUnlocked = true;
+    }
 
-	@Override
-	public void onLock(Myo myo, long l)
-	{
-		isUnlocked = false;
-	}
+    @Override
+    public void onLock(Myo myo, long l) {
+        isUnlocked = false;
+    }
 
-	@Override
-	public void onPose(Myo myo, long l, Pose pose)
-	{
-		currentPose = pose;
-	}
+    @Override
+    public void onPose(Myo myo, long l, Pose pose) {
+        currentPose = pose;
+    }
 
-	@Override
-	public void onOrientationData(Myo myo, long l, Quaternion quaternion)
-	{
+    @Override
+    public void onOrientationData(Myo myo, long l, Quaternion quaternion) {
         orientationW = quaternion.w();
         orientationX = quaternion.x();
         orientationY = quaternion.y();
         orientationZ = quaternion.z();
 
-		float roll = (float) Math.atan2(2.0 * (quaternion.w() * quaternion.x() + quaternion.y() * quaternion.z()), 1.0 - 2.0 * (quaternion.x() * quaternion.x() + quaternion.y() * quaternion.y()));
-		float pitch = (float) Math.asin(Math.max(-1.0, Math.min(1.0, 2.0 * (quaternion.w() * quaternion.y() - quaternion.z() * quaternion.x()))));
-		float yaw = (float) Math.atan2(2.0 * (quaternion.w() * quaternion.z() + quaternion.x() * quaternion.y()), 1.0 - 2.0 * (quaternion.y() * quaternion.y() + quaternion.z() * quaternion.z()));
+        float roll = (float) Math.atan2(2.0 * (quaternion.w() * quaternion.x() + quaternion.y() * quaternion.z()), 1.0 - 2.0 * (quaternion.x() * quaternion.x() + quaternion.y() * quaternion.y()));
+        float pitch = (float) Math.asin(Math.max(-1.0, Math.min(1.0, 2.0 * (quaternion.w() * quaternion.y() - quaternion.z() * quaternion.x()))));
+        float yaw = (float) Math.atan2(2.0 * (quaternion.w() * quaternion.z() + quaternion.x() * quaternion.y()), 1.0 - 2.0 * (quaternion.y() * quaternion.y() + quaternion.z() * quaternion.z()));
 
-		// Convert the floating point angles in radians to a scale from 0 to 18.
-		rollW = (int) ((roll + (float) Math.PI) / (Math.PI * 2.0) * 18);
-		pitchW = (int) ((pitch + (float) Math.PI / 2.0) / Math.PI * 18);
-		yawW = (int) ((yaw + (float) Math.PI) / (Math.PI * 2.0) * 18);
-	}
+        // Convert the floating point angles in radians to a scale from 0 to 18.
+        rollW = (int) ((roll + (float) Math.PI) / (Math.PI * 2.0) * 18);
+        pitchW = (int) ((pitch + (float) Math.PI / 2.0) / Math.PI * 18);
+        yawW = (int) ((yaw + (float) Math.PI) / (Math.PI * 2.0) * 18);
+    }
 
-	@Override
-	public void onAccelerometerData(Myo myo, long l, Vector3 vector3)
-	{
-		accelerationX = (float) vector3.x();
-		accelerationY = (float) vector3.y();
-		accelerationZ = (float) vector3.z();
-	}
+    @Override
+    public void onAccelerometerData(Myo myo, long l, Vector3 vector3) {
+        accelerationX = (float) vector3.x();
+        accelerationY = (float) vector3.y();
+        accelerationZ = (float) vector3.z();
+    }
 
-	@Override
-	public void onGyroscopeData(Myo myo, long l, Vector3 vector3)
-	{
+    @Override
+    public void onGyroscopeData(Myo myo, long l, Vector3 vector3) {
 
-	}
+    }
 
-	@Override
-	public void onRssi(Myo myo, long l, int i)
-	{
+    @Override
+    public void onRssi(Myo myo, long l, int i) {
 
-	}
+    }
 
-	public void onEMGData(Myo myo, UUID uuid, byte[] data)
-	{
+    public void onEMGData(Myo myo, UUID uuid, byte[] data) {
         for (int i = 0; i < 16; i++) {
             emg[i] = data[i];
         }
-	}
+    }
 }

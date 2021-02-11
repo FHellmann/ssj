@@ -44,101 +44,80 @@ import hcm.ssj.core.option.OptionList;
 /**
  * Created by Michael Dietz on 05.07.2016.
  */
-public class GPSSensor extends Sensor
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class GPSSensor extends Sensor {
+    public final Options options = new Options();
+    GPSListener listener;
+    LocationManager locationManager;
 
-	public class Options extends OptionList
-	{
-		public final Option<Long>    minTime     = new Option<>("minTime", 200L, Long.class, "Minimum time interval between location updates, in milliseconds");
-		public final Option<Float>   minDistance = new Option<>("minDistance", 1f, Float.class, "Minimum distance between location updates, in meters");
-		public final Option<Boolean> ignoreData  = new Option<>("ignoreData", false, Boolean.class, "Set to 'true' if no error should occur when no data is received from gps");
-		public final Option<Boolean> useNetwork  = new Option<>("useNetwork", true, Boolean.class, "Set to 'false' if NETWORK_PROVIDER should not be used as fallback");
+    public GPSSensor() {
+        _name = "GPS";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    protected boolean connect() throws SSJFatalException {
+        boolean connected = false;
 
-	GPSListener     listener;
-	LocationManager locationManager;
+        listener = new GPSListener(options.minTime.get());
 
-	public GPSSensor()
-	{
-		_name = "GPS";
-	}
+        locationManager = (LocationManager) SSJApplication.getAppContext().getSystemService(Context.LOCATION_SERVICE);
 
-	@Override
-	protected boolean connect() throws SSJFatalException
-	{
-		boolean connected = false;
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.postDelayed(new Runnable() {
+                public void run() {
+                    // Register listener
+                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, options.minTime.get(), options.minDistance.get(), listener);
 
-		listener = new GPSListener(options.minTime.get());
+                    if (options.useNetwork.get()) {
+                        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, options.minTime.get(), options.minDistance.get(), listener);
+                    }
+                }
+            }, 1);
 
-		locationManager = (LocationManager) SSJApplication.getAppContext().getSystemService(Context.LOCATION_SERVICE);
+            // Wait for values
+            long time = SystemClock.elapsedRealtime();
+            while (!_terminate && !listener.receivedData && SystemClock.elapsedRealtime() - time < _frame.options.waitSensorConnect.get() * 1000) {
+                try {
+                    Thread.sleep(Cons.SLEEP_IN_LOOP);
+                } catch (InterruptedException e) {
+                }
+            }
 
-		if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-		{
-			Handler handler = new Handler(Looper.getMainLooper());
-			handler.postDelayed(new Runnable()
-			{
-				public void run()
-				{
-					// Register listener
-					locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, options.minTime.get(), options.minDistance.get(), listener);
+            if (listener.receivedData) {
+                connected = true;
+            } else {
+                Log.e("unable to connect to gps");
+            }
+        }
 
-					if (options.useNetwork.get())
-					{
-						locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, options.minTime.get(), options.minDistance.get(), listener);
-					}
-				}
-			}, 1);
+        if (options.ignoreData.get() && connected == false) {
+            connected = true;
+        }
 
-			// Wait for values
-			long time = SystemClock.elapsedRealtime();
-			while (!_terminate && !listener.receivedData && SystemClock.elapsedRealtime() - time < _frame.options.waitSensorConnect.get() * 1000)
-			{
-				try
-				{
-					Thread.sleep(Cons.SLEEP_IN_LOOP);
-				}
-				catch (InterruptedException e)
-				{
-				}
-			}
+        return connected;
+    }
 
-			if (listener.receivedData)
-			{
-				connected = true;
-			}
-			else
-			{
-				Log.e("unable to connect to gps");
-			}
-		}
+    @Override
+    protected void disconnect() throws SSJFatalException {
+        if (locationManager != null && listener != null) {
+            // Remove listener
+            locationManager.removeUpdates(listener);
+        }
+    }
 
-		if (options.ignoreData.get() && connected == false)
-		{
-			connected = true;
-		}
+    public class Options extends OptionList {
+        public final Option<Long> minTime = new Option<>("minTime", 200L, Long.class, "Minimum time interval between location updates, in milliseconds");
+        public final Option<Float> minDistance = new Option<>("minDistance", 1f, Float.class, "Minimum distance between location updates, in meters");
+        public final Option<Boolean> ignoreData = new Option<>("ignoreData", false, Boolean.class, "Set to 'true' if no error should occur when no data is received from gps");
+        public final Option<Boolean> useNetwork = new Option<>("useNetwork", true, Boolean.class, "Set to 'false' if NETWORK_PROVIDER should not be used as fallback");
 
-		return connected;
-	}
-
-	@Override
-	protected void disconnect() throws SSJFatalException
-	{
-		if (locationManager != null && listener != null)
-		{
-			// Remove listener
-			locationManager.removeUpdates(listener);
-		}
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

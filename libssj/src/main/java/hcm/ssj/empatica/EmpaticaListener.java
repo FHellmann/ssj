@@ -32,118 +32,100 @@ import com.empatica.empalink.delegate.EmpaDataDelegate;
 /**
  * Created by Michael Dietz on 15.04.2015.
  */
-public class EmpaticaListener implements EmpaDataDelegate
-{
-	private float gsr;
-	private float bvp;
-	private float ibi;
-	private float temperature;
-	private float battery;
-	private int   x;
-	private int   y;
-	private int   z;
+public class EmpaticaListener implements EmpaDataDelegate {
+    public boolean receivedData;
+    private float gsr;
+    private float bvp;
+    private float ibi;
+    private float temperature;
+    private float battery;
+    private int x;
+    private int y;
+    private int z;
 
-	public boolean receivedData;
+    public EmpaticaListener() {
+        reset();
+    }
 
-	public EmpaticaListener()
-	{
-		reset();
-	}
+    public void reset() {
+        gsr = 0;
+        bvp = 0;
+        ibi = 0;
+        temperature = 0;
+        battery = 0;
+        x = 0;
+        y = 0;
+        z = 0;
+        receivedData = false;
+    }
 
-	public void reset()
-	{
-		gsr = 0;
-		bvp = 0;
-		ibi = 0;
-		temperature = 0;
-		battery = 0;
-		x = 0;
-		y = 0;
-		z = 0;
-		receivedData = false;
-	}
+    @Override
+    public void didReceiveGSR(float gsr, double timestamp) {
+        receivedData = true;
+        this.gsr = gsr;
+    }
 
-	@Override
-	public void didReceiveGSR(float gsr, double timestamp)
-	{
-		receivedData = true;
-		this.gsr = gsr;
-	}
+    @Override
+    public void didReceiveBVP(float bvp, double timestamp) {
+        receivedData = true;
+        this.bvp = bvp;
+    }
 
-	@Override
-	public void didReceiveBVP(float bvp, double timestamp)
-	{
-		receivedData = true;
-		this.bvp = bvp;
-	}
+    @Override
+    public void didReceiveIBI(float ibi, double timestamp) {
+        receivedData = true;
+        this.ibi = ibi;
+    }
 
-	@Override
-	public void didReceiveIBI(float ibi, double timestamp)
-	{
-		receivedData = true;
-		this.ibi = ibi;
-	}
+    @Override
+    public void didReceiveTemperature(float temperature, double timestamp) {
+        receivedData = true;
+        this.temperature = temperature;
+    }
 
-	@Override
-	public void didReceiveTemperature(float temperature, double timestamp)
-	{
-		receivedData = true;
-		this.temperature = temperature;
-	}
+    @Override
+    public void didReceiveBatteryLevel(float battery, double timestamp) {
+        receivedData = true;
+        this.battery = battery;
+    }
 
-	@Override
-	public void didReceiveBatteryLevel(float battery, double timestamp)
-	{
-		receivedData = true;
-		this.battery = battery;
-	}
+    @Override
+    public void didReceiveAcceleration(int x, int y, int z, double timestamp) {
+        receivedData = true;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 
-	@Override
-	public void didReceiveAcceleration(int x, int y, int z, double timestamp)
-	{
-		receivedData = true;
-		this.x = x;
-		this.y = y;
-		this.z = z;
-	}
+    public float getGsr() {
+        return gsr;
+    }
 
-	public float getGsr()
-	{
-		return gsr;
-	}
+    public float getBvp() {
+        return bvp;
+    }
 
-	public float getBvp()
-	{
-		return bvp;
-	}
+    public float getIbi() {
+        return ibi;
+    }
 
-	public float getIbi()
-	{
-		return ibi;
-	}
+    public float getTemperature() {
+        return temperature;
+    }
 
-	public float getTemperature()
-	{
-		return temperature;
-	}
+    public float getBattery() {
+        return battery;
+    }
 
-	public float getBattery()
-	{
-		return battery;
-	}
+    public int getX() {
+        return x;
+    }
 
-	public int getX()
-	{
-		return x;
-	}
+    public int getY() {
+        return y;
+    }
 
-	public int getY()
-	{
-		return y;
-	}
-
-	public int getZ()
-	{
-		return z;
-	}
+    public int getZ() {
+        return z;
+    }
 }

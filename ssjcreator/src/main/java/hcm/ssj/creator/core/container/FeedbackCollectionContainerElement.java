@@ -39,33 +39,27 @@ import hcm.ssj.feedback.FeedbackCollection;
  * Created by Antonio Grieco on 18.10.2017.
  */
 
-public class FeedbackCollectionContainerElement extends ContainerElement
-{
+public class FeedbackCollectionContainerElement extends ContainerElement {
 
-	private List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackList;
+    private List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackList;
 
-	public FeedbackCollectionContainerElement(FeedbackCollection element)
-	{
-		super(element);
-		feedbackList = element.getFeedbackList();
-	}
+    public FeedbackCollectionContainerElement(FeedbackCollection element) {
+        super(element);
+        feedbackList = element.getFeedbackList();
+    }
 
-	public List<Map<Feedback, FeedbackCollection.LevelBehaviour>> getFeedbackList()
-	{
-		return feedbackList;
-	}
+    public List<Map<Feedback, FeedbackCollection.LevelBehaviour>> getFeedbackList() {
+        return feedbackList;
+    }
 
-	public void addFeedback(Feedback feedback, int level, FeedbackCollection.LevelBehaviour levelBehaviour)
-	{
-		while (feedbackList.size() <= level)
-		{
-			feedbackList.add(new LinkedHashMap<Feedback, FeedbackCollection.LevelBehaviour>());
-		}
-		feedbackList.get(level).put(feedback, levelBehaviour);
-	}
+    public void addFeedback(Feedback feedback, int level, FeedbackCollection.LevelBehaviour levelBehaviour) {
+        while (feedbackList.size() <= level) {
+            feedbackList.add(new LinkedHashMap<Feedback, FeedbackCollection.LevelBehaviour>());
+        }
+        feedbackList.get(level).put(feedback, levelBehaviour);
+    }
 
-	public void removeAllFeedbacks()
-	{
-		feedbackList = new ArrayList<>();
-	}
+    public void removeAllFeedbacks() {
+        feedbackList = new ArrayList<>();
+    }
 }

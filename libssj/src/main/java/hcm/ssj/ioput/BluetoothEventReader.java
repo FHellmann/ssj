@@ -53,37 +53,16 @@ import hcm.ssj.core.option.OptionList;
  * Bluetooth event reader - reads SSJ events from a bluetooth source
  * Created by Johnny on 07.04.2015.
  */
-public class BluetoothEventReader extends EventHandler
-{
-    public class Options extends OptionList
-    {
-        public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
-        public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
-        public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "if this is a client");
-        public final Option<BluetoothConnection.Type> connectionType = new Option<>("connectionType", BluetoothConnection.Type.SERVER, BluetoothConnection.Type.class, "");
-        public final Option<Boolean> parseXmlToEvent = new Option<>("parseXmlToEvent", true, Boolean.class, "attempt to convert the message to an SSJ event format");
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
+public class BluetoothEventReader extends EventHandler {
     public final Options options = new Options();
-
     private final int MSG_HEADER_SIZE = 12;
-
-    private BluetoothConnection _conn;
     boolean _connected = false;
     byte[] _buffer;
-
     XmlPullParser _parser;
     PowerManager _mgr;
     PowerManager.WakeLock _wakeLock;
-
-    public BluetoothEventReader()
-    {
+    private BluetoothConnection _conn;
+    public BluetoothEventReader() {
         _name = "BluetoothEventReader";
 
         _doWakeLock = false; //disable SSJ's WL-manager, WL will be handled locally
@@ -92,11 +71,9 @@ public class BluetoothEventReader extends EventHandler
     }
 
     @Override
-    public void enter() throws SSJFatalException
-    {
+    public void enter() throws SSJFatalException {
         try {
-            switch(options.connectionType.get())
-            {
+            switch (options.connectionType.get()) {
                 case SERVER:
                     _conn = new BluetoothServer(UUID.nameUUIDFromBytes(options.connectionName.get().getBytes()), options.serverName.get());
                     _conn.connect(false);
@@ -106,31 +83,24 @@ public class BluetoothEventReader extends EventHandler
                     _conn.connect(false);
                     break;
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new SSJFatalException("error in setting up connection", e);
         }
 
         BluetoothDevice dev = _conn.getRemoteDevice();
-        if(dev == null) {
+        if (dev == null) {
             throw new SSJFatalException("cannot retrieve remote device");
         }
 
         Log.i("connected to " + dev.getName() + " @ " + dev.getAddress());
 
-        if(!options.parseXmlToEvent.get())
-        {
+        if (!options.parseXmlToEvent.get()) {
             _buffer = new byte[Cons.MAX_EVENT_SIZE];
-        }
-        else
-        {
-            try
-            {
+        } else {
+            try {
                 _parser = Xml.newPullParser();
                 _parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            }
-            catch (XmlPullParserException e)
-            {
+            } catch (XmlPullParserException e) {
                 throw new SSJFatalException("unable to initialize parser", e);
             }
         }
@@ -139,26 +109,20 @@ public class BluetoothEventReader extends EventHandler
     }
 
     @Override
-    protected void process() throws SSJFatalException
-    {
-        if (!_connected || !_conn.isConnected())
-        {
+    protected void process() throws SSJFatalException {
+        if (!_connected || !_conn.isConnected()) {
             return;
         }
 
-        try
-        {
-            if (!options.parseXmlToEvent.get())
-            {
+        try {
+            if (!options.parseXmlToEvent.get()) {
                 int len = _conn.input().read(_buffer);
                 _wakeLock.acquire();
 
                 Event ev = Event.create(Cons.Type.STRING);
                 ev.setData(new String(_buffer, 0, len));
                 _evchannel_out.pushEvent(ev);
-            }
-            else
-            {
+            } else {
                 _parser.setInput(new InputStreamReader(_conn.input()));
 
                 //first element must be <events>
@@ -166,16 +130,13 @@ public class BluetoothEventReader extends EventHandler
 
                 _wakeLock.acquire();
 
-                if (_parser.getEventType() != XmlPullParser.START_TAG || !_parser.getName().equalsIgnoreCase("events"))
-                {
+                if (_parser.getEventType() != XmlPullParser.START_TAG || !_parser.getName().equalsIgnoreCase("events")) {
                     Log.w("unknown or malformed bluetooth message");
                     return;
                 }
 
-                while (_parser.next() != XmlPullParser.END_DOCUMENT)
-                {
-                    if (_parser.getEventType() == XmlPullParser.START_TAG && _parser.getName().equalsIgnoreCase("event"))
-                    {
+                while (_parser.next() != XmlPullParser.END_DOCUMENT) {
+                    if (_parser.getEventType() == XmlPullParser.START_TAG && _parser.getName().equalsIgnoreCase("event")) {
                         Event ev = Event.create(Cons.Type.STRING);
 
                         ev.name = _parser.getAttributeValue(null, "event");
@@ -189,35 +150,26 @@ public class BluetoothEventReader extends EventHandler
 
                         _evchannel_out.pushEvent(ev);
                     }
-                    if (_parser.getEventType() == XmlPullParser.END_TAG && _parser.getName().equalsIgnoreCase("events"))
-                    {
+                    if (_parser.getEventType() == XmlPullParser.END_TAG && _parser.getName().equalsIgnoreCase("events")) {
                         break;
                     }
                 }
             }
             _conn.notifyDataTranferResult(true);
-        }
-        catch(IOException e)
-        {
+        } catch (IOException e) {
             Log.w("failed to receive BL data", e);
             _conn.notifyDataTranferResult(false);
-        }
-        catch(XmlPullParserException e)
-        {
+        } catch (XmlPullParserException e) {
             Log.w("failed to parse package", e);
-        }
-        finally
-        {
-            if (_wakeLock.isHeld())
-            {
+        } finally {
+            if (_wakeLock.isHeld()) {
                 _wakeLock.release();
             }
         }
     }
 
     @Override
-    public void flush() throws SSJFatalException
-    {
+    public void flush() throws SSJFatalException {
         _connected = false;
 
         try {
@@ -241,17 +193,30 @@ public class BluetoothEventReader extends EventHandler
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         _conn.clear();
         _conn = null;
         super.clear();
     }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
+        public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
+        public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "if this is a client");
+        public final Option<BluetoothConnection.Type> connectionType = new Option<>("connectionType", BluetoothConnection.Type.SERVER, BluetoothConnection.Type.class, "");
+        public final Option<Boolean> parseXmlToEvent = new Option<>("parseXmlToEvent", true, Boolean.class, "attempt to convert the message to an SSJ event format");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 
 }

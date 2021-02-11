@@ -30,9 +30,8 @@ package hcm.ssj.ssd;
 /**
  * Created by Michael Dietz on 11.01.2021.
  */
-public enum FilterMethod
-{
-	HIGHEST_SCORE,
-	LARGEST_AREA,
-	NON_MAX_SUPPRESSION
+public enum FilterMethod {
+    HIGHEST_SCORE,
+    LARGEST_AREA,
+    NON_MAX_SUPPRESSION
 }

@@ -27,7 +27,6 @@
 
 package hcm.ssj.core.event;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import hcm.ssj.core.Cons;
@@ -35,41 +34,34 @@ import hcm.ssj.core.Cons;
 /**
  * Created by Michael Dietz on 06.10.2020.
  */
-public class MapEvent extends Event
-{
-	public Map<String, String> data;
+public class MapEvent extends Event {
+    public Map<String, String> data;
 
-	public MapEvent()
-	{
-		this(null);
-	}
+    public MapEvent() {
+        this(null);
+    }
 
-	public MapEvent(Map<String, String> data)
-	{
-		type = Cons.Type.MAP;
-		this.data = data;
-	}
+    public MapEvent(Map<String, String> data) {
+        type = Cons.Type.MAP;
+        this.data = data;
+    }
 
-	@Override
-	public Map<String, String> ptr()
-	{
-		return data;
-	}
+    @Override
+    public Map<String, String> ptr() {
+        return data;
+    }
 
-	@Override
-	public Map<String, String> ptrMap()
-	{
-		return data;
-	}
+    @Override
+    public Map<String, String> ptrMap() {
+        return data;
+    }
 
-	@Override
-	public void setData(Object data)
-	{
-		setData((Map<String, String>) data);
-	}
+    @Override
+    public void setData(Object data) {
+        setData((Map<String, String>) data);
+    }
 
-	public void setData(Map<String, String> data)
-	{
-		this.data = data;
-	}
+    public void setData(Map<String, String> data) {
+        this.data = data;
+    }
 }

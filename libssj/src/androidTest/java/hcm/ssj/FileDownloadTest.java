@@ -50,64 +50,51 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class FileDownloadTest
-{
-	private static final String assetsURL = "https://raw.githubusercontent.com/hcmlab/ssj/syncHost/models";
-	private static final String trainer = "inception.trainer";
-	private static final String model = "inception.model";
-	private static final String option = "inception.option";
+public class FileDownloadTest {
+    private static final String assetsURL = "https://raw.githubusercontent.com/hcmlab/ssj/syncHost/models";
+    private static final String trainer = "inception.trainer";
+    private static final String model = "inception.model";
+    private static final String option = "inception.option";
 
 
-	@Test
-	public void downloadTrainerFile()
-	{
-		File file = null;
-		try
-		{
-			Pipeline.getInstance().download(trainer, assetsURL, FileCons.DOWNLOAD_DIR, true);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		file = new File(FileCons.DOWNLOAD_DIR, trainer);
+    @Test
+    public void downloadTrainerFile() {
+        File file = null;
+        try {
+            Pipeline.getInstance().download(trainer, assetsURL, FileCons.DOWNLOAD_DIR, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        file = new File(FileCons.DOWNLOAD_DIR, trainer);
 
-		assertTrue(file.exists());
-	}
+        assertTrue(file.exists());
+    }
 
 
-	@Test
-	public void downloadModelFile()
-	{
-		File file = null;
-		try
-		{
-			Pipeline.getInstance().download(model, assetsURL, FileCons.DOWNLOAD_DIR, true);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		file = new File(FileCons.DOWNLOAD_DIR, model);
+    @Test
+    public void downloadModelFile() {
+        File file = null;
+        try {
+            Pipeline.getInstance().download(model, assetsURL, FileCons.DOWNLOAD_DIR, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        file = new File(FileCons.DOWNLOAD_DIR, model);
 
-		assertTrue(file.exists());
-	}
+        assertTrue(file.exists());
+    }
 
 
-	@Test
-	public void downloadOptionFile()
-	{
-		File file = null;
-		try
-		{
-			Pipeline.getInstance().download(option, assetsURL, FileCons.DOWNLOAD_DIR, true);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		file = new File(FileCons.DOWNLOAD_DIR, option);
+    @Test
+    public void downloadOptionFile() {
+        File file = null;
+        try {
+            Pipeline.getInstance().download(option, assetsURL, FileCons.DOWNLOAD_DIR, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        file = new File(FileCons.DOWNLOAD_DIR, option);
 
-		assertTrue(file.exists());
-	}
+        assertTrue(file.exists());
+    }
 }

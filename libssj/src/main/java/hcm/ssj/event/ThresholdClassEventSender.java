@@ -43,215 +43,178 @@ import hcm.ssj.core.option.Option;
 import hcm.ssj.core.option.OptionList;
 import hcm.ssj.core.stream.Stream;
 
-public class ThresholdClassEventSender extends Consumer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class ThresholdClassEventSender extends Consumer {
+    public final Options options = new Options();
+    private List<SimpleEntry<Float, String>> thresholdList;
+    private float lastValue = Float.NEGATIVE_INFINITY;
+    private Map.Entry<Float, String> lastClass = null;
+    private int samplesMaxDur;
+    private double lastTriggerTime;
 
-	public class Options extends OptionList
-	{
-		public final Option<String> sender = new Option<>("sender", null, String.class, "name of event sender");
-		public final Option<String[]> classes = new Option<>("classes", new String[]{"low", "medium", "high"}, String[].class, "classes for threshold values (eventnames)");
-		public final Option<float[]> thresholds = new Option<>("thresholds", new float[]{0f, 1f, 2f}, float[].class, "thresholds for input");
-		public final Option<Float> minDiff = new Option<>("minDiff", 0.1f, Float.class, "minimum difference to previous value");
-		public final Option<Boolean> mean = new Option<>("mean", false, Boolean.class, "classify based on mean value of entire frame");
-		public final Option<Double> maxDur = new Option<>("maxDur", 2., Double.class, "maximum delay before continued events will be sent");
+    public ThresholdClassEventSender() {
+        _name = "ThresholdClassEventSender";
+        options.sender.set(_name);
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in[0].dim != 1) {
+            throw new SSJFatalException("Dimension != 1 unsupported");
+        }
 
-	private List<SimpleEntry<Float, String>> thresholdList;
-	private float lastValue = Float.NEGATIVE_INFINITY;
-	private Map.Entry<Float, String> lastClass = null;
+        makeThresholdList();
 
-	private int samplesMaxDur;
-	private double lastTriggerTime;
+        samplesMaxDur = (int) (options.maxDur.get() * stream_in[0].sr);
+    }
 
-	public ThresholdClassEventSender()
-	{
-		_name = "ThresholdClassEventSender";
-		options.sender.set(_name);
-	}
+    private void makeThresholdList() throws SSJFatalException {
+        String[] classes = options.classes.get();
+        float[] thresholds = options.thresholds.get();
 
-	@Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-	{
-		if (stream_in[0].dim != 1)
-		{
-			throw new SSJFatalException("Dimension != 1 unsupported");
-		}
+        if (classes == null || thresholds == null) {
+            throw new SSJFatalException("classes and thresholds not correctly set");
+        }
 
-		makeThresholdList();
+        if (classes.length != thresholds.length) {
+            throw new SSJFatalException("number of classes do not match number of thresholds");
+        }
 
-		samplesMaxDur = (int) (options.maxDur.get() * stream_in[0].sr);
-	}
+        thresholdList = new ArrayList<>();
+        for (int i = 0; i < classes.length; ++i) {
+            thresholdList.add(new SimpleEntry<Float, String>(thresholds[i], classes[i]));
+        }
+        Collections.sort(thresholdList, new ThresholdListComparator());
+    }
 
-	private void makeThresholdList() throws SSJFatalException
-	{
-		String[] classes = options.classes.get();
-		float[] thresholds = options.thresholds.get();
+    @Override
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        makeThresholdList();
 
-		if (classes == null || thresholds == null)
-		{
-			throw new SSJFatalException("classes and thresholds not correctly set");
-		}
+        double time = stream_in[0].time;
+        double timeStep = 1 / stream_in[0].sr;
+        float sum = 0;
 
-		if (classes.length != thresholds.length)
-		{
-			throw new SSJFatalException("number of classes do not match number of thresholds");
-		}
+        for (int i = 0; i < stream_in[0].num; i++) {
+            float value = 0;
+            switch (stream_in[0].type) {
+                case BYTE:
+                    value = stream_in[0].ptrB()[i];
+                    break;
+                case FLOAT:
+                    value = stream_in[0].ptrF()[i];
+                    break;
+                case DOUBLE:
+                    value = (float) stream_in[0].ptrD()[i];
+                    break;
+                case SHORT:
+                    value = stream_in[0].ptrS()[i];
+                    break;
+                case INT:
+                    value = (float) stream_in[0].ptrI()[i];
+                    break;
+                case LONG:
+                    value = stream_in[0].ptrL()[i];
+                    break;
+                default:
+                    Log.e("unsupported input type");
+                    break;
+            }
 
-		thresholdList = new ArrayList<>();
-		for (int i = 0; i < classes.length; ++i)
-		{
-			thresholdList.add(new SimpleEntry<Float, String>(thresholds[i], classes[i]));
-		}
-		Collections.sort(thresholdList, new ThresholdListComparator());
-	}
+            if (options.mean.get()) {
+                sum += value;
+            } else {
+                processValue(value, time, stream_in[0].sr, 1);
+            }
+            time += timeStep;
+        }
+        if (options.mean.get()) {
+            processValue(sum / stream_in[0].num, time, stream_in[0].sr, stream_in[0].num);
+        }
+    }
 
-	@Override
-	protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-	{
-		makeThresholdList();
+    private void processValue(float value, double time, double sampleRate, int numberOfSamples) {
+        SimpleEntry<Float, String> newClass = classify(value);
+        samplesMaxDur -= numberOfSamples;
+        if (newClass == null) {
+            return;
+        }
+        if (isEqualLastClass(newClass)) {
+            if (samplesMaxDur <= 0) {
+                lastValue = value;
+                sendEvent(newClass, lastTriggerTime, time - lastTriggerTime, Event.State.CONTINUED);
+                samplesMaxDur = (int) (options.maxDur.get() * sampleRate);
+            }
+        } else if (valueDiffersEnoughFromLast(value)) {
+            if (lastClass != null) {
+                sendEvent(lastClass, lastTriggerTime, time - lastTriggerTime, Event.State.COMPLETED);
+            }
+            sendEvent(newClass, time, 0, Event.State.CONTINUED);
+            lastTriggerTime = time;
+            lastValue = value;
+            lastClass = newClass;
+            samplesMaxDur = (int) (options.maxDur.get() * sampleRate);
+        }
+    }
 
-		double time = stream_in[0].time;
-		double timeStep = 1 / stream_in[0].sr;
-		float sum = 0;
+    private boolean isEqualLastClass(SimpleEntry<Float, String> newClass) {
+        return newClass.equals(lastClass);
+    }
 
-		for (int i = 0; i < stream_in[0].num; i++)
-		{
-			float value = 0;
-			switch (stream_in[0].type)
-			{
-				case BYTE:
-					value = (float) stream_in[0].ptrB()[i];
-					break;
-				case FLOAT:
-					value = stream_in[0].ptrF()[i];
-					break;
-				case DOUBLE:
-					value = (float) stream_in[0].ptrD()[i];
-					break;
-				case SHORT:
-					value = stream_in[0].ptrS()[i];
-					break;
-				case INT:
-					value = (float) stream_in[0].ptrI()[i];
-					break;
-				case LONG:
-					value = stream_in[0].ptrL()[i];
-					break;
-				default:
-					Log.e("unsupported input type");
-					break;
-			}
+    private boolean valueDiffersEnoughFromLast(float value) {
+        return Math.abs(value - lastValue) > options.minDiff.get();
+    }
 
-			if (options.mean.get())
-			{
-				sum += value;
-			}
-			else
-			{
-				processValue(value, time, stream_in[0].sr, 1);
-			}
-			time += timeStep;
-		}
-		if (options.mean.get())
-		{
-			processValue(sum / stream_in[0].num, time, stream_in[0].sr, stream_in[0].num);
-		}
-	}
+    private SimpleEntry<Float, String> classify(float value) {
+        SimpleEntry<Float, String> foundClass = null;
+        for (SimpleEntry<Float, String> thresholdClass : thresholdList) {
+            float classValue = thresholdClass.getKey();
+            if (value > classValue) {
+                return thresholdClass;
+            }
+        }
+        return foundClass;
+    }
 
-	private void processValue(float value, double time, double sampleRate, int numberOfSamples)
-	{
-		SimpleEntry<Float, String> newClass = classify(value);
-		samplesMaxDur -= numberOfSamples;
-		if (newClass == null)
-		{
-			return;
-		}
-		if (isEqualLastClass(newClass))
-		{
-			if (samplesMaxDur <= 0)
-			{
-				lastValue = value;
-				sendEvent(newClass, lastTriggerTime, time - lastTriggerTime, Event.State.CONTINUED);
-				samplesMaxDur = (int) (options.maxDur.get() * sampleRate);
-			}
-		}
-		else if (valueDiffersEnoughFromLast(value))
-		{
-			if (lastClass != null)
-			{
-				sendEvent(lastClass, lastTriggerTime, time - lastTriggerTime, Event.State.COMPLETED);
-			}
-			sendEvent(newClass, time, 0, Event.State.CONTINUED);
-			lastTriggerTime = time;
-			lastValue = value;
-			lastClass = newClass;
-			samplesMaxDur = (int) (options.maxDur.get() * sampleRate);
-		}
-	}
+    private void sendEvent(Map.Entry<Float, String> thresholdClass, double time, double duration, Event.State state) {
+        Event event = Event.create(Cons.Type.EMPTY);
+        event.name = thresholdClass.getValue();
+        event.sender = options.sender.get();
+        event.time = Math.max(0, (int) (1000 * time + 0.5));
+        event.dur = Math.max(0, (int) (1000 * duration + 0.5));
+        event.state = state;
+        _evchannel_out.pushEvent(event);
+    }
 
-	private boolean isEqualLastClass(SimpleEntry<Float, String> newClass)
-	{
-		return newClass.equals(lastClass);
-	}
+    public class Options extends OptionList {
+        public final Option<String> sender = new Option<>("sender", null, String.class, "name of event sender");
+        public final Option<String[]> classes = new Option<>("classes", new String[]{"low", "medium", "high"}, String[].class, "classes for threshold values (eventnames)");
+        public final Option<float[]> thresholds = new Option<>("thresholds", new float[]{0f, 1f, 2f}, float[].class, "thresholds for input");
+        public final Option<Float> minDiff = new Option<>("minDiff", 0.1f, Float.class, "minimum difference to previous value");
+        public final Option<Boolean> mean = new Option<>("mean", false, Boolean.class, "classify based on mean value of entire frame");
+        public final Option<Double> maxDur = new Option<>("maxDur", 2., Double.class, "maximum delay before continued events will be sent");
 
-	private boolean valueDiffersEnoughFromLast(float value)
-	{
-		return Math.abs(value - lastValue) > options.minDiff.get();
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 
-	private SimpleEntry<Float, String> classify(float value)
-	{
-		SimpleEntry<Float, String> foundClass = null;
-		for (SimpleEntry<Float, String> thresholdClass : thresholdList)
-		{
-			float classValue = thresholdClass.getKey();
-			if (value > classValue)
-			{
-				return thresholdClass;
-			}
-		}
-		return foundClass;
-	}
-
-	private void sendEvent(Map.Entry<Float, String> thresholdClass, double time, double duration, Event.State state)
-	{
-		Event event = Event.create(Cons.Type.EMPTY);
-		event.name = thresholdClass.getValue();
-		event.sender = options.sender.get();
-		event.time = Math.max(0, (int) (1000 * time + 0.5));
-		event.dur = Math.max(0, (int) (1000 * duration + 0.5));
-		event.state = state;
-		_evchannel_out.pushEvent(event);
-	}
-
-	private class ThresholdListComparator implements Comparator<SimpleEntry<Float, String>>
-	{
-		@Override
-		public int compare(SimpleEntry<Float, String> o1, SimpleEntry<Float, String> o2)
-		{
-			// Note: this comparator imposes orderings that are inconsistent with equals.
-			// Order is descending.
-			if (o1.getKey() > o2.getKey())
-			{
-				return -1;
-			}
-			if (o1.getKey() < o2.getKey())
-			{
-				return 1;
-			}
-			return 0;
-		}
-	}
+    private class ThresholdListComparator implements Comparator<SimpleEntry<Float, String>> {
+        @Override
+        public int compare(SimpleEntry<Float, String> o1, SimpleEntry<Float, String> o2) {
+            // Note: this comparator imposes orderings that are inconsistent with equals.
+            // Order is descending.
+            if (o1.getKey() > o2.getKey()) {
+                return -1;
+            }
+            if (o1.getKey() < o2.getKey()) {
+                return 1;
+            }
+            return 0;
+        }
+    }
 }

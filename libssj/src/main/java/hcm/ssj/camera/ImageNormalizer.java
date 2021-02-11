@@ -42,103 +42,86 @@ import hcm.ssj.core.stream.Stream;
  * @author Vitaly
  */
 
-public class ImageNormalizer extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class ImageNormalizer extends Transformer {
+    public final Options options = new Options();
+    private final int CHANNELS_PER_PIXEL = 3;
+    private int width;
+    private int height;
+    public ImageNormalizer() {
+        _name = "ImageNormalizer";
+    }
 
-	public class Options extends OptionList
-	{
-		public final Option<Float> imageMean = new Option<>("imageMean", 127.5f, Float.class, "image mean");
-		public final Option<Float> imageStd = new Option<>("imageStd", 1f, Float.class, "image standard deviation");
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        // Get image dimensions
+        width = ((ImageStream) stream_in[0]).width;
+        height = ((ImageStream) stream_in[0]).height;
+    }
 
-	private int CHANNELS_PER_PIXEL = 3;
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        // Convert byte array to integer array
+        int[] rgb = CameraUtil.decodeBytes(stream_in[0].ptrB(), width, height);
 
-	private int width;
-	private int height;
+        // Normalize image values and write result to the output buffer
+        normalizeImageValues(rgb, stream_out.ptrF());
+    }
 
-	public final Options options = new Options();
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        ImageStream stream = ((ImageStream) stream_in[0]);
+        return stream.width * stream.height * CHANNELS_PER_PIXEL;
+    }
 
-	public ImageNormalizer()
-	{
-		_name = "ImageNormalizer";
-	}
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return stream_in[0].bytes;
+    }
 
-	@Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		// Get image dimensions
-		width = ((ImageStream) stream_in[0]).width;
-		height = ((ImageStream) stream_in[0]).height;
-	}
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		// Convert byte array to integer array
-		int[] rgb = CameraUtil.decodeBytes(stream_in[0].ptrB(), width, height);
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
 
-		// Normalize image values and write result to the output buffer
-		normalizeImageValues(rgb, stream_out.ptrF());
-	}
+    @Override
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[]{"Normalized image float values"};
+    }
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		ImageStream stream = ((ImageStream) stream_in[0]);
-		return stream.width * stream.height * CHANNELS_PER_PIXEL;
-	}
+    /**
+     * Prepares image for the classification with the Inception model.
+     *
+     * @param rgb Pixel values to normalize.
+     * @param out Output stream.
+     */
+    private void normalizeImageValues(int[] rgb, float[] out) {
+        float imageMean = options.imageMean.get();
+        float imageStd = options.imageStd.get();
 
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return stream_in[0].bytes;
-	}
+        for (int i = 0; i < rgb.length; ++i) {
+            final int val = rgb[i];
+            out[i * 3] = (((val >> 16) & 0xFF) - imageMean) / imageStd;
+            out[i * 3 + 1] = (((val >> 8) & 0xFF) - imageMean) / imageStd;
+            out[i * 3 + 2] = ((val & 0xFF) - imageMean) / imageStd;
+        }
+    }
 
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		return Cons.Type.FLOAT;
-	}
+    public class Options extends OptionList {
+        public final Option<Float> imageMean = new Option<>("imageMean", 127.5f, Float.class, "image mean");
+        public final Option<Float> imageStd = new Option<>("imageStd", 1f, Float.class, "image standard deviation");
 
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return sampleNumber_in;
-	}
-
-	@Override
-	protected void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[] { "Normalized image float values" };
-	}
-
-	/**
-	 * Prepares image for the classification with the Inception model.
-	 *
-	 * @param rgb Pixel values to normalize.
-	 * @param out Output stream.
-	 */
-	private void normalizeImageValues(int[] rgb, float[] out)
-	{
-		float imageMean = options.imageMean.get();
-		float imageStd = options.imageStd.get();
-
-		for (int i = 0; i < rgb.length; ++i)
-		{
-			final int val = rgb[i];
-			out[i * 3] = (((val >> 16) & 0xFF) - imageMean) / imageStd;
-			out[i * 3 + 1] = (((val >> 8) & 0xFF) - imageMean) / imageStd;
-			out[i * 3 + 2] = ((val & 0xFF) - imageMean) / imageStd;
-		}
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

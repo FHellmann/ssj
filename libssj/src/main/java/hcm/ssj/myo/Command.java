@@ -40,9 +40,10 @@ import hcm.ssj.core.Log;
  */
 public class Command {
 
+    static final UUID CONTROL_SERVICE_UUID = UUID.fromString("d5060001-a904-deb9-4748-2c7f4a124842");
+    static final UUID COMMAND_CHAR_UUID = UUID.fromString("d5060401-a904-deb9-4748-2c7f4a124842");
     String _name = "Myo_Cmd";
     BleManager mBleManager;
-
     public Command(Hub hub) {
         /* try to access mBleManager field which is private by using reflection */
         /* this field is required as this is the communication-module */
@@ -51,13 +52,12 @@ public class Command {
             field = Hub.class.getDeclaredField("mBleManager");
             field.setAccessible(true);
             mBleManager = (BleManager) field.get(hub);
+        } catch (NoSuchFieldException e) {
+            Log.w("unable to access BleManager", e);
+        } catch (IllegalAccessException e) {
+            Log.w("unable to access BleManager", e);
         }
-        catch (NoSuchFieldException e) {Log.w("unable to access BleManager", e);}
-        catch (IllegalAccessException e) {Log.w("unable to access BleManager", e);}
     }
-
-    static final UUID CONTROL_SERVICE_UUID = UUID.fromString("d5060001-a904-deb9-4748-2c7f4a124842");
-    static final UUID COMMAND_CHAR_UUID = UUID.fromString("d5060401-a904-deb9-4748-2c7f4a124842");
 
     void writeControlCommand(String address, byte[] controlCommand) {
         UUID serviceUuid = CONTROL_SERVICE_UUID;

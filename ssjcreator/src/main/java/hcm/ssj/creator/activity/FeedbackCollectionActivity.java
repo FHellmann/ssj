@@ -29,11 +29,12 @@ package hcm.ssj.creator.activity;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,170 +53,140 @@ import hcm.ssj.feedback.FeedbackCollection;
  * Created by Antonio Grieco on 19.09.2017.
  */
 
-public class FeedbackCollectionActivity extends AppCompatActivity
-{
-	public static FeedbackCollectionContainerElement feedbackCollectionContainerElement = null;
-	private FeedbackCollectionContainerElement innerFeedbackCollectionContainerElement = null;
-	private LinearLayout levelLinearLayout;
-	private List<FeedbackLevelLayout> feedbackLevelLayoutList;
-	private FeedbackListener feedbackListener;
-	private ImageView recycleBin;
+public class FeedbackCollectionActivity extends AppCompatActivity {
+    public static FeedbackCollectionContainerElement feedbackCollectionContainerElement = null;
+    private FeedbackCollectionContainerElement innerFeedbackCollectionContainerElement = null;
+    private LinearLayout levelLinearLayout;
+    private List<FeedbackLevelLayout> feedbackLevelLayoutList;
+    private FeedbackListener feedbackListener;
+    private ImageView recycleBin;
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState)
-	{
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_feedback_container);
-		init();
-		createLevels();
-	}
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_feedback_container);
+        init();
+        createLevels();
+    }
 
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		if (innerFeedbackCollectionContainerElement != null)
-		{
-			innerFeedbackCollectionContainerElement.removeAllFeedbacks();
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (innerFeedbackCollectionContainerElement != null) {
+            innerFeedbackCollectionContainerElement.removeAllFeedbacks();
 
-			for (int level = 0; level < feedbackLevelLayoutList.size(); level++)
-			{
-				Map<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourMap = feedbackLevelLayoutList.get(level).getFeedbackLevelBehaviourMap();
-				if (feedbackLevelBehaviourMap != null && !feedbackLevelBehaviourMap.isEmpty())
-				{
-					for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackLevelBehaviourMap.entrySet())
-					{
-						innerFeedbackCollectionContainerElement.addFeedback(feedbackLevelBehaviourEntry.getKey(), level, feedbackLevelBehaviourEntry.getValue());
-					}
-				}
-			}
-		}
-	}
+            for (int level = 0; level < feedbackLevelLayoutList.size(); level++) {
+                Map<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourMap = feedbackLevelLayoutList.get(level).getFeedbackLevelBehaviourMap();
+                if (feedbackLevelBehaviourMap != null && !feedbackLevelBehaviourMap.isEmpty()) {
+                    for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackLevelBehaviourMap.entrySet()) {
+                        innerFeedbackCollectionContainerElement.addFeedback(feedbackLevelBehaviourEntry.getKey(), level, feedbackLevelBehaviourEntry.getValue());
+                    }
+                }
+            }
+        }
+    }
 
-	@Override
-	public void onConfigurationChanged(Configuration newConfig)
-	{
-		super.onConfigurationChanged(newConfig);
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
 
-		for (final FeedbackLevelLayout feedbackLevelLayout : feedbackLevelLayoutList)
-		{
-			feedbackLevelLayout.postDelayed(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					feedbackLevelLayout.reorder();
-				}
-			}, 250);
-		}
-	}
+        for (final FeedbackLevelLayout feedbackLevelLayout : feedbackLevelLayoutList) {
+            feedbackLevelLayout.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    feedbackLevelLayout.reorder();
+                }
+            }, 250);
+        }
+    }
 
-	private void init()
-	{
-		innerFeedbackCollectionContainerElement = feedbackCollectionContainerElement;
-		feedbackCollectionContainerElement = null;
-		if (innerFeedbackCollectionContainerElement == null)
-		{
-			finish();
-			throw new RuntimeException("no feedbackcontainer given");
-		}
-		levelLinearLayout = (LinearLayout) findViewById(R.id.feedbackLinearLayout);
-		recycleBin = (ImageView) findViewById(R.id.recycleBin);
-		recycleBin.setOnDragListener(new FeedbackCollectionOnDragListener(this));
+    private void init() {
+        innerFeedbackCollectionContainerElement = feedbackCollectionContainerElement;
+        feedbackCollectionContainerElement = null;
+        if (innerFeedbackCollectionContainerElement == null) {
+            finish();
+            throw new RuntimeException("no feedbackcontainer given");
+        }
+        levelLinearLayout = findViewById(R.id.feedbackLinearLayout);
+        recycleBin = findViewById(R.id.recycleBin);
+        recycleBin.setOnDragListener(new FeedbackCollectionOnDragListener(this));
 
-		setTitle(((FeedbackCollection) innerFeedbackCollectionContainerElement.getElement()).getComponentName());
-		feedbackLevelLayoutList = new ArrayList<>();
+        setTitle(((FeedbackCollection) innerFeedbackCollectionContainerElement.getElement()).getComponentName());
+        feedbackLevelLayoutList = new ArrayList<>();
 
-		this.feedbackListener = new FeedbackListener()
-		{
-			@Override
-			public void onComponentAdded()
-			{
-				deleteEmptyLevels();
-				addEmptyLevel();
-			}
-		};
-	}
+        this.feedbackListener = new FeedbackListener() {
+            @Override
+            public void onComponentAdded() {
+                deleteEmptyLevels();
+                addEmptyLevel();
+            }
+        };
+    }
 
-	private void createLevels()
-	{
-		feedbackLevelLayoutList.clear();
-		levelLinearLayout.removeAllViews();
-		List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackLevelList = innerFeedbackCollectionContainerElement.getFeedbackList();
-		for (int i = 0; i < feedbackLevelList.size(); i++)
-		{
-			FeedbackLevelLayout feedbackLevelLayout = new FeedbackLevelLayout(this, i, feedbackLevelList.get(i));
-			feedbackLevelLayout.setOnDragListener(new FeedbackCollectionOnDragListener(this));
-			feedbackLevelLayout.setFeedbackListener(this.feedbackListener);
-			feedbackLevelLayoutList.add(feedbackLevelLayout);
-			levelLinearLayout.addView(feedbackLevelLayout);
-		}
-		addEmptyLevel();
-	}
+    private void createLevels() {
+        feedbackLevelLayoutList.clear();
+        levelLinearLayout.removeAllViews();
+        List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackLevelList = innerFeedbackCollectionContainerElement.getFeedbackList();
+        for (int i = 0; i < feedbackLevelList.size(); i++) {
+            FeedbackLevelLayout feedbackLevelLayout = new FeedbackLevelLayout(this, i, feedbackLevelList.get(i));
+            feedbackLevelLayout.setOnDragListener(new FeedbackCollectionOnDragListener(this));
+            feedbackLevelLayout.setFeedbackListener(this.feedbackListener);
+            feedbackLevelLayoutList.add(feedbackLevelLayout);
+            levelLinearLayout.addView(feedbackLevelLayout);
+        }
+        addEmptyLevel();
+    }
 
-	private void addEmptyLevel()
-	{
-		FeedbackLevelLayout feedbackLevelLayout = new FeedbackLevelLayout(this, levelLinearLayout.getChildCount(), null);
-		feedbackLevelLayout.setOnDragListener(new FeedbackCollectionOnDragListener(this));
-		feedbackLevelLayout.setFeedbackListener(this.feedbackListener);
-		feedbackLevelLayoutList.add(feedbackLevelLayout);
-		levelLinearLayout.addView(feedbackLevelLayout);
-	}
+    private void addEmptyLevel() {
+        FeedbackLevelLayout feedbackLevelLayout = new FeedbackLevelLayout(this, levelLinearLayout.getChildCount(), null);
+        feedbackLevelLayout.setOnDragListener(new FeedbackCollectionOnDragListener(this));
+        feedbackLevelLayout.setFeedbackListener(this.feedbackListener);
+        feedbackLevelLayoutList.add(feedbackLevelLayout);
+        levelLinearLayout.addView(feedbackLevelLayout);
+    }
 
-	private void deleteEmptyLevels()
-	{
-		int counter = 0;
-		Iterator<FeedbackLevelLayout> iterator = feedbackLevelLayoutList.iterator();
-		while (iterator.hasNext())
-		{
-			FeedbackLevelLayout feedbackLevelLayout = iterator.next();
-			if (feedbackLevelLayout.getFeedbackLevelBehaviourMap() != null && !feedbackLevelLayout.getFeedbackLevelBehaviourMap().isEmpty())
-			{
-				feedbackLevelLayout.setLevel(counter);
-				counter++;
-			}
-			else
-			{
-				levelLinearLayout.removeView(feedbackLevelLayout);
-				iterator.remove();
-			}
-		}
-	}
+    private void deleteEmptyLevels() {
+        int counter = 0;
+        Iterator<FeedbackLevelLayout> iterator = feedbackLevelLayoutList.iterator();
+        while (iterator.hasNext()) {
+            FeedbackLevelLayout feedbackLevelLayout = iterator.next();
+            if (feedbackLevelLayout.getFeedbackLevelBehaviourMap() != null && !feedbackLevelLayout.getFeedbackLevelBehaviourMap().isEmpty()) {
+                feedbackLevelLayout.setLevel(counter);
+                counter++;
+            } else {
+                levelLinearLayout.removeView(feedbackLevelLayout);
+                iterator.remove();
+            }
+        }
+    }
 
-	public void showDragIcons(int width, int height)
-	{
-		ViewGroup.LayoutParams layoutParamsDragIcon = this.recycleBin.getLayoutParams();
-		layoutParamsDragIcon.width = width;
-		layoutParamsDragIcon.height = height;
-		this.recycleBin.setLayoutParams(layoutParamsDragIcon);
-		this.recycleBin.setVisibility(View.VISIBLE);
-		this.recycleBin.invalidate();
-	}
+    public void showDragIcons(int width, int height) {
+        ViewGroup.LayoutParams layoutParamsDragIcon = this.recycleBin.getLayoutParams();
+        layoutParamsDragIcon.width = width;
+        layoutParamsDragIcon.height = height;
+        this.recycleBin.setLayoutParams(layoutParamsDragIcon);
+        this.recycleBin.setVisibility(View.VISIBLE);
+        this.recycleBin.invalidate();
+    }
 
-	public void hideDragIcons()
-	{
-		this.recycleBin.setVisibility(View.GONE);
-	}
+    public void hideDragIcons() {
+        this.recycleBin.setVisibility(View.GONE);
+    }
 
-	public ImageView getRecycleBin()
-	{
-		return recycleBin;
-	}
+    public ImageView getRecycleBin() {
+        return recycleBin;
+    }
 
-	public void requestReorder()
-	{
-		for (final FeedbackLevelLayout feedbackLevelLayout : feedbackLevelLayoutList)
-		{
-			feedbackLevelLayout.post(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					feedbackLevelLayout.reorder();
-				}
-			});
-		}
-		deleteEmptyLevels();
-		addEmptyLevel();
-	}
+    public void requestReorder() {
+        for (final FeedbackLevelLayout feedbackLevelLayout : feedbackLevelLayoutList) {
+            feedbackLevelLayout.post(new Runnable() {
+                @Override
+                public void run() {
+                    feedbackLevelLayout.reorder();
+                }
+            });
+        }
+        deleteEmptyLevels();
+        addEmptyLevel();
+    }
 }

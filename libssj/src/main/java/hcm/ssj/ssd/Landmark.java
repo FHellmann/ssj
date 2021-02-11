@@ -30,33 +30,28 @@ package hcm.ssj.ssd;
 /**
  * Created by Michael Dietz on 12.01.2021.
  */
-public class Landmark
-{
-	public float x;
-	public float y;
-	public float z;
-	public float visibility;
+public class Landmark {
+    public float x;
+    public float y;
+    public float z;
+    public float visibility;
 
-	public Landmark(float visibility)
-	{
-		this.visibility = visibility;
-	}
+    public Landmark(float visibility) {
+        this.visibility = visibility;
+    }
 
-	public Landmark(float x, float y)
-	{
-		this(x, y, 0.0f);
-	}
+    public Landmark(float x, float y) {
+        this(x, y, 0.0f);
+    }
 
-	public Landmark(float x, float y, float z)
-	{
-		this(x, y, z, 1.0f);
-	}
+    public Landmark(float x, float y, float z) {
+        this(x, y, z, 1.0f);
+    }
 
-	public Landmark(float x, float y, float z, float visibility)
-	{
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.visibility = visibility;
-	}
+    public Landmark(float x, float y, float z, float visibility) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.visibility = visibility;
+    }
 }

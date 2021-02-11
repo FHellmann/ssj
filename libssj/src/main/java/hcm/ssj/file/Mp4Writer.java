@@ -51,8 +51,8 @@ import hcm.ssj.core.stream.Stream;
  */
 @SuppressWarnings("deprecation")
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-public abstract class Mp4Writer extends Consumer implements IFileWriter
-{
+public abstract class Mp4Writer extends Consumer implements IFileWriter {
+    protected final static int TIMEOUT_USEC = 10000;
     private static final int SENDEND_TIMEOUT = 2000;
     private static final int SENDEND_SLEEP = 100;
     //encoder
@@ -66,11 +66,10 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     //
     protected byte[] aByShuffle;
     protected long lFrameIndex;
-    protected final static int TIMEOUT_USEC = 10000;
-    //
-    private ByteBuffer[] aByteBufferInput = null;
     //
     protected File file = null;
+    //
+    private ByteBuffer[] aByteBufferInput = null;
 
     /**
      * @param inputBuf  ByteBuffer
@@ -79,11 +78,10 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     protected abstract void fillBuffer(ByteBuffer inputBuf, byte[] frameData) throws IOException;
 
     /**
-	 * @param stream_in Stream[]
-	 */
+     * @param stream_in Stream[]
+     */
     @Override
-    public void flush(Stream stream_in[]) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in) throws SSJFatalException {
         releaseEncoder();
         aByShuffle = null;
         bufferInfo = null;
@@ -94,17 +92,14 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
      *
      * @param options Options
      */
-    protected final void initFiles(Stream in, Options options)
-    {
-        if (options.filePath.get() == null)
-        {
+    protected final void initFiles(Stream in, Options options) {
+        if (options.filePath.get() == null) {
             Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
             options.filePath.set(new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE));
         }
         File fileDirectory = Util.createDirectory(options.filePath.parseWildcards());
 
-        if (options.fileName.get() == null)
-        {
+        if (options.fileName.get() == null) {
             String defaultName = TextUtils.join("_", in.desc) + ".mp4";
             Log.w("file name not set, setting to " + defaultName);
             options.fileName.set(defaultName);
@@ -119,25 +114,20 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
      * @param mimeType    String
      * @param filePath    String
      */
-    protected final void prepareEncoder(MediaFormat mediaFormat, String mimeType, String filePath) throws IOException
-    {
+    protected final void prepareEncoder(MediaFormat mediaFormat, String mimeType, String filePath) throws IOException {
         //create and start encoder
-        try
-        {
+        try {
             mediaCodec = MediaCodec.createEncoderByType(mimeType);
             mediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             mediaCodec.start();
             aByteBufferInput = mediaCodec.getInputBuffers();
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             throw new IOException("MediaCodec creation failed", ex);
         }
         //create muxer
-        try
-        {
+        try {
             mediaMuxer = new MediaMuxer(filePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             throw new IOException("MediaMuxer creation failed", ex);
         }
         iTrackIndex = -1;
@@ -147,18 +137,14 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     /**
      * Releases encoder resources
      */
-    protected final void releaseEncoder()
-    {
-        if (mediaCodec != null)
-        {
+    protected final void releaseEncoder() {
+        if (mediaCodec != null) {
             sendEnd();
             mediaCodec.release();
             mediaCodec = null;
         }
-        if (mediaMuxer != null)
-        {
-            if (bMuxerStarted)
-            {
+        if (mediaMuxer != null) {
+            if (bMuxerStarted) {
                 mediaMuxer.stop();
             }
             mediaMuxer.release();
@@ -170,26 +156,20 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     /**
      * @param frameData byte[]
      */
-    protected final void encode(byte[] frameData) throws IOException
-    {
+    protected final void encode(byte[] frameData) throws IOException {
         int inputBufIndex = mediaCodec.dequeueInputBuffer(TIMEOUT_USEC);
-        if (inputBufIndex >= 0)
-        {
+        if (inputBufIndex >= 0) {
             long ptsUsec = computePresentationTime(lFrameIndex);
             ByteBuffer inputBuf = aByteBufferInput[inputBufIndex];
             //the buffer should be sized to hold one full frame
-            if (inputBuf.capacity() < frameData.length)
-            {
+            if (inputBuf.capacity() < frameData.length) {
                 throw new IOException("Buffer capacity too small: " + inputBuf.capacity() + "\tdata: " + frameData.length);
-            }
-            else
-            {
+            } else {
                 inputBuf.clear();
                 fillBuffer(inputBuf, frameData);
                 mediaCodec.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
             }
-        } else
-        {
+        } else {
             //either all in use, time out during initial setup
             Log.w("Input buffer not available. Skipped frame: " + lFrameIndex);
         }
@@ -199,42 +179,32 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     /**
      * @param last boolean
      */
-    protected final synchronized void save(boolean last)
-    {
+    protected final synchronized void save(boolean last) {
         //save data until none is available
-        while (true)
-        {
+        while (true) {
             ByteBuffer[] encoderOutputBuffers = mediaCodec.getOutputBuffers();
             int encoderStatus = mediaCodec.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC);
-            if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER)
-            {
+            if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 //no output available yet
-                if (last)
-                {
+                if (last) {
                     //try again until buffer sends the end event flag
-                    try
-                    {
+                    try {
                         //small timeout to ease CPU usage
                         wait(0, 10000);
-                    } catch (InterruptedException ex)
-                    {
+                    } catch (InterruptedException ex) {
                         Log.e(ex.getMessage());
                         ex.printStackTrace();
                     }
-                } else
-                {
+                } else {
                     break;
                 }
-            } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED)
-            {
+            } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 //not expected for an encoder
                 Log.d("Encoder output buffers changed: " + lFrameIndex);
                 break;
-            } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED)
-            {
+            } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 //should happen before receiving buffers and should only happen once
-                if (bMuxerStarted)
-                {
+                if (bMuxerStarted) {
                     Log.e("image format changed unexpectedly");
                     return;
                 }
@@ -244,16 +214,13 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
                 iTrackIndex = mediaMuxer.addTrack(newFormat);
                 mediaMuxer.start();
                 bMuxerStarted = true;
-            } else if (encoderStatus < 0)
-            {
+            } else if (encoderStatus < 0) {
                 Log.e("Unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
                 break;
-            } else if (encoderStatus >= 0)
-            {
+            } else if (encoderStatus >= 0) {
                 //get data from encoder and send it to muxer
                 ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
-                if (encodedData == null)
-                {
+                if (encodedData == null) {
                     Log.e("EncoderOutputBuffer " + encoderStatus + " was null" + ": " + lFrameIndex);
                     return;
                 }
@@ -262,8 +229,7 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
                 mediaMuxer.writeSampleData(iTrackIndex, encodedData, bufferInfo);
                 mediaCodec.releaseOutputBuffer(encoderStatus, false);
                 //check for end of stream
-                if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0)
-                {
+                if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                     break;
                 }
             }
@@ -273,35 +239,28 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     /**
      * Send end of stream to encoder
      */
-    private void sendEnd()
-    {
+    private void sendEnd() {
         int inputBufIndex = -1;
         double time = _frame.getTime();
         //try to get a valid input buffer to close the writer
-        while (inputBufIndex < 0)
-        {
+        while (inputBufIndex < 0) {
             inputBufIndex = mediaCodec.dequeueInputBuffer(TIMEOUT_USEC);
-            if (_frame.getTime() > time + SENDEND_TIMEOUT)
-            {
+            if (_frame.getTime() > time + SENDEND_TIMEOUT) {
                 break;
             }
-            try
-            {
+            try {
                 Thread.sleep(SENDEND_SLEEP);
-            } catch (InterruptedException ex)
-            {
+            } catch (InterruptedException ex) {
                 Log.e("Thread interrupted: " + lFrameIndex);
             }
         }
-        if (inputBufIndex >= 0)
-        {
+        if (inputBufIndex >= 0) {
             long ptsUsec = computePresentationTime(lFrameIndex);
             //send an empty frame with the end-of-stream flag set
             mediaCodec.queueInputBuffer(inputBufIndex, 0, 0, ptsUsec, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             //save every frame still unprocessed
             save(true);
-        } else
-        {
+        } else {
             //either all in use, time out during initial setup
             Log.w("Input buffer not available for last frame: " + lFrameIndex);
         }
@@ -310,14 +269,12 @@ public abstract class Mp4Writer extends Consumer implements IFileWriter
     /**
      * Generates the presentation time for frame N, in microseconds
      */
-    private long computePresentationTime(long frameIndex)
-    {
+    private long computePresentationTime(long frameIndex) {
         return (long) (132L + frameIndex * 1000000L / dFrameRate);
     }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

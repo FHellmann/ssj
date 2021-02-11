@@ -41,107 +41,95 @@ import hcm.ssj.core.stream.Stream;
  * Created by Michael Dietz on 18.10.2016.
  */
 
-public class FFTfeat extends Transformer
-{
-	private FloatFFT_1D fft;
-	private float[][] fft_in;
-	private float[][] fft_out;
+public class FFTfeat extends Transformer {
+    private FloatFFT_1D fft;
+    private float[][] fft_in;
+    private float[][] fft_out;
 
-	private int fft_dim = 0;
-	private int fft_size = 0;
-	private int rfft = 0;
+    private int fft_dim = 0;
+    private int fft_size = 0;
+    private int rfft = 0;
 
-	public FFTfeat()
-	{
-		_name = this.getClass().getSimpleName();
-	}
+    public FFTfeat() {
+        _name = this.getClass().getSimpleName();
+    }
 
-	@Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		fft_dim = stream_in[0].dim;
-		fft_size = stream_in[0].num;
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        fft_dim = stream_in[0].dim;
+        fft_size = stream_in[0].num;
 
-		fft = new FloatFFT_1D(fft_size);
-		fft_out = new float[fft_dim][];
-		fft_in = new float[fft_dim][];
+        fft = new FloatFFT_1D(fft_size);
+        fft_out = new float[fft_dim][];
+        fft_in = new float[fft_dim][];
 
-		for(int i = 0; i < fft_dim; i++){
-			fft_in[i]= new float[fft_size];
-			fft_out[i] = new float[rfft];
-		}
-	}
+        for (int i = 0; i < fft_dim; i++) {
+            fft_in[i] = new float[fft_size];
+            fft_out[i] = new float[rfft];
+        }
+    }
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		float[] in = stream_in[0].ptrF();
-		float[] out = stream_out.ptrF();
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        float[] in = stream_in[0].ptrF();
+        float[] out = stream_out.ptrF();
 
-		for (int j = 0; j < fft_size; j++) {
-			for (int i = 0; i < fft_dim; i++) {
-				if (j < stream_in[0].num){
-					fft_in[i][j] = in[j * fft_dim + i];
-				} else {
-					fft_in[i][j] = 0;
-				}
-			}
-		}
+        for (int j = 0; j < fft_size; j++) {
+            for (int i = 0; i < fft_dim; i++) {
+                if (j < stream_in[0].num) {
+                    fft_in[i][j] = in[j * fft_dim + i];
+                } else {
+                    fft_in[i][j] = 0;
+                }
+            }
+        }
 
-		for (int i = 0; i < fft_dim; i++)
-		{
-			// Calculate FFT
-			fft.realForward(fft_in[i]);
+        for (int i = 0; i < fft_dim; i++) {
+            // Calculate FFT
+            fft.realForward(fft_in[i]);
 
-			// Format values like in SSI
-			Util.joinFFT(fft_in[i], fft_out[i]);
-		}
+            // Format values like in SSI
+            Util.joinFFT(fft_in[i], fft_out[i]);
+        }
 
-		for (int j = 0; j < rfft; j++){
-			for (int i = 0; i < fft_dim; i++){
-				out[j * fft_dim + i] = fft_out[i][j];
-			}
-		}
-	}
+        for (int j = 0; j < rfft; j++) {
+            for (int i = 0; i < fft_dim; i++) {
+                out[j * fft_dim + i] = fft_out[i][j];
+            }
+        }
+    }
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		rfft = ((stream_in[0].num >> 1) + 1);
-		return stream_in[0].dim * rfft;
-	}
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        rfft = ((stream_in[0].num >> 1) + 1);
+        return stream_in[0].dim * rfft;
+    }
 
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return stream_in[0].bytes;
-	}
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return stream_in[0].bytes;
+    }
 
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		if(stream_in[0].type != Cons.Type.FLOAT)
-		{
-			Log.e("Unsupported input stream type");
-		}
-		return Cons.Type.FLOAT;
-	}
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.FLOAT) {
+            Log.e("Unsupported input stream type");
+        }
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return 1;
-	}
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return 1;
+    }
 
-	@Override
-	protected void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[]{"fft"};
-	}
+    @Override
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[]{"fft"};
+    }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

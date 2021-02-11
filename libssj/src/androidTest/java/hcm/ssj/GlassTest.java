@@ -45,45 +45,40 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class GlassTest
-{
-	@Test
-	public void testInfrared() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class GlassTest {
+    @Test
+    public void testInfrared() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		InfraredSensor sensor = new InfraredSensor();
+        // Sensor
+        InfraredSensor sensor = new InfraredSensor();
 
-		// Channel
-		InfraredChannel sensorChannel = new InfraredChannel();
-		frame.addSensor(sensor, sensorChannel);
+        // Channel
+        InfraredChannel sensorChannel = new InfraredChannel();
+        frame.addSensor(sensor, sensorChannel);
 
-		// Transformer
-		BlinkDetection transformer = new BlinkDetection();
-		frame.addTransformer(transformer, sensorChannel, 1, 0);
+        // Transformer
+        BlinkDetection transformer = new BlinkDetection();
+        frame.addTransformer(transformer, sensorChannel, 1, 0);
 
-		// Logger
-		Logger log = new Logger();
-		frame.addConsumer(log, sensorChannel, 1, 0);
+        // Logger
+        Logger log = new Logger();
+        frame.addConsumer(log, sensorChannel, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.release();
-	}
+        // Stop framework
+        frame.stop();
+        frame.release();
+    }
 }

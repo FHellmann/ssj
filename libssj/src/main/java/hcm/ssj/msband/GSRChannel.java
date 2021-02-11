@@ -39,94 +39,77 @@ import hcm.ssj.core.stream.Stream;
 
 /**
  * Provides skin resistance in kOhms
- *
+ * <p>
  * Created by Michael Dietz on 06.07.2016.
  */
-public class GSRChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class GSRChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Float> sampleRate = new Option<>("sampleRate", 5.0f, Float.class, "supported sample rates: 0.2, 5.0 Hz");
+    public GSRChannel() {
+        _name = "MSBand_GSR";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        GsrSampleRate sr;
+        if (options.sampleRate.get() <= 0.2) {
+            sr = GsrSampleRate.MS5000;
+        } else {
+            sr = GsrSampleRate.MS200;
+        }
 
-	protected BandListener _listener;
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.GSR, true, sr.ordinal());
+    }
 
-	public GSRChannel()
-	{
-		_name = "MSBand_GSR";
-	}
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	@Override
-	public void init() throws SSJException
-	{
-		GsrSampleRate sr;
-		if (options.sampleRate.get() <= 0.2)
-		{
-			sr = GsrSampleRate.MS5000;
-		}
-		else
-		{
-			sr = GsrSampleRate.MS200;
-		}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-		((MSBand)_sensor).configureChannel(MSBand.Channel.GSR, true, sr.ordinal());
-	}
+        float[] out = stream_out.ptrF();
+        out[0] = (float) _listener.getGsr();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		float[] out = stream_out.ptrF();
-		out[0] = (float)_listener.getGsr();
+    @Override
+    protected int getSampleDimension() {
+        return 1;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "GSR";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 1;
-	}
+    public class Options extends OptionList {
+        public final Option<Float> sampleRate = new Option<>("sampleRate", 5.0f, Float.class, "supported sample rates: 0.2, 5.0 Hz");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "GSR";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

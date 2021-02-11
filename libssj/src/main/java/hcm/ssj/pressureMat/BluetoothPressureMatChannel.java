@@ -40,26 +40,6 @@ import hcm.ssj.core.stream.Stream;
  * Created by Johnny on 05.03.2015.
  */
 public class BluetoothPressureMatChannel extends SensorChannel {
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList {
-        public final Option<Integer> channel_id = new Option<>("channel_id", 0, Integer.class, "the channel index as defined by the order in which the streams were sent");
-        public final Option<Integer> bytes = new Option<>("bytes", 0, Integer.class, "");
-        public final Option<Integer> dim = new Option<>("dim", 0, Integer.class, "");
-        public final Option<Double> sr = new Option<>("sr", 0., Double.class, "");
-        public final Option<Integer> num = new Option<>("num", 1, Integer.class, "values >1 make buffer error handling less efficient");
-        public final Option<Cons.Type> type = new Option<>("type", Cons.Type.UNDEF, Cons.Type.class, "");
-
-
-        private Options() {
-            addOptions();
-        }
-    }
-
     public final Options options = new Options();
 
     public BluetoothPressureMatChannel() {
@@ -67,8 +47,12 @@ public class BluetoothPressureMatChannel extends SensorChannel {
     }
 
     @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
 
         if (options.sr.get() == 0 || options.bytes.get() == 0 || options.dim.get() == 0 || options.type.get() == Cons.Type.UNDEF) {
             Log.e("input channel not configured");
@@ -76,8 +60,7 @@ public class BluetoothPressureMatChannel extends SensorChannel {
     }
 
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         short[] data = ((BluetoothPressureSensor) _sensor).getDataInt(options.channel_id.get());
 
         if (data.length != stream_out.tot) {
@@ -120,6 +103,20 @@ public class BluetoothPressureMatChannel extends SensorChannel {
         for (int i = 0; i < stream_out.desc.length; i++) {
             stream_out.desc[i] = "Press" + i;
 
+        }
+    }
+
+    public class Options extends OptionList {
+        public final Option<Integer> channel_id = new Option<>("channel_id", 0, Integer.class, "the channel index as defined by the order in which the streams were sent");
+        public final Option<Integer> bytes = new Option<>("bytes", 0, Integer.class, "");
+        public final Option<Integer> dim = new Option<>("dim", 0, Integer.class, "");
+        public final Option<Double> sr = new Option<>("sr", 0., Double.class, "");
+        public final Option<Integer> num = new Option<>("num", 1, Integer.class, "values >1 make buffer error handling less efficient");
+        public final Option<Cons.Type> type = new Option<>("type", Cons.Type.UNDEF, Cons.Type.class, "");
+
+
+        private Options() {
+            addOptions();
         }
     }
 

@@ -41,16 +41,13 @@ import hcm.ssj.core.event.Event;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class Condition
-{
+public class Condition {
+    public float thres_lower = 0;
+    public float thres_upper = 0;
     protected String _event;
     protected String _sender;
 
-    public float thres_lower = 0;
-    public float thres_upper = 0;
-
-    public static Condition create(XmlPullParser xml, Context context)
-    {
+    public static Condition create(XmlPullParser xml, Context context) {
         Condition b = null;
         String type = xml.getAttributeValue(null, "type");
         if (type != null && type.equalsIgnoreCase("SpeechRate"))
@@ -66,30 +63,25 @@ public class Condition
         return b;
     }
 
-    public boolean checkEvent(Event event)
-    {
+    public boolean checkEvent(Event event) {
         if (event.name.equalsIgnoreCase(_event)
-        && event.sender.equalsIgnoreCase(_sender))
-        {
+                && event.sender.equalsIgnoreCase(_sender)) {
             float value = parseEvent(event);
-            if((value == thres_lower) || (value >= thres_lower && value < thres_upper))
-                return true;
+            return (value == thres_lower) || (value >= thres_lower && value < thres_upper);
         }
 
         return false;
     }
 
-    public float parseEvent(Event event)
-    {
-        switch(event.type)
-        {
+    public float parseEvent(Event event) {
+        switch (event.type) {
             case BYTE:
-                return (float) event.ptrB()[0];
+                return event.ptrB()[0];
             case CHAR:
             case STRING:
                 return Float.parseFloat(event.ptrStr());
             case SHORT:
-                return (float) event.ptrShort()[0];
+                return event.ptrShort()[0];
             case INT:
                 return (float) event.ptrI()[0];
             case LONG:
@@ -107,10 +99,8 @@ public class Condition
         }
     }
 
-    protected void load(XmlPullParser xml, Context context)
-    {
-        try
-        {
+    protected void load(XmlPullParser xml, Context context) {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "condition");
 
             _event = xml.getAttributeValue(null, "event");
@@ -120,22 +110,15 @@ public class Condition
             String equals = xml.getAttributeValue(null, "equals");
             String to = xml.getAttributeValue(null, "to");
 
-            if(equals != null)
-            {
+            if (equals != null) {
                 thres_lower = Float.parseFloat(equals);
-            }
-            else if(from != null && to != null)
-            {
+            } else if (from != null && to != null) {
                 thres_lower = Float.parseFloat(from);
                 thres_upper = Float.parseFloat(to);
-            }
-            else
-            {
+            } else {
                 throw new IOException("threshold value(s) not set");
             }
-        }
-        catch(IOException | XmlPullParserException e)
-        {
+        } catch (IOException | XmlPullParserException e) {
             Log.e("error parsing config file", e);
         }
     }

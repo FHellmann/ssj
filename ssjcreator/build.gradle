@@ -26,7 +26,7 @@
  */
 
 apply plugin: 'com.android.application'
-apply from: '../version.gradle'
+apply from: rootProject.file('gradle/version.gradle')
 
 android {
     compileSdkVersion 29
@@ -50,6 +50,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            testCoverageEnabled true
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
@@ -67,7 +70,18 @@ android {
             */
         }
     }
+    compileOptions {
+        encoding "UTF-8"
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    testOptions {
+        animationsDisabled true
 
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
     bundle {
         language {
             // Specifies that the app bundle should not support
@@ -93,9 +107,13 @@ repositories {
 }
 
 dependencies {
+    androidTestImplementation 'androidx.test:core:1.0.0'
     androidTestImplementation 'androidx.annotation:annotation:1.0.0'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test:rules:1.2.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.0.0'
+    androidTestImplementation 'androidx.test.ext:truth:1.0.0'
+    androidTestImplementation 'com.google.truth:truth:0.42'
 
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'com.google.android.material:material:1.0.0'
@@ -103,3 +121,8 @@ dependencies {
     implementation 'com.github.paolorotolo:appintro:4.0.0'
     implementation 'com.obsez.android.lib.filechooser:filechooser:1.1.5'
 }
+
+apply from: rootProject.file('gradle/version.gradle')
+apply from: rootProject.file('gradle/static-analysis.gradle')
+apply from: rootProject.file('gradle/coverage-submodule.gradle')
+apply from: rootProject.file('gradle/test-logging.gradle')

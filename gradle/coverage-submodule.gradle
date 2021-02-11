@@ -1,6 +1,6 @@
 /*
- * ApplicationTest.java
- * Copyright (c) 2017
+ * coverage-submodule.gradle
+ * Copyright (c) 2021
  * Authors: Ionut Damian, Michael Dietz, Frank Gaibler, Daniel Langerenken, Simon Flutura,
  * Vitalijs Krumins, Antonio Grieco
  * *****************************************************
@@ -25,18 +25,26 @@
  * with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-package hcm.demo;
+apply plugin: 'jacoco'
 
-import android.app.Application;
-import android.test.ApplicationTestCase;
+tasks.withType(Test) {
+    jacoco.includeNoLocationClasses = true
+}
 
-/**
- * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
- */
-public class ApplicationTest extends ApplicationTestCase<Application>
-{
-    public ApplicationTest()
-    {
-        super(Application.class);
+task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest', 'createDebugCoverageReport']) {
+    onlyIf { System.env.'CI' }
+    reports {
+        xml.enabled = true
+        html.enabled = false
     }
+
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*', '**/*_Impl*', '**/*_ViewBinding*']
+    def debugTree = fileTree(dir: "${buildDir}/intermediates/classes/debug", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+    getSourceDirectories().setFrom(files([mainSrc]))
+    getClassDirectories().setFrom(files([debugTree]))
+    getExecutionData().setFrom(fileTree(dir: "$buildDir", includes: [
+            "jacoco/testDebugUnitTest.exec", "outputs/code-coverage/connected/*coverage.ec"
+    ]))
 }

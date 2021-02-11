@@ -1,6 +1,6 @@
 /*
- * ApplicationTest.java
- * Copyright (c) 2017
+ * coverage.gradle
+ * Copyright (c) 2021
  * Authors: Ionut Damian, Michael Dietz, Frank Gaibler, Daniel Langerenken, Simon Flutura,
  * Vitalijs Krumins, Antonio Grieco
  * *****************************************************
@@ -25,18 +25,31 @@
  * with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
-package hcm.creator;
+apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: "jacoco"
 
-import android.app.Application;
-import android.test.ApplicationTestCase;
+coveralls {
+    jacocoReportPath = "${rootProject.buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+}
 
-/**
- * <a href="http://d.android.com/tools/testing/testing_android.html">Testing Fundamentals</a>
- */
-public class ApplicationTest extends ApplicationTestCase<Application>
-{
-    public ApplicationTest()
-    {
-        super(Application.class);
+tasks.coveralls {
+    dependsOn 'jacocoRootReport'
+    onlyIf { System.env.'CI' }
+}
+
+task jacocoRootReport(type: JacocoReport, dependsOn: ['libssj:jacocoTestReport', 'ssjcreator:jacocoTestReport']) {
+    onlyIf { System.env.'CI' }
+    reports {
+        xml.enabled = true
+        html.enabled = false
     }
+    getSourceDirectories().setFrom(files([tasks.getByPath("libssj:jacocoTestReport").sourceDirectories,
+                                          tasks.getByPath("ssjcreator:jacocoTestReport").sourceDirectories]))
+
+    getClassDirectories().setFrom(files([tasks.getByPath("libssj:jacocoTestReport").classDirectories,
+                                              tasks.getByPath("ssjcreator:jacocoTestReport").classDirectories]))
+
+    getExecutionData().setFrom(files([tasks.getByPath("libssj:jacocoTestReport").executionData,
+                                      tasks.getByPath("ssjcreator:jacocoTestReport").executionData]))
+
 }

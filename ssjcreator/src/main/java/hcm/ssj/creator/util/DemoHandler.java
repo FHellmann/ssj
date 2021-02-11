@@ -46,98 +46,77 @@ import hcm.ssj.file.FileUtils;
  * Handle demo files.<br>
  * Created by Frank Gaibler on 22.09.2016.
  */
-public abstract class DemoHandler
-{
+public abstract class DemoHandler {
     /**
      *
      */
-    private DemoHandler()
-    {
+    private DemoHandler() {
     }
 
     /**
      * @param context Context
      */
-    public static void copyFiles(Context context)
-    {
+    public static void copyFiles(Context context) {
         //in v0.7, the location of the pipelines changed
         copyFiles(null,
-                  Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR,
-                  Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.PIPELINES,
-                  new FilenameFilter() {
-                      @Override
-                      public boolean accept(File dir, String name)
-                      {
-                          if(name.endsWith(".xml") || name.endsWith(".layout"))
-                              return true;
-                          else
-                              return false;
-                      }
-                  });
+                Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR,
+                Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.PIPELINES,
+                new FilenameFilter() {
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        return name.endsWith(".xml") || name.endsWith(".layout");
+                    }
+                });
 
         AssetManager assetManager = context.getAssets();
         copyFiles(assetManager,
-                  Util.DEMO,
-                  Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR, null);
+                Util.DEMO,
+                Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR, null);
         copyFiles(assetManager,
-                  Util.DEMO + File.separator + Util.RES,
-                  Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.RES, null);
+                Util.DEMO + File.separator + Util.RES,
+                Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.RES, null);
         copyFiles(assetManager,
-                  Util.DEMO + File.separator + Util.PIPELINES,
-                  Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.PIPELINES, null);
+                Util.DEMO + File.separator + Util.PIPELINES,
+                Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.PIPELINES, null);
         copyFiles(assetManager,
-                  Util.DEMO + File.separator + Util.STRATEGIES,
-                  Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.STRATEGIES, null);
+                Util.DEMO + File.separator + Util.STRATEGIES,
+                Environment.getExternalStorageDirectory() + File.separator + Util.SSJ + File.separator + Util.CREATOR + File.separator + Util.STRATEGIES, null);
     }
 
-    public static void copyFiles(AssetManager assetManager, String src_dir, String dst_dir, FilenameFilter filter)
-    {
+    public static void copyFiles(AssetManager assetManager, String src_dir, String dst_dir, FilenameFilter filter) {
         String[] filenames;
-        try
-        {
-            if(assetManager != null)
-            {
+        try {
+            if (assetManager != null) {
                 filenames = assetManager.list(src_dir);
-            }
-            else
-            {
+            } else {
                 filenames = new File(src_dir).list(filter);
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("error accessing folder: " + src_dir, e);
             return;
         }
 
-        if(filenames == null || filenames.length == 0)
+        if (filenames == null || filenames.length == 0)
             return;
 
-        for (String file : filenames)
-        {
-            try
-            {
+        for (String file : filenames) {
+            try {
                 InputStream in = null;
-                if(assetManager != null)
-                {
+                if (assetManager != null) {
                     in = assetManager.open(src_dir + File.separator + file);
-                }
-                else
-                {
+                } else {
                     in = new FileInputStream(new File(src_dir, file));
                 }
 
                 File dir = new File(dst_dir);
-                if(!dir.exists())
+                if (!dir.exists())
                     dir.mkdirs();
                 OutputStream out = new FileOutputStream(new File(dir, file));
                 FileUtils.copyFile(in, out);
                 in.close();
                 out.flush();
                 out.close();
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 Log.i("skipping copying file: " + file);
             }
         }

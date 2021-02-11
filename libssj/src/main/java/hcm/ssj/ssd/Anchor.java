@@ -30,10 +30,9 @@ package hcm.ssj.ssd;
 /**
  * Created by Michael Dietz on 11.01.2021.
  */
-class Anchor
-{
-	public float xCenter;
-	public float yCenter;
-	public float width;
-	public float height;
+class Anchor {
+    public float xCenter;
+    public float yCenter;
+    public float width;
+    public float height;
 }

@@ -46,19 +46,146 @@ import hcm.ssj.core.stream.Stream;
  *
  * @see <a href="https://www.d2.mpi-inf.mpg.de/sites/default/files/ishimaru14_ah.pdf">In the Blink of an Eye</a>
  */
-public class BlinkDetection extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class BlinkDetection extends Transformer {
+    //constants
+    private static final int DIMENSION = 1;
+    public final Options options = new Options();
+    //helper variables
+    private final float timeThreshold = 500;
+    private final int maxSize = 7;
+    private final LimitedQueue<Float> values = new LimitedQueue<>(maxSize);
+    private float timeSave = timeThreshold + 1;
+    private int count = 0;
+    /**
+     *
+     */
+    public BlinkDetection() {
+        _name = this.getClass().getSimpleName();
+    }
 
-	/**
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * The input stream should consist of 1-dimensional float values
+     *
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        //no check for a specific type to allow for different providers
+        if (stream_in.length < 1 || stream_in[0].dim < DIMENSION) {
+            Log.e("invalid input stream");
+        }
+        //init values
+        count = 0;
+        timeSave = timeThreshold + 1;
+        values.clear();
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        float[] dataAcc = stream_in[0].ptrF();
+        float[] out = stream_out.ptrF();
+        for (int i = 0; i < stream_in[0].num; i++) {
+            //add to fifo
+            values.add(dataAcc[i]);
+            //write to output
+            out[i] = detectBlink(stream_in[0].sr);
+        }
+    }
+
+    /**
+     * Detect blinks by comparing the last 7 values.<br>
+     * The nature of the algorithm delays the output by 3 input values.<br>
+     * The code is slightly modified to improve computation and to fix obvious mistakes.
+     *
+     * @param sampleRate double
+     * @return float
+     * @see <a href="https://github.com/shoya140/GlassLogger/blob/master/src/com/mrk1869/glasslogger/MonitoringActivity.java">blink detection github link</a>
+     */
+    private float detectBlink(double sampleRate) {
+        if (values.size() == maxSize && timeSave > timeThreshold) {
+            float left = (values.get(0) + values.get(1) + values.get(2)) / 3.0f; //average range of values before the probable peak
+            float right = (values.get(4) + values.get(5) + values.get(6)) / 3.0f; //average range of values after the probable peak
+            float peak = values.get(3); //the probable peak
+            if ((left >= peak || peak >= right) && (left <= peak || peak <= right)) {
+                float left_to_right = Math.abs(right - left);
+                //check for high variance which indicates unfeasible sensor data
+                if (left_to_right < options.varianceThreshold.get()) {
+                    float peak_to_left = Math.abs(peak - left);
+                    float peak_to_right = Math.abs(peak - right);
+                    if (peak_to_left >= left_to_right && peak_to_right >= left_to_right) {
+                        float diff = Math.abs(peak - ((left + right) / 2.0f));
+                        if (diff > options.blinkThreshold.get()) {
+                            timeSave = 0;
+                            return options.countBlink.get() ? ++count : 1;
+                        }
+                    }
+                }
+            }
+        }
+        timeSave += 1000 / sampleRate;
+        return options.countBlink.get() ? count : 0;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     * @return int
+     */
+    @Override
+    public final int getSampleDimension(Stream[] stream_in) {
+        return DIMENSION;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     * @return int
+     */
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return Util.sizeOf(Cons.Type.FLOAT);
+    }
+
+    /**
+     * @param stream_in Stream[]
+     * @return Cons.Type
+     */
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        return Cons.Type.FLOAT;
+    }
+
+    /**
+     * @param sampleNumber_in int
+     * @return int
+     */
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[DIMENSION];
+        stream_out.desc[0] = options.countBlink.get() ? "blnkCnt" : "blnk";
+    }
+
+    /**
      * All options for the transformer
      */
-    public class Options extends OptionList
-    {
+    public class Options extends OptionList {
         /**
          * Peak threshold for blink detection.<br>
          * A lower value will detect more alleged blinks.
@@ -78,156 +205,9 @@ public class BlinkDetection extends Transformer
         /**
          *
          */
-        private Options()
-        {
+        private Options() {
             addOptions();
         }
-    }
-
-    public final Options options = new Options();
-    //constants
-    private static final int DIMENSION = 1;
-    //helper variables
-    private final float timeThreshold = 500;
-    private float timeSave = timeThreshold + 1;
-    private final int maxSize = 7;
-    private int count = 0;
-    private final LimitedQueue<Float> values = new LimitedQueue<>(maxSize);
-
-    /**
-     *
-     */
-    public BlinkDetection()
-    {
-        _name = this.getClass().getSimpleName();
-    }
-
-    /**
-	 * The input stream should consist of 1-dimensional float values
-     *  @param stream_in  Stream[]
-     * @param stream_out Stream
-	 */
-    @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        //no check for a specific type to allow for different providers
-        if (stream_in.length < 1 || stream_in[0].dim < DIMENSION)
-        {
-            Log.e("invalid input stream");
-        }
-        //init values
-        count = 0;
-        timeSave = timeThreshold + 1;
-        values.clear();
-    }
-
-    /**
-     * @param stream_in  Stream[]
-     * @param stream_out Stream
-     */
-    @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        float[] dataAcc = stream_in[0].ptrF();
-        float[] out = stream_out.ptrF();
-        for (int i = 0; i < stream_in[0].num; i++)
-        {
-            //add to fifo
-            values.add(dataAcc[i]);
-            //write to output
-            out[i] = detectBlink(stream_in[0].sr);
-        }
-    }
-
-    /**
-     * Detect blinks by comparing the last 7 values.<br>
-     * The nature of the algorithm delays the output by 3 input values.<br>
-     * The code is slightly modified to improve computation and to fix obvious mistakes.
-     *
-     * @param sampleRate double
-     * @return float
-     * @see <a href="https://github.com/shoya140/GlassLogger/blob/master/src/com/mrk1869/glasslogger/MonitoringActivity.java">blink detection github link</a>
-     */
-    private float detectBlink(double sampleRate)
-    {
-        if (values.size() == maxSize && timeSave > timeThreshold)
-        {
-            float left = (values.get(0) + values.get(1) + values.get(2)) / 3.0f; //average range of values before the probable peak
-            float right = (values.get(4) + values.get(5) + values.get(6)) / 3.0f; //average range of values after the probable peak
-            float peak = values.get(3); //the probable peak
-            if ((left >= peak || peak >= right) && (left <= peak || peak <= right))
-            {
-                float left_to_right = Math.abs(right - left);
-                //check for high variance which indicates unfeasible sensor data
-                if (left_to_right < options.varianceThreshold.get())
-                {
-                    float peak_to_left = Math.abs(peak - left);
-                    float peak_to_right = Math.abs(peak - right);
-                    if (peak_to_left >= left_to_right && peak_to_right >= left_to_right)
-                    {
-                        float diff = Math.abs(peak - ((left + right) / 2.0f));
-                        if (diff > options.blinkThreshold.get())
-                        {
-                            timeSave = 0;
-                            return options.countBlink.get() ? ++count : 1;
-                        }
-                    }
-                }
-            }
-        }
-        timeSave += 1000 / sampleRate;
-        return options.countBlink.get() ? count : 0;
-    }
-
-    /**
-     * @param stream_in Stream[]
-     * @return int
-     */
-    @Override
-    public final int getSampleDimension(Stream[] stream_in)
-    {
-        return DIMENSION;
-    }
-
-    /**
-     * @param stream_in Stream[]
-     * @return int
-     */
-    @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
-        return Util.sizeOf(Cons.Type.FLOAT);
-    }
-
-    /**
-     * @param stream_in Stream[]
-     * @return Cons.Type
-     */
-    @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
-        return Cons.Type.FLOAT;
-    }
-
-    /**
-     * @param sampleNumber_in int
-     * @return int
-     */
-    @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
-        return sampleNumber_in;
-    }
-
-    /**
-     * @param stream_in  Stream[]
-     * @param stream_out Stream
-     */
-    @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
-        stream_out.desc = new String[DIMENSION];
-        stream_out.desc[0] = options.countBlink.get() ? "blnkCnt" : "blnk";
     }
 
     /**
@@ -235,15 +215,13 @@ public class BlinkDetection extends Transformer
      *
      * @param <E>
      */
-    private class LimitedQueue<E> extends LinkedList<E>
-    {
-        private int limit;
+    private class LimitedQueue<E> extends LinkedList<E> {
+        private final int limit;
 
         /**
          * @param limit int
          */
-        public LimitedQueue(int limit)
-        {
+        public LimitedQueue(int limit) {
             this.limit = limit;
         }
 
@@ -252,11 +230,9 @@ public class BlinkDetection extends Transformer
          * @return boolean
          */
         @Override
-        public boolean add(E o)
-        {
+        public boolean add(E o) {
             super.add(o);
-            while (size() > limit)
-            {
+            while (size() > limit) {
                 super.remove();
             }
             return true;

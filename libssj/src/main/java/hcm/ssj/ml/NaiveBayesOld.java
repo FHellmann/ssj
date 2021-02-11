@@ -45,22 +45,7 @@ import hcm.ssj.file.SimpleXmlParser;
  * Created by Frank Gaibler on 22.09.2015.
  */
 @Deprecated
-public class NaiveBayesOld extends Model
-{
-    /**
-     * All options for the transformer
-     */
-    public class Options extends Model.Options
-    {
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class NaiveBayesOld extends Model {
     public final Options options = new Options();
     //file options
     private boolean userLogNormalDistribution = true;
@@ -72,25 +57,21 @@ public class NaiveBayesOld extends Model
     private double[][] std_dev = null;
     private float[] probs;
     private double[] data;
-
     /**
      *
      */
-    public NaiveBayesOld()
-    {
+    public NaiveBayesOld() {
         _name = "NaiveBayes";
     }
 
     @Override
-    void init(int input_dim, int output_dim, String[] outputNames)
-    {
+    void init(int input_dim, int output_dim, String[] outputNames) {
         probs = new float[output_dim];
         _isSetup = true;
     }
 
     @Override
-    public Model.Options getOptions()
-    {
+    public Model.Options getOptions() {
         return options;
     }
 
@@ -98,83 +79,66 @@ public class NaiveBayesOld extends Model
      * @param stream Stream
      * @return double[]
      */
-    public float[] forward(Stream stream)
-    {
-        if (!isTrained || class_probs == null || class_probs.length <= 0)
-        {
+    public float[] forward(Stream stream) {
+        if (!isTrained || class_probs == null || class_probs.length <= 0) {
             Log.w("not trained");
             return null;
         }
-        if (stream.dim != n_features)
-        {
+        if (stream.dim != n_features) {
             Log.w("feature dimension differs");
             return null;
         }
 
         double sum = 0;
         boolean prior = usePriorProbability;
-        if (userLogNormalDistribution)
-        {
-            for (int nclass = 0; nclass < output_dim; nclass++)
-            {
+        if (userLogNormalDistribution) {
+            for (int nclass = 0; nclass < output_dim; nclass++) {
                 double prob = prior ? naiveBayesLog(class_probs[nclass]) : 0;
                 double[] ptr = getValuesAsDouble(stream);
                 double temp;
-                for (int nfeat = 0, t = 0; nfeat < n_features; nfeat++)
-                {
-                    if (std_dev[nclass][nfeat] == 0)
-                    {
+                for (int nfeat = 0, t = 0; nfeat < n_features; nfeat++) {
+                    if (std_dev[nclass][nfeat] == 0) {
                         t++;
                         continue;
                     }
                     double sqr = std_dev[nclass][nfeat] * std_dev[nclass][nfeat];
                     temp = ptr[t++] - means[nclass][nfeat];
-                    if (sqr != 0)
-                    {
+                    if (sqr != 0) {
                         prob += -naiveBayesLog(std_dev[nclass][nfeat]) - (temp * temp) / (2 * sqr);
-                    } else
-                    {
+                    } else {
                         prob += -naiveBayesLog(std_dev[nclass][nfeat]) - (temp * temp) / (2 * Double.MIN_VALUE);
                     }
                 }
-                probs[nclass] = (float)Math.exp(prob / n_features);
+                probs[nclass] = (float) Math.exp(prob / n_features);
                 sum += probs[nclass];
             }
 
-        } else
-        {
-            for (int nclass = 0; nclass < output_dim; nclass++)
-            {
+        } else {
+            for (int nclass = 0; nclass < output_dim; nclass++) {
                 double norm_const = Math.sqrt(2.0 * Math.PI);
                 double prob = prior ? class_probs[nclass] : 0;
                 double[] ptr = getValuesAsDouble(stream);
-                for (int nfeat = 0, t = 0; nfeat < n_features; nfeat++)
-                {
+                for (int nfeat = 0, t = 0; nfeat < n_features; nfeat++) {
                     double diff = ptr[t++] - means[nclass][nfeat];
                     double stddev = std_dev[nclass][nfeat];
-                    if (stddev == 0)
-                    {
+                    if (stddev == 0) {
                         stddev = Double.MIN_VALUE;
                     }
                     double temp = (1 / (norm_const * stddev)) * Math.exp(-((diff * diff) / (2 * (stddev * stddev))));
                     prob *= temp;
                 }
-                probs[nclass] = (float)prob;
+                probs[nclass] = (float) prob;
                 sum += probs[nclass];
             }
         }
         //normalisation
-        if (sum == 0)
-        {
+        if (sum == 0) {
             Log.w("sum == 0");
-            for (int j = 0; j < output_dim; j++)
-            {
+            for (int j = 0; j < output_dim; j++) {
                 probs[j] = 1.0f / output_dim;
             }
-        } else
-        {
-            for (int j = 0; j < output_dim; j++)
-            {
+        } else {
+            for (int j = 0; j < output_dim; j++) {
                 probs[j] /= sum;
             }
         }
@@ -184,34 +148,27 @@ public class NaiveBayesOld extends Model
     /**
      * Load data from option file
      */
-    public void loadOption(File file)
-    {
-        if (file == null)
-        {
+    public void loadOption(File file) {
+        if (file == null) {
             Log.w("option file not set in options");
             return;
         }
         SimpleXmlParser simpleXmlParser = new SimpleXmlParser();
-        try
-        {
+        try {
             SimpleXmlParser.XmlValues xmlValues = simpleXmlParser.parse(
                     new FileInputStream(file),
                     new String[]{"options", "item"},
                     new String[]{"name", "value"}
             );
             ArrayList<String[]> foundAttributes = xmlValues.foundAttributes;
-            for (String[] strings : foundAttributes)
-            {
-                if (strings[0].equals("log"))
-                {
+            for (String[] strings : foundAttributes) {
+                if (strings[0].equals("log")) {
                     userLogNormalDistribution = strings[1].equals("true");
-                } else if (strings[0].equals("prior"))
-                {
+                } else if (strings[0].equals("prior")) {
                     usePriorProbability = strings[1].equals("true");
                 }
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
             Log.e("file could not be parsed", e);
         }
@@ -220,92 +177,74 @@ public class NaiveBayesOld extends Model
     /**
      * Load data from model file
      */
-    public void loadModel(File file)
-    {
-        if (file == null)
-        {
+    public void loadModel(File file) {
+        if (file == null) {
             Log.e("model file not set in options");
             return;
         }
         BufferedReader reader;
-        try
-        {
+        try {
             InputStream inputStream = new FileInputStream(file);
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             reader = new BufferedReader(inputStreamReader);
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             Log.e("file not found");
             return;
         }
         String line;
-        do
-        {
+        do {
             line = readLine(reader);
         } while (line.startsWith("#"));
-        String token[] = line.split("\t");
-        if (token.length > 0)
-        {
+        String[] token = line.split("\t");
+        if (token.length > 0) {
             int classNum = Integer.valueOf(token[0]);
-            if(classNum != output_dim)
-                Log.w("model definition (n_classes) mismatch between trainer and model file: " + classNum +" != "+ output_dim);
-        }
-        else
-        {
+            if (classNum != output_dim)
+                Log.w("model definition (n_classes) mismatch between trainer and model file: " + classNum + " != " + output_dim);
+        } else {
             Log.w("can't read number of classes from classifier file " + file.getName() + "!");
             return;
         }
-        if (token.length > 1)
-        {
+        if (token.length > 1) {
             n_features = Integer.valueOf(token[1]);
-        } else
-        {
+        } else {
             Log.w("can't read feature dimension from classifier file " + file.getName() + "'!");
             return;
         }
         class_probs = new double[output_dim];
         means = new double[output_dim][];
         std_dev = new double[output_dim][];
-        for (int nclass = 0; nclass < output_dim; nclass++)
-        {
+        for (int nclass = 0; nclass < output_dim; nclass++) {
             means[nclass] = new double[n_features];
             std_dev[nclass] = new double[n_features];
-            for (int nfeat = 0; nfeat < n_features; nfeat++)
-            {
+            for (int nfeat = 0; nfeat < n_features; nfeat++) {
                 means[nclass][nfeat] = 0;
                 std_dev[nclass][nfeat] = 0;
             }
             class_probs[nclass] = 0;
         }
-        for (int nclass = 0; nclass < output_dim; nclass++)
-        {
-            do
-            {
+        for (int nclass = 0; nclass < output_dim; nclass++) {
+            do {
                 line = readLine(reader);
             } while (line.isEmpty() || line.startsWith("#"));
             token = line.split("\t");
 
             String name = token[0];
-            if(!name.equalsIgnoreCase(output_names[nclass]))
-            {
+            if (!name.equalsIgnoreCase(output_names[nclass])) {
                 Log.w("model definition (name of class " + nclass + ") mismatch between trainer and model file:" + name + " != " + output_names[nclass]);
                 output_names[nclass] = name;
             }
 
             class_probs[nclass] = Double.valueOf(token[1]);
-            for (int nfeat = 0; nfeat < n_features; nfeat++)
-            {
+            for (int nfeat = 0; nfeat < n_features; nfeat++) {
                 line = readLine(reader);
                 token = line.split("\t");
                 means[nclass][nfeat] = Double.valueOf(token[0]);
                 std_dev[nclass][nfeat] = Double.valueOf(token[1]);
             }
         }
-        try
-        {
+        try {
             reader.close();
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("could not close reader");
         }
 
@@ -316,16 +255,12 @@ public class NaiveBayesOld extends Model
      * @param reader BufferedReader
      * @return String
      */
-    private String readLine(BufferedReader reader)
-    {
+    private String readLine(BufferedReader reader) {
         String line = null;
-        if (reader != null)
-        {
-            try
-            {
+        if (reader != null) {
+            try {
                 line = reader.readLine();
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not read line");
             }
         }
@@ -336,8 +271,7 @@ public class NaiveBayesOld extends Model
      * @param x double
      * @return double
      */
-    private double naiveBayesLog(double x)
-    {
+    private double naiveBayesLog(double x) {
         return x > (1e-20) ? Math.log(x) : -46;
     }
 
@@ -347,46 +281,39 @@ public class NaiveBayesOld extends Model
      * @param stream Stream
      * @return double[]
      */
-    private double[] getValuesAsDouble(Stream stream)
-    {
-        if(data == null)
+    private double[] getValuesAsDouble(Stream stream) {
+        if (data == null)
             data = new double[stream.num * stream.dim];
 
-        switch (stream.type)
-        {
+        switch (stream.type) {
             case CHAR:
                 char[] chars = stream.ptrC();
-                for (int i = 0; i < data.length; i++)
-                {
-                    data[i] = (double) chars[i];
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = chars[i];
                 }
                 break;
             case SHORT:
                 short[] shorts = stream.ptrS();
-                for (int i = 0; i < data.length; i++)
-                {
-                    data[i] = (double) shorts[i];
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = shorts[i];
                 }
                 break;
             case INT:
                 int[] ints = stream.ptrI();
-                for (int i = 0; i < data.length; i++)
-                {
-                    data[i] = (double) ints[i];
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = ints[i];
                 }
                 break;
             case LONG:
                 long[] longs = stream.ptrL();
-                for (int i = 0; i < data.length; i++)
-                {
+                for (int i = 0; i < data.length; i++) {
                     data[i] = (double) longs[i];
                 }
                 break;
             case FLOAT:
                 float[] floats = stream.ptrF();
-                for (int i = 0; i < data.length; i++)
-                {
-                    data[i] = (double) floats[i];
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = floats[i];
                 }
                 break;
             case DOUBLE:
@@ -397,5 +324,17 @@ public class NaiveBayesOld extends Model
         }
 
         return data;
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends Model.Options {
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

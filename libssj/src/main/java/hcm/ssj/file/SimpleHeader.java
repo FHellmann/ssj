@@ -31,11 +31,11 @@ package hcm.ssj.file;
  * Simple header file.<br>
  * Created by Frank Gaibler on 31.08.2015.
  */
-class SimpleHeader
-{
+class SimpleHeader {
     protected final static String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss:SSS";
     private final static String _version = "1.0";
     private final static String _ssi_v = "2";
+    private final static String _byte2 = "0";
     protected String _ftype = "ASCII";
     protected String _sr = "50.0";
     protected String _dim = "1";
@@ -46,54 +46,47 @@ class SimpleHeader
     protected String _system = "00/00/00 00:00:00:0";
     protected String _from = "0.0";
     protected String _to = "0.0";
-    private final static String _byte2 = "0";
     protected String _num = "0";
 
     /**
      * @return String
      */
-    protected String getLine1()
-    {
+    protected String getLine1() {
         return "<?xml version=\"" + _version + "\" ?>";
     }
 
     /**
      * @return String
      */
-    protected String getLine2()
-    {
+    protected String getLine2() {
         return "<stream ssi-v=\"" + _ssi_v + "\">";
     }
 
     /**
      * @return String
      */
-    protected String getLine3()
-    {
+    protected String getLine3() {
         return "<info ftype=\"" + _ftype + "\" sr=\"" + _sr + "\" dim=\"" + _dim + "\" byte=\"" + _byte + "\" type=\"" + _type + "\" />";
     }
 
     /**
      * @return String
      */
-    protected String getLine4()
-    {
+    protected String getLine4() {
         return "<time ms=\"" + _ms + "\" local=\"" + _local + "\" system=\"" + _system + "\"/>";
     }
 
     /**
      * @return String
      */
-    protected String getLine5()
-    {
+    protected String getLine5() {
         return "<chunk from=\"" + _from + "\" to=\"" + _to + "\" byte=\"" + _byte2 + "\" num=\"" + _num + "\"/>";
     }
 
     /**
      * @return String
      */
-    protected String getLine6()
-    {
+    protected String getLine6() {
         return "</stream>";
     }
 }

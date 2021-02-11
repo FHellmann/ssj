@@ -32,35 +32,29 @@ import java.util.ArrayList;
 /**
  * Custom implementation of a LIFO queue with fixed size.
  * Taken from <a href="https://stackoverflow.com/questions/1963806/is-there-a-fixed-sized-queue-which-removes-excessive-elements">here</a>.
- *
+ * <p>
  * Created by Michael Dietz on 09.01.2020.
  */
-public class LimitedSizeQueue<K> extends ArrayList<K>
-{
-	private int maxSize;
+public class LimitedSizeQueue<K> extends ArrayList<K> {
+    private final int maxSize;
 
-	public LimitedSizeQueue(int size)
-	{
-		this.maxSize = size;
-	}
+    public LimitedSizeQueue(int size) {
+        this.maxSize = size;
+    }
 
-	public boolean add(K k)
-	{
-		boolean r = super.add(k);
-		if (size() > maxSize)
-		{
-			removeRange(0, size() - maxSize);
-		}
-		return r;
-	}
+    public boolean add(K k) {
+        boolean r = super.add(k);
+        if (size() > maxSize) {
+            removeRange(0, size() - maxSize);
+        }
+        return r;
+    }
 
-	public K getYoungest()
-	{
-		return get(size() - 1);
-	}
+    public K getYoungest() {
+        return get(size() - 1);
+    }
 
-	public K getOldest()
-	{
-		return get(0);
-	}
+    public K getOldest() {
+        return get(0);
+    }
 }

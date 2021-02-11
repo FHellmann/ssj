@@ -30,7 +30,7 @@ package hcm.ssj.angelsensor;
 /*
  * adapted version of:
  * https://github.com/StevenRudenko/BleSensorTag/blob/master/src/sample/ble/sensortag/ble/BleUtils.java
- * 
+ *
  */
 
 

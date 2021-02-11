@@ -38,7 +38,10 @@ public class EmptyEvent extends Event {
         type = Cons.Type.EMPTY;
     }
 
-    public void setData(Object data) { throw new UnsupportedOperationException(); }
+    public void setData(Object data) {
+        throw new UnsupportedOperationException();
+    }
+
     public boolean[] ptr() {
         return null;
     }

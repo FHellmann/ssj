@@ -36,82 +36,84 @@ import static java.lang.System.loadLibrary;
  * Interfaace for communication with SSI framework
  * Created by Ionut Damian on 07.09.2017.
  */
-public class SSI
-{
-	static
-	{
-		loadLibrary("ssissjbridge");
-	}
+public class SSI {
+    static {
+        loadLibrary("ssissjbridge");
+    }
 
-	public static native String getVersion();
+    public static native String getVersion();
 
-	public static native long create(String name, String libname, String libpath);
+    public static native long create(String name, String libname, String libpath);
 
-	public static native boolean setOption(long ssiobj, String name, String value);
+    public static native boolean setOption(long ssiobj, String name, String value);
 
-	public static native void transformEnter(long ssiobj, Stream[] stream_in, Stream stream_out);
-	public static native void transform(long ssiobj, Stream[] stream_in, Stream stream_out);
-	public static native void transformFlush(long ssiobj, Stream[] stream_in, Stream stream_out);
+    public static native void transformEnter(long ssiobj, Stream[] stream_in, Stream stream_out);
 
-	public static native int getSampleNumberOut(long ssiobj, int sample_number_in);
-	public static native int getSampleDimensionOut(long ssiobj, int sample_dimension_in);
-	public static native int getSampleBytesOut(long ssiobj, int sample_bytes_in);
-	public static native int getSampleTypeOut(long ssiobj, Cons.Type sample_type_in);
+    public static native void transform(long ssiobj, Stream[] stream_in, Stream stream_out);
 
-	public static native long clear();
+    public static native void transformFlush(long ssiobj, Stream[] stream_in, Stream stream_out);
 
-	public enum TransformerName
-	{
-		//TRANSFORMERS
-		AudioActivity("ssiaudio"),
-		AudioConvert("ssiaudio"),
-		AudioIntensity("ssiaudio"),
-		OSLpc("ssiaudio"),
-		AudioMono("ssiaudio"),
-		SNRatio("ssiaudio"),
+    public static native int getSampleNumberOut(long ssiobj, int sample_number_in);
 
-		ClassifierT("ssimodel"),
+    public static native int getSampleDimensionOut(long ssiobj, int sample_dimension_in);
 
-		Bundle("ssisignal"),
-		Butfilt("ssisignal"),
-		ConvPower("ssisignal"),
-		Derivative("ssisignal"),
-		DownSample("ssisignal"),
-		Energy("ssisignal"),
-		Expression("ssisignal"),
-		FFTfeat("ssisignal"),
-		Functionals("ssisignal"),
-		Gate("ssisignal"),
-		IIR("ssisignal"),
-		Integral("ssisignal"),
-		Intensity("ssisignal"),
-		Limits("ssisignal"),
-		Mean("ssisignal"),
-		MFCC("ssisignal"),
-		MvgAvgVar("ssisignal"),
-		MvgConDiv("ssisignal"),
-		MvgDrvtv("ssisignal"),
-		MvgMedian("ssisignal"),
-		MvgMinMax("ssisignal"),
-		MvgNorm("ssisignal"),
-		MvgPeakGate("ssisignal"),
-		Noise("ssisignal"),
-		Normalize("ssisignal"),
-		Pulse("ssisignal"),
-		Relative("ssisignal"),
-		Spectrogram("ssisignal"),
-		Statistics("ssisignal"),
-		Sum("ssisignal"),
+    public static native int getSampleBytesOut(long ssiobj, int sample_bytes_in);
 
-		EmoVoiceFeat("ssiemovoice"),
-		EmoVoiceMFCC("ssiemovoice"),
-		EmoVoicePitch("ssiemovoice"),
-		EmoVoiceVAD("ssiemovoice");
+    public static native int getSampleTypeOut(long ssiobj, Cons.Type sample_type_in);
 
-		public String lib;
-		TransformerName(String lib)
-		{
-			this.lib = lib;
-		}
-	}
+    public static native long clear();
+
+    public enum TransformerName {
+        //TRANSFORMERS
+        AudioActivity("ssiaudio"),
+        AudioConvert("ssiaudio"),
+        AudioIntensity("ssiaudio"),
+        OSLpc("ssiaudio"),
+        AudioMono("ssiaudio"),
+        SNRatio("ssiaudio"),
+
+        ClassifierT("ssimodel"),
+
+        Bundle("ssisignal"),
+        Butfilt("ssisignal"),
+        ConvPower("ssisignal"),
+        Derivative("ssisignal"),
+        DownSample("ssisignal"),
+        Energy("ssisignal"),
+        Expression("ssisignal"),
+        FFTfeat("ssisignal"),
+        Functionals("ssisignal"),
+        Gate("ssisignal"),
+        IIR("ssisignal"),
+        Integral("ssisignal"),
+        Intensity("ssisignal"),
+        Limits("ssisignal"),
+        Mean("ssisignal"),
+        MFCC("ssisignal"),
+        MvgAvgVar("ssisignal"),
+        MvgConDiv("ssisignal"),
+        MvgDrvtv("ssisignal"),
+        MvgMedian("ssisignal"),
+        MvgMinMax("ssisignal"),
+        MvgNorm("ssisignal"),
+        MvgPeakGate("ssisignal"),
+        Noise("ssisignal"),
+        Normalize("ssisignal"),
+        Pulse("ssisignal"),
+        Relative("ssisignal"),
+        Spectrogram("ssisignal"),
+        Statistics("ssisignal"),
+        Sum("ssisignal"),
+
+        EmoVoiceFeat("ssiemovoice"),
+        EmoVoiceMFCC("ssiemovoice"),
+        EmoVoicePitch("ssiemovoice"),
+        EmoVoiceVAD("ssiemovoice");
+
+        public String lib;
+
+        TransformerName(String lib) {
+            this.lib = lib;
+        }
+    }
 }

@@ -40,99 +40,80 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class AccelerationChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class AccelerationChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Float> sampleRate = new Option<>("sampleRate", 62.5f, Float.class, "supported sample rates: 7.8125, 31.25, 62.5 Hz");
+    public AccelerationChannel() {
+        _name = "MSBand_Acceleration";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        SampleRate sr;
+        if (options.sampleRate.get() <= 7.8125) {
+            sr = SampleRate.MS128;
+        } else if (options.sampleRate.get() <= 31.25) {
+            sr = SampleRate.MS32;
+        } else {
+            sr = SampleRate.MS16;
+        }
 
-	protected BandListener _listener;
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.Acceleration, true, sr.ordinal());
+    }
 
-	public AccelerationChannel()
-	{
-		_name = "MSBand_Acceleration";
-	}
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	@Override
-	public void init() throws SSJException
-	{
-		SampleRate sr;
-		if (options.sampleRate.get() <= 7.8125)
-		{
-			sr = SampleRate.MS128;
-		}
-		else if (options.sampleRate.get() <= 31.25)
-		{
-			sr = SampleRate.MS32;
-		}
-		else
-		{
-			sr = SampleRate.MS16;
-		}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-		((MSBand)_sensor).configureChannel(MSBand.Channel.Acceleration, true, sr.ordinal());
-	}
+        float[] out = stream_out.ptrF();
+        out[0] = _listener.getAccelerationX();
+        out[1] = _listener.getAccelerationY();
+        out[2] = _listener.getAccelerationZ();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		float[] out = stream_out.ptrF();
-		out[0] = _listener.getAccelerationX();
-		out[1] = _listener.getAccelerationY();
-		out[2] = _listener.getAccelerationZ();
+    @Override
+    protected int getSampleDimension() {
+        return 3;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "AccX";
+        stream_out.desc[1] = "AccY";
+        stream_out.desc[2] = "AccZ";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 3;
-	}
+    public class Options extends OptionList {
+        public final Option<Float> sampleRate = new Option<>("sampleRate", 62.5f, Float.class, "supported sample rates: 7.8125, 31.25, 62.5 Hz");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "AccX";
-		stream_out.desc[1] = "AccY";
-		stream_out.desc[2] = "AccZ";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

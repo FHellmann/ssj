@@ -40,73 +40,47 @@ import hcm.ssj.core.stream.Stream;
  * Merges input streams which the same sample rate and the same type to one stream.<br>
  * Created by Frank Gaibler on 24.11.2015.
  */
-public class Serializer extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends OptionList
-    {
-        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
-        public final Option<Cons.Type> outputType = new Option<>("outputType", Cons.Type.FLOAT, Cons.Type.class, "The output type for which the input streams have to match.");
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
-
+public class Serializer extends Transformer {
     public final Options options = new Options();
 
     /**
      *
      */
-    public Serializer()
-    {
+    public Serializer() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         //check for valid stream
-        if (stream_in.length < 1 || stream_in[0].dim < 1)
-        {
+        if (stream_in.length < 1 || stream_in[0].dim < 1) {
             Log.e("invalid input stream");
             return;
         }
         //every stream should have the same sample number
         int num = stream_in[0].num;
-        for (int i = 1; i < stream_in.length; i++)
-        {
-            if (num != stream_in[i].num)
-            {
+        for (int i = 1; i < stream_in.length; i++) {
+            if (num != stream_in[i].num) {
                 Log.e("invalid sample number for stream_in " + i);
                 return;
             }
         }
         //not all types are supported
-        if (options.outputType.get() == Cons.Type.EMPTY || options.outputType.get() == Cons.Type.UNDEF)
-        {
+        if (options.outputType.get() == Cons.Type.EMPTY || options.outputType.get() == Cons.Type.UNDEF) {
             Log.e("output type is not supported");
         }
         //every stream should have the same type
-        for (int i = 0; i < stream_in.length; i++)
-        {
-            if (options.outputType.get() != stream_in[i].type)
-            {
+        for (int i = 0; i < stream_in.length; i++) {
+            if (options.outputType.get() != stream_in[i].type) {
                 Log.e("invalid type for stream_in " + i);
                 return;
             }
@@ -118,19 +92,13 @@ public class Serializer extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        switch (options.outputType.get())
-        {
-            case BOOL:
-            {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        switch (options.outputType.get()) {
+            case BOOL: {
                 boolean[] out = stream_out.ptrBool();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrBool()[i * aStream_in.dim + k];
                         }
@@ -138,15 +106,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case BYTE:
-            {
+            case BYTE: {
                 byte[] out = stream_out.ptrB();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrB()[i * aStream_in.dim + k];
                         }
@@ -154,15 +118,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case CHAR:
-            {
+            case CHAR: {
                 char[] out = stream_out.ptrC();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrC()[i * aStream_in.dim + k];
                         }
@@ -170,15 +130,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case DOUBLE:
-            {
+            case DOUBLE: {
                 double[] out = stream_out.ptrD();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrD()[i * aStream_in.dim + k];
                         }
@@ -186,15 +142,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case FLOAT:
-            {
+            case FLOAT: {
                 float[] out = stream_out.ptrF();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrF()[i * aStream_in.dim + k];
                         }
@@ -202,15 +154,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case INT:
-            {
+            case INT: {
                 int[] out = stream_out.ptrI();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrI()[i * aStream_in.dim + k];
                         }
@@ -218,15 +166,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case LONG:
-            {
+            case LONG: {
                 long[] out = stream_out.ptrL();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrL()[i * aStream_in.dim + k];
                         }
@@ -234,15 +178,11 @@ public class Serializer extends Transformer
                 }
                 break;
             }
-            case SHORT:
-            {
+            case SHORT: {
                 short[] out = stream_out.ptrS();
-                for (int i = 0, z = 0; i < stream_in[0].num; i++)
-                {
-                    for (Stream aStream_in : stream_in)
-                    {
-                        for (int k = 0; k < aStream_in.dim; k++, z++)
-                        {
+                for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+                    for (Stream aStream_in : stream_in) {
+                        for (int k = 0; k < aStream_in.dim; k++, z++) {
                             //write to output
                             out[z] = aStream_in.ptrS()[i * aStream_in.dim + k];
                         }
@@ -261,11 +201,9 @@ public class Serializer extends Transformer
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int overallDimension = 0;
-        for (Stream stream : stream_in)
-        {
+        for (Stream stream : stream_in) {
             overallDimension += stream.dim;
         }
         return overallDimension;
@@ -276,8 +214,7 @@ public class Serializer extends Transformer
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(options.outputType.get());
     }
 
@@ -286,8 +223,7 @@ public class Serializer extends Transformer
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return options.outputType.get();
     }
 
@@ -296,8 +232,7 @@ public class Serializer extends Transformer
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return sampleNumber_in;
     }
 
@@ -306,27 +241,36 @@ public class Serializer extends Transformer
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
-        if (options.outputClass.get() != null)
-        {
-            if (overallDimension == options.outputClass.get().length)
-            {
+        if (options.outputClass.get() != null) {
+            if (overallDimension == options.outputClass.get().length) {
                 System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
                 return;
-            } else
-            {
+            } else {
                 Log.w("invalid option outputClass length");
             }
         }
-        for (int i = 0, k = 0; i < stream_in.length; i++)
-        {
-            for (int j = 0; j < stream_in[i].dim; j++, k++)
-            {
+        for (int i = 0, k = 0; i < stream_in.length; i++) {
+            for (int j = 0; j < stream_in[i].dim; j++, k++) {
                 stream_out.desc[k] = "srlz" + i + "." + j;
             }
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends OptionList {
+        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
+        public final Option<Cons.Type> outputType = new Option<>("outputType", Cons.Type.FLOAT, Cons.Type.class, "The output type for which the input streams have to match.");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

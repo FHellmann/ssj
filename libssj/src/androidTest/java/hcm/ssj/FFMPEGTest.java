@@ -45,51 +45,46 @@ import hcm.ssj.ffmpeg.FFMPEGWriter;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class FFMPEGTest
-{
-	int width = 640;
-	int height = 480;
-	int frameRate = 15;
+public class FFMPEGTest {
+    int width = 640;
+    int height = 480;
+    int frameRate = 15;
 
-	@Test
-	public void testFFMPEGWriter() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testFFMPEGWriter() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
-		cameraSensor.options.width.set(width);
-		cameraSensor.options.height.set(height);
-		cameraSensor.options.previewFpsRangeMin.set(frameRate * 1000);
-		cameraSensor.options.previewFpsRangeMax.set(frameRate * 1000);
+        // Sensor
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
+        cameraSensor.options.width.set(width);
+        cameraSensor.options.height.set(height);
+        cameraSensor.options.previewFpsRangeMin.set(frameRate * 1000);
+        cameraSensor.options.previewFpsRangeMax.set(frameRate * 1000);
 
-		// Sensor channel
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set((double) frameRate);
-		frame.addSensor(cameraSensor, cameraChannel);
+        // Sensor channel
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set((double) frameRate);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		// Consumer
-		FFMPEGWriter ffmpegWriter = new FFMPEGWriter();
-		ffmpegWriter.options.fileName.set("test.mp4");
-		frame.addConsumer(ffmpegWriter, cameraChannel, 1.0 / frameRate);
+        // Consumer
+        FFMPEGWriter ffmpegWriter = new FFMPEGWriter();
+        ffmpegWriter.options.fileName.set("test.mp4");
+        frame.addConsumer(ffmpegWriter, cameraChannel, 1.0 / frameRate);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.release();
-	}
+        // Stop framework
+        frame.stop();
+        frame.release();
+    }
 }

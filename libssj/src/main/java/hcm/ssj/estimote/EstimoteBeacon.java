@@ -48,112 +48,92 @@ import hcm.ssj.core.option.OptionList;
  * Created by Michael Dietz on 08.03.2017.
  */
 
-public class EstimoteBeacon extends Sensor implements BeaconManager.ServiceReadyCallback
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class EstimoteBeacon extends Sensor implements BeaconManager.ServiceReadyCallback {
+    public final Options options = new Options();
+    protected BeaconManager beaconManager;
+    protected BeaconListener listener;
+    protected Region region;
+    protected boolean connected;
+    public EstimoteBeacon() {
+        _name = "EstimoteBeacon";
 
-	public enum IdentificationMode
-	{
-		MAC_ADDRESS,
-		UUID_MAJOR_MINOR
-	}
+        listener = new BeaconListener();
+    }
 
-	public class Options extends OptionList
-	{
-		public final Option<String>             region = new Option<>("region", "beacon region", String.class, "");
-		public final Option<String>             uuid   = new Option<>("uuid", "", String.class, "");
-		public final Option<Integer>            major  = new Option<>("major", null, Integer.class, "");
-		public final Option<Integer>            minor  = new Option<>("minor", null, Integer.class, "");
-		public final Option<IdentificationMode> idMode = new Option<>("idMode", IdentificationMode.UUID_MAJOR_MINOR, IdentificationMode.class, "");
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    protected boolean connect() throws SSJFatalException {
+        Log.i("Connecting to estimote beacons");
+        connected = false;
 
-	public final Options options = new Options();
+        listener.reset();
+        listener.setIdMode(options.idMode.get());
 
-	protected BeaconManager  beaconManager;
-	protected BeaconListener listener;
-	protected Region         region;
+        region = new Region(options.region.get(), options.uuid.get() != null ? UUID.fromString(options.uuid.get()) : null, options.major.get(), options.minor.get());
 
-	protected boolean connected;
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                beaconManager = new BeaconManager(SSJApplication.getAppContext());
+                beaconManager.connect(EstimoteBeacon.this);
+                beaconManager.setRangingListener(listener);
+                beaconManager.setForegroundScanPeriod(200, 0);
+                //beaconManager.setBackgroundScanPeriod(200, 0);
+            }
+        }, 1);
 
-	public EstimoteBeacon()
-	{
-		_name = "EstimoteBeacon";
+        long time = SystemClock.elapsedRealtime();
+        while (!_terminate && SystemClock.elapsedRealtime() - time < _frame.options.waitSensorConnect.get() * 1000) {
+            try {
+                Thread.sleep(Cons.SLEEP_IN_LOOP);
+            } catch (InterruptedException e) {
+            }
+        }
 
-		listener = new BeaconListener();
-	}
+        if (!connected) {
+            Log.e("Unable to connect to estimote beacons");
+        }
 
-	@Override
-	protected boolean connect() throws SSJFatalException
-	{
-		Log.i("Connecting to estimote beacons");
-		connected = false;
+        return connected;
+    }
 
-		listener.reset();
-		listener.setIdMode(options.idMode.get());
+    @Override
+    public void onServiceReady() {
+        Log.i("Estimote service ready, starting ranging");
 
-		region = new Region(options.region.get(), options.uuid.get() != null ? UUID.fromString(options.uuid.get()) : null, options.major.get(), options.minor.get());
+        connected = true;
 
-		Handler handler = new Handler(Looper.getMainLooper());
-		handler.postDelayed(new Runnable()
-		{
-			public void run()
-			{
-				beaconManager = new BeaconManager(SSJApplication.getAppContext());
-				beaconManager.connect(EstimoteBeacon.this);
-				beaconManager.setRangingListener(listener);
-				beaconManager.setForegroundScanPeriod(200, 0);
-				//beaconManager.setBackgroundScanPeriod(200, 0);
-			}
-		}, 1);
+        beaconManager.startRanging(region);
+    }
 
-		long time = SystemClock.elapsedRealtime();
-		while (!_terminate && SystemClock.elapsedRealtime() - time < _frame.options.waitSensorConnect.get() * 1000)
-		{
-			try
-			{
-				Thread.sleep(Cons.SLEEP_IN_LOOP);
-			}
-			catch (InterruptedException e)
-			{
-			}
-		}
+    @Override
+    protected void disconnect() throws SSJFatalException {
+        connected = false;
 
-		if (!connected)
-		{
-			Log.e("Unable to connect to estimote beacons");
-		}
+        if (beaconManager != null && region != null) {
+            beaconManager.stopRanging(region);
+            beaconManager.disconnect();
+        }
+    }
 
-		return connected;
-	}
+    public enum IdentificationMode {
+        MAC_ADDRESS,
+        UUID_MAJOR_MINOR
+    }
 
-	@Override
-	public void onServiceReady()
-	{
-		Log.i("Estimote service ready, starting ranging");
+    public class Options extends OptionList {
+        public final Option<String> region = new Option<>("region", "beacon region", String.class, "");
+        public final Option<String> uuid = new Option<>("uuid", "", String.class, "");
+        public final Option<Integer> major = new Option<>("major", null, Integer.class, "");
+        public final Option<Integer> minor = new Option<>("minor", null, Integer.class, "");
+        public final Option<IdentificationMode> idMode = new Option<>("idMode", IdentificationMode.UUID_MAJOR_MINOR, IdentificationMode.class, "");
 
-		connected = true;
-
-		beaconManager.startRanging(region);
-	}
-
-	@Override
-	protected void disconnect() throws SSJFatalException
-	{
-		connected = false;
-
-		if (beaconManager != null && region != null)
-		{
-			beaconManager.stopRanging(region);
-			beaconManager.disconnect();
-		}
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

@@ -35,27 +35,25 @@ import hcm.ssj.core.Cons;
 /**
  * Created by Johnny on 19.03.2015.
  */
-public abstract class Event implements Serializable
-{
-    public enum State
-    {
-        COMPLETED,
-        CONTINUED
-    }
-
+public abstract class Event implements Serializable {
     public String name;
     public String sender;
     public long time;
     public int dur;
     public State state;
     public Cons.Type type;
-
     public int id;
 
-    public static Event create(Cons.Type type)
-    {
-        switch(type)
-        {
+    public Event() {
+        this.name = "";
+        this.sender = "";
+        this.time = 0;
+        this.dur = 0;
+        this.state = State.COMPLETED;
+    }
+
+    public static Event create(Cons.Type type) {
+        switch (type) {
             case BYTE:
                 return new ByteEvent();
             case CHAR:
@@ -82,35 +80,88 @@ public abstract class Event implements Serializable
         }
     }
 
-    public Event()
-    {
-        this.name = "";
-        this.sender = "";
-        this.time = 0;
-        this.dur = 0;
-        this.state = State.COMPLETED;
+    public abstract void setData(Object data);
+
+    public void setData(byte[] data) {
+        throw new UnsupportedOperationException();
     }
 
-    public abstract void setData(Object data);
-    public void setData(byte[] data) { throw new UnsupportedOperationException(); }
-    public void setData(char[] data) { throw new UnsupportedOperationException(); }
-    public void setData(int[] data) { throw new UnsupportedOperationException(); }
-    public void setData(long[] data) { throw new UnsupportedOperationException(); }
-    public void setData(float[] data) { throw new UnsupportedOperationException(); }
-    public void setData(double[] data) { throw new UnsupportedOperationException(); }
-    public void setData(boolean[] data) { throw new UnsupportedOperationException(); }
-    public void setData(String data) { throw new UnsupportedOperationException(); }
-    public void setData(Map<String, String> data) { throw new UnsupportedOperationException(); }
-    
+    public void setData(char[] data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(int[] data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(long[] data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(float[] data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(double[] data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(boolean[] data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(String data) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void setData(Map<String, String> data) {
+        throw new UnsupportedOperationException();
+    }
+
     public abstract Object ptr();
-    public byte[] ptrB() { throw new UnsupportedOperationException(); }
-    public char[] ptrC() { throw new UnsupportedOperationException(); }
-    public short[] ptrShort() { throw new UnsupportedOperationException(); }
-    public int[] ptrI() { throw new UnsupportedOperationException(); }
-    public long[] ptrL() { throw new UnsupportedOperationException(); }
-    public float[] ptrF() { throw new UnsupportedOperationException(); }
-    public double[] ptrD() { throw new UnsupportedOperationException(); }
-    public boolean[] ptrBool() { throw new UnsupportedOperationException(); }
-    public String ptrStr() { throw new UnsupportedOperationException(); }
-    public Map<String, String> ptrMap() { throw new UnsupportedOperationException(); }
+
+    public byte[] ptrB() {
+        throw new UnsupportedOperationException();
+    }
+
+    public char[] ptrC() {
+        throw new UnsupportedOperationException();
+    }
+
+    public short[] ptrShort() {
+        throw new UnsupportedOperationException();
+    }
+
+    public int[] ptrI() {
+        throw new UnsupportedOperationException();
+    }
+
+    public long[] ptrL() {
+        throw new UnsupportedOperationException();
+    }
+
+    public float[] ptrF() {
+        throw new UnsupportedOperationException();
+    }
+
+    public double[] ptrD() {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean[] ptrBool() {
+        throw new UnsupportedOperationException();
+    }
+
+    public String ptrStr() {
+        throw new UnsupportedOperationException();
+    }
+
+    public Map<String, String> ptrMap() {
+        throw new UnsupportedOperationException();
+    }
+
+    public enum State {
+        COMPLETED,
+        CONTINUED
+    }
 }

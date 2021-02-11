@@ -39,51 +39,27 @@ import hcm.ssj.core.stream.Stream;
  * Infrared provider for google glass.<br>
  * Created by Frank Gaibler on 13.08.2015.
  */
-public class InfraredChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the sensor provider
-     */
-    public class Options extends OptionList
-    {
-        public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "The rate in which the provider samples data from the sensor");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
-    public final Options options = new Options();
+public class InfraredChannel extends SensorChannel {
     private static final int DIMENSION = 1;
-
+    public final Options options = new Options();
     InfraredSensor _irSensor;
-
-    public InfraredChannel()
-    {
+    public InfraredChannel() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream stream_out) throws SSJFatalException
-    {
-        if (_sensor instanceof InfraredSensor)
-        {
-            _irSensor = (InfraredSensor)_sensor;
-        } else
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        if (_sensor instanceof InfraredSensor) {
+            _irSensor = (InfraredSensor) _sensor;
+        } else {
             throw new RuntimeException(this.getClass() + ": " + _name + ": No Infrared sensor found");
         }
     }
@@ -92,8 +68,7 @@ public class InfraredChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         float[] out = stream_out.ptrF();
         out[0] = _irSensor.getData();
 
@@ -104,8 +79,7 @@ public class InfraredChannel extends SensorChannel
      * @return double
      */
     @Override
-    public double getSampleRate()
-    {
+    public double getSampleRate() {
         return options.sampleRate.get();
     }
 
@@ -113,8 +87,7 @@ public class InfraredChannel extends SensorChannel
      * @return int
      */
     @Override
-    final public int getSampleDimension()
-    {
+    final public int getSampleDimension() {
         return DIMENSION;
     }
 
@@ -122,8 +95,7 @@ public class InfraredChannel extends SensorChannel
      * @return int
      */
     @Override
-    public int getSampleBytes()
-    {
+    public int getSampleBytes() {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -131,8 +103,7 @@ public class InfraredChannel extends SensorChannel
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType()
-    {
+    public Cons.Type getSampleType() {
         return Cons.Type.FLOAT;
     }
 
@@ -140,19 +111,29 @@ public class InfraredChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream stream_out)
-    {
+    protected void describeOutput(Stream stream_out) {
         int dimension = getSampleDimension();
         stream_out.desc = new String[dimension];
-        if (dimension == 1)
-        {
+        if (dimension == 1) {
             stream_out.desc[0] = "Infrared";
-        } else
-        {
-            for (int i = 0; i < dimension; i++)
-            {
+        } else {
+            for (int i = 0; i < dimension; i++) {
                 stream_out.desc[i] = "Infrared" + i;
             }
+        }
+    }
+
+    /**
+     * All options for the sensor provider
+     */
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "The rate in which the provider samples data from the sensor");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

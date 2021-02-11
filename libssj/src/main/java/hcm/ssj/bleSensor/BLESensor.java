@@ -39,39 +39,11 @@ import hcm.ssj.core.option.Option;
 import hcm.ssj.core.option.OptionList;
 
 public class BLESensor extends Sensor {
+    public final BLESensor.Options options = new BLESensor.Options();
     protected boolean angelInitialized;
     protected BLESensorListener listener;
-
-    private BleDevicesScanner mBleScanner;
-    private BluetoothAdapter bluetoothAdapter;
     BluetoothDevice bluetoothDevice;
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList {
-        public final Option<String> sensorName = new Option<>("sensorName", "HCM", String.class, "Sensor Name to connect to");
-        //public final Option<String> service = new Option<>("service", "0000180d-0000-1000-8000-00805f9b34fb", String.class, "UUID of service" );//hr
-        //public final Option<String> service = new Option<>("service", "481d178c-10dd-11e4-b514-b2227cce2b54", String.class, "UUID of service" ); //angel
-        public final Option<String> service = new Option<>("service", "00002220-0000-1000-8000-00805f9b34fb", String.class, "UUID of service");// andys
-        //public final Option<String> characteristic = new Option<>("characteristic", "00002a37-0000-1000-8000-00805f9b34fb", String.class, "UUID of characteristic"); //hr
-        //public final Option<String> characteristic = new Option<>("characteristic", "334c0be8-76f9-458b-bb2e-7df2b486b4d7", String.class, "UUID of characteristic");//angel
-        public final Option<String> characteristic = new Option<>("characteristic", "00002221-0000-1000-8000-00805f9b34fb", String.class, "UUID of characteristic"); // andys
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
-
-    public final BLESensor.Options options = new BLESensor.Options();
-
-
+    private BleDevicesScanner mBleScanner;
     public LeScanCallback mScanCallback = new LeScanCallback() {
 
 
@@ -92,7 +64,7 @@ public class BLESensor extends Sensor {
             }
         }
     };
-
+    private BluetoothAdapter bluetoothAdapter;
 
     public BLESensor() {
         _name = "BLESensor";
@@ -100,8 +72,12 @@ public class BLESensor extends Sensor {
     }
 
     @Override
-	public boolean connect() throws SSJFatalException
-	{
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public boolean connect() throws SSJFatalException {
         listener = new BLESensorListener(options.service.get(), options.characteristic.get());
 
         try {
@@ -121,13 +97,29 @@ public class BLESensor extends Sensor {
     }
 
     @Override
-	public void disconnect() throws SSJFatalException
-	{
+    public void disconnect() throws SSJFatalException {
 
     }
 
     public void didDiscoverDevice(BluetoothDevice bluetoothDevice, int rssi, boolean allowed) {
 
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> sensorName = new Option<>("sensorName", "HCM", String.class, "Sensor Name to connect to");
+        //public final Option<String> service = new Option<>("service", "0000180d-0000-1000-8000-00805f9b34fb", String.class, "UUID of service" );//hr
+        //public final Option<String> service = new Option<>("service", "481d178c-10dd-11e4-b514-b2227cce2b54", String.class, "UUID of service" ); //angel
+        public final Option<String> service = new Option<>("service", "00002220-0000-1000-8000-00805f9b34fb", String.class, "UUID of service");// andys
+        //public final Option<String> characteristic = new Option<>("characteristic", "00002a37-0000-1000-8000-00805f9b34fb", String.class, "UUID of characteristic"); //hr
+        //public final Option<String> characteristic = new Option<>("characteristic", "334c0be8-76f9-458b-bb2e-7df2b486b4d7", String.class, "UUID of characteristic");//angel
+        public final Option<String> characteristic = new Option<>("characteristic", "00002221-0000-1000-8000-00805f9b34fb", String.class, "UUID of characteristic"); // andys
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 
 

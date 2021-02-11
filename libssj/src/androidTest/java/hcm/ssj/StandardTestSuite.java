@@ -36,15 +36,15 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-		AndroidSensorTest.class,
-		AudioTest.class,
-		BodyTest.class,
-		EventTest.class,
-		FileTest.class,
-		SignalTest.class,
-		SvmTest.class,
-		SSITest.class,
-		UtilTest.class,
-		NaiveBayesTest.class})
-public class StandardTestSuite
-{}
+        AndroidSensorTest.class,
+        AudioTest.class,
+        BodyTest.class,
+        EventTest.class,
+        FileTest.class,
+        SignalTest.class,
+        SvmTest.class,
+        SSITest.class,
+        UtilTest.class,
+        NaiveBayesTest.class})
+public class StandardTestSuite {
+}

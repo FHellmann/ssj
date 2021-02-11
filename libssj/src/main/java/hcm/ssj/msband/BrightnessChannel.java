@@ -38,81 +38,67 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class BrightnessChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class BrightnessChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 2, Integer.class, "");
+    public BrightnessChannel() {
+        _name = "MSBand_Brightness";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.AmbientLight, true, 0);
+    }
 
-	protected BandListener _listener;
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	public BrightnessChannel()
-	{
-		_name = "MSBand_Brightness";
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-	@Override
-	public void init() throws SSJException
-	{
-		((MSBand)_sensor).configureChannel(MSBand.Channel.AmbientLight, true, 0);
-	}
+        int[] out = stream_out.ptrI();
+        out[0] = _listener.getBrightness();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		int[] out = stream_out.ptrI();
-		out[0] = _listener.getBrightness();
+    @Override
+    protected int getSampleDimension() {
+        return 1;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.INT;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "Brightness";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 1;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 2, Integer.class, "");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.INT;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "Brightness";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

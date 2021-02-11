@@ -47,33 +47,7 @@ import hcm.ssj.core.stream.Stream;
  * File reader provider for SSJ.<br>
  * Created by Frank Gaibler on 20.08.2015.
  */
-public class FileReaderChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     *
-     */
-    public class Options extends OptionList
-    {
-        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
-        public final Option<String> separator = new Option<>("separator", FileCons.DELIMITER_DIMENSION, String.class, "Attribute separator of the file");
-        public final Option<Double> offset = new Option<>("offset", 0.0, Double.class, "start reading from indicated time (in seconds)");
-        public final Option<Double> chunk = new Option<>("chunk", 0.1, Double.class, "how many samples to read at once (in seconds)");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class FileReaderChannel extends SensorChannel {
     public final Options options = new Options();
     private FileReader fileReader;
     private byte[] buffer;
@@ -83,32 +57,31 @@ public class FileReaderChannel extends SensorChannel
     private int bytes;
     private Cons.Type type;
     private Cons.FileType ftype;
-
     /**
      *
      */
-    public FileReaderChannel()
-    {
+    public FileReaderChannel() {
         super();
         _name = this.getClass().getSimpleName();
     }
 
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
     /**
-	 *
+     *
      */
     @Override
-    protected void init() throws SSJException
-    {
+    protected void init() throws SSJException {
         fileReader = (FileReader) _sensor;
         SimpleHeader simpleHeader;
 
-        try
-        {
+        try {
             fileReader.readerInit();
             simpleHeader = fileReader.getSimpleHeader();
-        }
-        catch (IOException | XmlPullParserException e)
-        {
+        } catch (IOException | XmlPullParserException e) {
             throw new SSJException("error initializing file reader", e);
         }
 
@@ -117,100 +90,94 @@ public class FileReaderChannel extends SensorChannel
         bytes = Integer.parseInt(simpleHeader._byte);
 
         double minChunk = 1.0 / sampleRate;
-        if(options.chunk.get() < minChunk) {
+        if (options.chunk.get() < minChunk) {
             Log.w("chunk size too small, setting to " + minChunk + "s");
             options.chunk.set(minChunk);
         }
 
-        num = (int)(sampleRate * options.chunk.get() + 0.5);
+        num = (int) (sampleRate * options.chunk.get() + 0.5);
         type = Cons.Type.valueOf(simpleHeader._type);
         ftype = Cons.FileType.valueOf(simpleHeader._ftype);
 
-        buffer = new byte[num*dimension*bytes];
+        buffer = new byte[num * dimension * bytes];
     }
 
-
-
     @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-    {
-		if (options.offset.get() > 0)
-		{
-			fileReader.skip((int) (stream_out.sr * options.offset.get()));
-		}
+    public void enter(Stream stream_out) throws SSJFatalException {
+        if (options.offset.get() > 0) {
+            fileReader.skip((int) (stream_out.sr * options.offset.get()));
+        }
     }
 
     /**
      * @param stream_out Stream
      */
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
-        if(ftype == Cons.FileType.ASCII)
-        {
-            for(int i = 0; i < num; ++i) {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (ftype == Cons.FileType.ASCII) {
+            for (int i = 0; i < num; ++i) {
                 switch (type) {
                     case BOOL: {
                         boolean[] out = stream_out.ptrBool();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = Boolean.valueOf(separated[k]);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = Boolean.valueOf(separated[k]);
+                        }
                         break;
                     }
                     case BYTE: {
                         byte[] out = stream_out.ptrB();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = Byte.valueOf(separated[k]);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = Byte.valueOf(separated[k]);
+                        }
                         break;
                     }
                     case CHAR: {
                         char[] out = stream_out.ptrC();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = separated[k].charAt(0);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = separated[k].charAt(0);
+                        }
                         break;
                     }
                     case SHORT: {
                         short[] out = stream_out.ptrS();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = Short.valueOf(separated[k]);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = Short.valueOf(separated[k]);
+                        }
                         break;
                     }
                     case INT: {
                         int[] out = stream_out.ptrI();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = Integer.valueOf(separated[k]);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = Integer.valueOf(separated[k]);
+                        }
                         break;
                     }
                     case LONG: {
                         long[] out = stream_out.ptrL();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = Long.valueOf(separated[k]);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = Long.valueOf(separated[k]);
+                        }
                         break;
                     }
                     case FLOAT: {
                         float[] out = stream_out.ptrF();
 
-                            String[] separated = getData();
-                            for (int k = 0; k < dimension; k++) {
-                                out[i * dimension + k] = Float.parseFloat(separated[k]);
-                            }
+                        String[] separated = getData();
+                        for (int k = 0; k < dimension; k++) {
+                            out[i * dimension + k] = Float.parseFloat(separated[k]);
+                        }
                         break;
                     }
                     case DOUBLE: {
@@ -226,9 +193,7 @@ public class FileReaderChannel extends SensorChannel
                         return false;
                 }
             }
-        }
-        else if(ftype == Cons.FileType.BINARY)
-        {
+        } else if (ftype == Cons.FileType.BINARY) {
             int numBytes = num * dimension * bytes;
             fileReader.getDataBinary(buffer, numBytes);
             Util.arraycopy(buffer, 0, stream_out.ptr(), 0, numBytes);
@@ -240,17 +205,13 @@ public class FileReaderChannel extends SensorChannel
     /**
      * @return String[]
      */
-    private String[] getData()
-    {
+    private String[] getData() {
         String data = fileReader.getDataASCII();
         String[] result;
 
-        if (data != null)
-        {
+        if (data != null) {
             result = data.split(options.separator.get());
-        }
-        else
-        {
+        } else {
             //notify listeners
             Monitor.notifyMonitor();
             result = new String[dimension];
@@ -264,8 +225,7 @@ public class FileReaderChannel extends SensorChannel
      * @return double
      */
     @Override
-    public double getSampleRate()
-    {
+    public double getSampleRate() {
         return sampleRate;
     }
 
@@ -273,18 +233,15 @@ public class FileReaderChannel extends SensorChannel
      * @return int
      */
     @Override
-    final public int getSampleDimension()
-    {
+    final public int getSampleDimension() {
         return dimension;
     }
-
 
     /**
      * @return int
      */
     @Override
-    final public int getSampleNumber()
-    {
+    final public int getSampleNumber() {
         return num;
     }
 
@@ -292,8 +249,7 @@ public class FileReaderChannel extends SensorChannel
      * @return int
      */
     @Override
-    public int getSampleBytes()
-    {
+    public int getSampleBytes() {
         return Util.sizeOf(type);
     }
 
@@ -301,8 +257,7 @@ public class FileReaderChannel extends SensorChannel
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType()
-    {
+    public Cons.Type getSampleType() {
         return type;
     }
 
@@ -310,23 +265,35 @@ public class FileReaderChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream stream_out)
-    {
+    protected void describeOutput(Stream stream_out) {
         stream_out.desc = new String[dimension];
-        if (options.outputClass.get() != null)
-        {
-            if (dimension == options.outputClass.get().length)
-            {
+        if (options.outputClass.get() != null) {
+            if (dimension == options.outputClass.get().length) {
                 System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
                 return;
-            } else
-            {
+            } else {
                 Log.w("invalid option outputClass length");
             }
         }
-        for (int i = 0; i < dimension; i++)
-        {
+        for (int i = 0; i < dimension; i++) {
             stream_out.desc[i] = "SFRP" + i;
+        }
+    }
+
+    /**
+     *
+     */
+    public class Options extends OptionList {
+        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
+        public final Option<String> separator = new Option<>("separator", FileCons.DELIMITER_DIMENSION, String.class, "Attribute separator of the file");
+        public final Option<Double> offset = new Option<>("offset", 0.0, Double.class, "start reading from indicated time (in seconds)");
+        public final Option<Double> chunk = new Option<>("chunk", 0.1, Double.class, "how many samples to read at once (in seconds)");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

@@ -56,99 +56,70 @@ public class Pitch extends Transformer {
     public final static int AMDF = 3;
     public final static int FFT_PITCH = 4;
     public final static int YIN = 5;
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<Integer> detector = new Option<>("detector", YIN, Integer.class, "");
-        public final Option<Boolean> computePitch = new Option<>("computePitch", true, Boolean.class, "output the pitch value");
-        public final Option<Boolean> computePitchEnvelope = new Option<>("computePitchEnvelope", false, Boolean.class, "output envelope which provides old pitch value again whenever pitch is invalid");
-        public final Option<Boolean> computeVoicedProb = new Option<>("computeVoicedProb", false, Boolean.class, "output the probability of the sample being voiced");
-        public final Option<Boolean> computePitchedState = new Option<>("computePitchedState", false, Boolean.class, "output the probability of the sample being pitched");
-        public final Option<Float> minPitch = new Option<>("minPitch", 52.0f, Float.class, "ignore any sample with pitch below value");
-        public final Option<Float> maxPitch = new Option<>("maxPitch", 620.0f, Float.class, "ignore any sample with pitch above value");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
     public final Options options = new Options();
-
     protected PitchDetector _detector;
-
     protected float _lastPitch = 0;
 
-    public Pitch()
-    {
+    public Pitch() {
         _name = "Pitch";
     }
 
     @Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         Stream audio = null;
-        for(Stream s : stream_in) {
-			if (s.findDataClass("Audio") >= 0)
-			{
-				audio = s;
-			}
+        for (Stream s : stream_in) {
+            if (s.findDataClass("Audio") >= 0) {
+                audio = s;
+            }
         }
-        if(audio == null) {
+        if (audio == null) {
             Log.w("invalid input stream");
             return;
         }
 
-        switch(options.detector.get())
-        {
+        switch (options.detector.get()) {
             case DETECTOR_MPM:
-                _detector = new McLeodPitchMethod((float)audio.sr, audio.num * audio.dim);
+                _detector = new McLeodPitchMethod((float) audio.sr, audio.num * audio.dim);
                 break;
             case DYNAMIC_WAVELET:
-                _detector = new DynamicWavelet((float)audio.sr, audio.num * audio.dim);
+                _detector = new DynamicWavelet((float) audio.sr, audio.num * audio.dim);
                 break;
             case FFT_YIN:
-                _detector = new FastYin((float)audio.sr, audio.num * audio.dim);
+                _detector = new FastYin((float) audio.sr, audio.num * audio.dim);
                 break;
             case AMDF:
-                _detector = new AMDF((float)audio.sr, audio.num * audio.dim);
+                _detector = new AMDF((float) audio.sr, audio.num * audio.dim);
                 break;
             case FFT_PITCH:
-                _detector = new FFTPitch((int)audio.sr, audio.num * audio.dim);
+                _detector = new FFTPitch((int) audio.sr, audio.num * audio.dim);
                 break;
             case YIN:
             default:
-                _detector = new Yin((float)audio.sr, audio.num * audio.dim);
+                _detector = new Yin((float) audio.sr, audio.num * audio.dim);
                 break;
         }
     }
 
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         float[] data = stream_in[0].ptrF();
         float[] out = stream_out.ptrF();
 
         PitchDetectionResult result = _detector.getPitch(data);
 
         float pitch = result.getPitch();
-        if (pitch > options.maxPitch.get() || pitch < options.minPitch.get())
-        {
+        if (pitch > options.maxPitch.get() || pitch < options.minPitch.get()) {
             pitch = -1;
         }
 
         int dim = 0;
 
-        if (options.computePitch.get())
-        {
+        if (options.computePitch.get()) {
             out[dim++] = pitch;
         }
 
@@ -161,68 +132,78 @@ public class Pitch extends Transformer {
             }
         }
 
-        if (options.computeVoicedProb.get())
-        {
+        if (options.computeVoicedProb.get()) {
             out[dim++] = result.getProbability();
         }
 
-        if (options.computePitchedState.get())
-        {
+        if (options.computePitchedState.get()) {
             out[dim++] = (result.isPitched() && pitch > 0) ? 1.0f : 0.0f;
         }
     }
 
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {}
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
 
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int dim = 0;
 
-        if(options.computePitch.get()) dim++;
-        if(options.computePitchEnvelope.get()) dim++;
-        if(options.computeVoicedProb.get()) dim++;
-        if(options.computePitchedState.get()) dim++;
+        if (options.computePitch.get()) dim++;
+        if (options.computePitchEnvelope.get()) dim++;
+        if (options.computeVoicedProb.get()) dim++;
+        if (options.computePitchedState.get()) dim++;
 
         return dim;
     }
 
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return 1;
     }
 
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
-        if(stream_in[0].bytes != 2 && stream_in[0].bytes != 4)
+    public int getSampleBytes(Stream[] stream_in) {
+        if (stream_in[0].bytes != 2 && stream_in[0].bytes != 4)
             Log.e("Unsupported input stream type");
 
         return 4;
     }
 
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
-        if(stream_in[0].type != Cons.Type.SHORT && stream_in[0].type != Cons.Type.FLOAT)
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.SHORT && stream_in[0].type != Cons.Type.FLOAT)
             Log.e("Unsupported input stream type");
 
         return Cons.Type.FLOAT;
     }
 
     @Override
-    public void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    public void describeOutput(Stream[] stream_in, Stream stream_out) {
         stream_out.desc = new String[stream_out.dim];
 
         int i = 0;
-        if(options.computePitch.get()) stream_out.desc[i++] = "Pitch";
-        if(options.computePitchEnvelope.get()) stream_out.desc[i++] = "Pitch";
-        if(options.computeVoicedProb.get()) stream_out.desc[i++] = "VoicedProb";
-        if(options.computePitchedState.get()) stream_out.desc[i++] = "PitchedState";
+        if (options.computePitch.get()) stream_out.desc[i++] = "Pitch";
+        if (options.computePitchEnvelope.get()) stream_out.desc[i++] = "Pitch";
+        if (options.computeVoicedProb.get()) stream_out.desc[i++] = "VoicedProb";
+        if (options.computePitchedState.get()) stream_out.desc[i++] = "PitchedState";
+    }
+
+    public class Options extends OptionList {
+        public final Option<Integer> detector = new Option<>("detector", YIN, Integer.class, "");
+        public final Option<Boolean> computePitch = new Option<>("computePitch", true, Boolean.class, "output the pitch value");
+        public final Option<Boolean> computePitchEnvelope = new Option<>("computePitchEnvelope", false, Boolean.class, "output envelope which provides old pitch value again whenever pitch is invalid");
+        public final Option<Boolean> computeVoicedProb = new Option<>("computeVoicedProb", false, Boolean.class, "output the probability of the sample being voiced");
+        public final Option<Boolean> computePitchedState = new Option<>("computePitchedState", false, Boolean.class, "output the probability of the sample being pitched");
+        public final Option<Float> minPitch = new Option<>("minPitch", 52.0f, Float.class, "ignore any sample with pitch below value");
+        public final Option<Float> maxPitch = new Option<>("maxPitch", 620.0f, Float.class, "ignore any sample with pitch above value");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 
 }

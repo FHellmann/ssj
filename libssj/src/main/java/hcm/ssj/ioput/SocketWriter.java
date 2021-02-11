@@ -50,47 +50,28 @@ import hcm.ssj.core.stream.Stream;
 public class SocketWriter extends Consumer {
 
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<Integer> port = new Option<>("port", 34300, Integer.class, "");
-        public final Option<String> ip = new Option<>("ip", "127.0.0.1", String.class, "");
-        public final Option<Cons.SocketType> type = new Option<>("type", Cons.SocketType.UDP, Cons.SocketType.class, "");
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
     public final Options options = new Options();
-
     private DatagramSocket _socket_udp;
     private Socket _socket_tcp;
     private InetAddress _addr;
     private DataOutputStream _out;
     private byte[] _data;
-
     private boolean _connected = false;
-
-    public SocketWriter()
-    {
+    public SocketWriter() {
         _name = "SocketWriter";
     }
 
     @Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
         //start client
         try {
             _addr = InetAddress.getByName(options.ip.get());
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case UDP:
                     _socket_udp = new DatagramSocket();
                     break;
@@ -99,27 +80,23 @@ public class SocketWriter extends Consumer {
                     _out = new DataOutputStream(_socket_tcp.getOutputStream());
                     break;
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("error in setting up connection", e);
         }
 
         _data = new byte[stream_in[0].tot];
 
-        Log.i("Streaming data to " + _addr.getHostName() +"@"+ options.port +"("+ options.type.get().toString() +")");
+        Log.i("Streaming data to " + _addr.getHostName() + "@" + options.port + "(" + options.type.get().toString() + ")");
         _connected = true;
     }
 
-    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
-        if (!_connected)
-        {
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        if (!_connected) {
             return;
         }
 
         try {
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case UDP:
                     Util.arraycopy(stream_in[0].ptr(), 0, _data, 0, _data.length);
                     DatagramPacket pack = new DatagramPacket(_data, _data.length, _addr, options.port.get());
@@ -137,12 +114,11 @@ public class SocketWriter extends Consumer {
         }
     }
 
-    public void flush(Stream[] stream_in) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in) throws SSJFatalException {
         _connected = false;
 
         try {
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case UDP:
                     _socket_udp.close();
                     _socket_udp = null;
@@ -154,6 +130,19 @@ public class SocketWriter extends Consumer {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public class Options extends OptionList {
+        public final Option<Integer> port = new Option<>("port", 34300, Integer.class, "");
+        public final Option<String> ip = new Option<>("ip", "127.0.0.1", String.class, "");
+        public final Option<Cons.SocketType> type = new Option<>("type", Cons.SocketType.UDP, Cons.SocketType.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

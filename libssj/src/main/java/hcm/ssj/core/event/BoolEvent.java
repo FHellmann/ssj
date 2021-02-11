@@ -61,8 +61,9 @@ public class BoolEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (boolean[])data;
+        this.data = (boolean[]) data;
     }
+
     public void setData(boolean[] data) {
         this.data = data;
     }

@@ -42,204 +42,185 @@ import hcm.ssj.signal.MvgNorm;
 /**
  * Created by Michael Dietz on 06.08.2015.
  */
-public class GSRArousalEstimation extends Transformer
-{
+public class GSRArousalEstimation extends Transformer {
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+    public final Options options = new Options();
+    MvgNorm _detrend;
+    MvgNorm _detrendNormMinMax;
+    MvgAvgVar _mvgAvgLongTerm;
+    MvgAvgVar _mvgAvgShortTerm;
+    MvgAvgVar _mvgAvgCombination;
+    Butfilt _butfiltLongTerm;
+    GSRArousalCombination _combination;
+    Stream _detrendStream;
+    Stream _detrendNormMinMaxStream;
+    Stream _mvgAvgLongTermStream;
+    Stream _butfiltLongTermStream;
+    Stream _mvgAvgShortTermStream;
+    Stream _combinationStream;
+    Stream _mvgAvgCombinationStream;
+    Stream[] _detrendStreamArray;
+    Stream[] _detrendNormMinMaxStreamArray;
+    Stream[] _mvgAvgLongTermStreamArray;
+    Stream[] _mvgAvgShortTermStreamArray;
+    Stream[] _combinationStreamArray;
+    Stream[] _combinationInput;
+    public GSRArousalEstimation() {
+        _name = "GSRArousalEstimation";
+    }
 
-	public class Options extends OptionList
-	{
-		public final Option<Double> windowSizeShortTerm = new Option<>("windowSizeShortTerm", 5., Double.class, "Size of short time window in seconds");
-		public final Option<Double> windowSizeLongTerm = new Option<>("windowSizeLongTerm", 60., Double.class, "Size of long time window in seconds");
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-		/**
-		 *
-		 */
-		private Options()
-		{
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        // Detrend: remove y offset
+        _detrend = new MvgNorm();
+        _detrend.options.norm.set(MvgNorm.Norm.SUB_MIN);
+        _detrend.options.method.set(MvgNorm.Method.SLIDING);
+        _detrend.options.windowSize.set(60.f);
 
-	MvgNorm _detrend;
-	MvgNorm _detrendNormMinMax;
+        _detrendStream = Stream.create(_detrend.getSampleNumber(stream_in[0].num), _detrend.getSampleDimension(stream_in), Util.calcSampleRate(_detrend, stream_in[0]), _detrend.getSampleType(stream_in));
+        _detrendStreamArray = new Stream[]{_detrendStream};
+        _detrend.enter(stream_in, _detrendStream);
 
-	MvgAvgVar _mvgAvgLongTerm;
-	MvgAvgVar _mvgAvgShortTerm;
-	MvgAvgVar _mvgAvgCombination;
+        // Detrend min max: convert to 0..1 range
+        _detrendNormMinMax = new MvgNorm();
+        _detrendNormMinMax.options.norm.set(MvgNorm.Norm.MIN_MAX);
+        _detrendNormMinMax.options.rangeA.set(0.f);
+        _detrendNormMinMax.options.rangeB.set(1.f);
+        _detrendNormMinMax.options.method.set(MvgNorm.Method.SLIDING);
+        _detrendNormMinMax.options.windowSize.set(60.f);
 
-	Butfilt               _butfiltLongTerm;
-	GSRArousalCombination _combination;
+        _detrendNormMinMaxStream = Stream.create(_detrendNormMinMax.getSampleNumber(_detrendStream.num), _detrendNormMinMax.getSampleDimension(_detrendStreamArray), Util.calcSampleRate(_detrendNormMinMax, _detrendStream), _detrendNormMinMax.getSampleType(_detrendStreamArray));
+        _detrendNormMinMaxStreamArray = new Stream[]{_detrendNormMinMaxStream};
+        _detrendNormMinMax.enter(_detrendStreamArray, _detrendNormMinMaxStream);
 
-	Stream _detrendStream;
-	Stream _detrendNormMinMaxStream;
-	Stream _mvgAvgLongTermStream;
-	Stream _butfiltLongTermStream;
-	Stream _mvgAvgShortTermStream;
-	Stream _combinationStream;
-	Stream _mvgAvgCombinationStream;
+        // Moving average long term
+        _mvgAvgLongTerm = new MvgAvgVar();
+        _mvgAvgLongTerm.options.format.set(MvgAvgVar.Format.AVERAGE);
+        _mvgAvgLongTerm.options.method.set(MvgAvgVar.Method.SLIDING);
+        _mvgAvgLongTerm.options.window.set(90.);
 
-	Stream[] _detrendStreamArray;
-	Stream[] _detrendNormMinMaxStreamArray;
-	Stream[] _mvgAvgLongTermStreamArray;
-	Stream[] _mvgAvgShortTermStreamArray;
-	Stream[] _combinationStreamArray;
-	Stream[] _combinationInput;
+        _mvgAvgLongTermStream = Stream.create(_mvgAvgLongTerm.getSampleNumber(_detrendNormMinMaxStream.num), _mvgAvgLongTerm.getSampleDimension(_detrendNormMinMaxStreamArray), Util.calcSampleRate(_mvgAvgLongTerm, _detrendNormMinMaxStream), _mvgAvgLongTerm.getSampleType(_detrendNormMinMaxStreamArray));
+        _mvgAvgLongTermStreamArray = new Stream[]{_mvgAvgLongTermStream};
+        _mvgAvgLongTerm.enter(_detrendNormMinMaxStreamArray, _mvgAvgLongTermStream);
 
-	public GSRArousalEstimation()
-	{
-		_name = "GSRArousalEstimation";
-	}
+        _butfiltLongTerm = new Butfilt();
+        _butfiltLongTerm.options.zero.set(true);
+        _butfiltLongTerm.options.norm.set(false);
+        _butfiltLongTerm.options.low.set(0.1);
+        _butfiltLongTerm.options.order.set(3);
+        _butfiltLongTerm.options.type.set(Butfilt.Type.LOW);
 
-	@Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		// Detrend: remove y offset
-		_detrend = new MvgNorm();
-		_detrend.options.norm.set(MvgNorm.Norm.SUB_MIN);
-		_detrend.options.method.set(MvgNorm.Method.SLIDING);
-		_detrend.options.windowSize.set(60.f);
+        _butfiltLongTermStream = Stream.create(_butfiltLongTerm.getSampleNumber(_mvgAvgLongTermStream.num), _butfiltLongTerm.getSampleDimension(_mvgAvgLongTermStreamArray), Util.calcSampleRate(_butfiltLongTerm, _mvgAvgLongTermStream), _butfiltLongTerm.getSampleType(_mvgAvgLongTermStreamArray));
+        _butfiltLongTerm.enter(_mvgAvgLongTermStreamArray, _butfiltLongTermStream);
 
-		_detrendStream = Stream.create(_detrend.getSampleNumber(stream_in[0].num), _detrend.getSampleDimension(stream_in), Util.calcSampleRate(_detrend, stream_in[0]), _detrend.getSampleType(stream_in));
-		_detrendStreamArray = new Stream[]{_detrendStream};
-		_detrend.enter(stream_in, _detrendStream);
+        // Moving average short term
+        _mvgAvgShortTerm = new MvgAvgVar();
+        _mvgAvgShortTerm.options.format.set(MvgAvgVar.Format.AVERAGE);
+        _mvgAvgShortTerm.options.method.set(MvgAvgVar.Method.SLIDING);
+        _mvgAvgShortTerm.options.window.set(5.);
 
-		// Detrend min max: convert to 0..1 range
-		_detrendNormMinMax = new MvgNorm();
-		_detrendNormMinMax.options.norm.set(MvgNorm.Norm.MIN_MAX);
-		_detrendNormMinMax.options.rangeA.set(0.f);
-		_detrendNormMinMax.options.rangeB.set(1.f);
-		_detrendNormMinMax.options.method.set(MvgNorm.Method.SLIDING);
-		_detrendNormMinMax.options.windowSize.set(60.f);
+        _mvgAvgShortTermStream = Stream.create(_mvgAvgShortTerm.getSampleNumber(_detrendNormMinMaxStream.num), _mvgAvgShortTerm.getSampleDimension(_detrendNormMinMaxStreamArray), Util.calcSampleRate(_mvgAvgShortTerm, _detrendNormMinMaxStream), _mvgAvgShortTerm.getSampleType(_detrendNormMinMaxStreamArray));
+        _mvgAvgShortTermStreamArray = new Stream[]{_mvgAvgShortTermStream};
+        _mvgAvgShortTerm.enter(_detrendNormMinMaxStreamArray, _mvgAvgShortTermStream);
 
-		_detrendNormMinMaxStream = Stream.create(_detrendNormMinMax.getSampleNumber(_detrendStream.num), _detrendNormMinMax.getSampleDimension(_detrendStreamArray), Util.calcSampleRate(_detrendNormMinMax, _detrendStream), _detrendNormMinMax.getSampleType(_detrendStreamArray));
-		_detrendNormMinMaxStreamArray = new Stream[]{_detrendNormMinMaxStream};
-		_detrendNormMinMax.enter(_detrendStreamArray, _detrendNormMinMaxStream);
+        // GSR Arousal Combination
+        _combination = new GSRArousalCombination();
 
-		// Moving average long term
-		_mvgAvgLongTerm = new MvgAvgVar();
-		_mvgAvgLongTerm.options.format.set(MvgAvgVar.Format.AVERAGE);
-		_mvgAvgLongTerm.options.method.set(MvgAvgVar.Method.SLIDING);
-		_mvgAvgLongTerm.options.window.set(90.);
+        _combinationStream = Stream.create(_combination.getSampleNumber(_mvgAvgShortTermStream.num), _combination.getSampleDimension(_mvgAvgShortTermStreamArray), Util.calcSampleRate(_combination, _mvgAvgShortTermStream), _combination.getSampleType(_mvgAvgShortTermStreamArray));
+        _combinationStreamArray = new Stream[]{_combinationStream};
+        _combinationInput = new Stream[]{_butfiltLongTermStream, _mvgAvgShortTermStream};
+        _combination.enter(_combinationInput, _combinationStream);
 
-		_mvgAvgLongTermStream = Stream.create(_mvgAvgLongTerm.getSampleNumber(_detrendNormMinMaxStream.num), _mvgAvgLongTerm.getSampleDimension(_detrendNormMinMaxStreamArray), Util.calcSampleRate(_mvgAvgLongTerm, _detrendNormMinMaxStream), _mvgAvgLongTerm.getSampleType(_detrendNormMinMaxStreamArray));
-		_mvgAvgLongTermStreamArray = new Stream[]{_mvgAvgLongTermStream};
-		_mvgAvgLongTerm.enter(_detrendNormMinMaxStreamArray, _mvgAvgLongTermStream);
+        // Moving average combination
+        _mvgAvgCombination = new MvgAvgVar();
+        _mvgAvgCombination.options.format.set(MvgAvgVar.Format.AVERAGE);
+        _mvgAvgCombination.options.method.set(MvgAvgVar.Method.SLIDING);
+        _mvgAvgCombination.options.window.set(30.);
 
-		_butfiltLongTerm = new Butfilt();
-		_butfiltLongTerm.options.zero.set(true);
-		_butfiltLongTerm.options.norm.set(false);
-		_butfiltLongTerm.options.low.set(0.1);
-		_butfiltLongTerm.options.order.set(3);
-		_butfiltLongTerm.options.type.set(Butfilt.Type.LOW);
+        _mvgAvgCombinationStream = Stream.create(_mvgAvgCombination.getSampleNumber(_combinationStream.num), _mvgAvgCombination.getSampleDimension(_combinationStreamArray), Util.calcSampleRate(_mvgAvgCombination, _combinationStream), _mvgAvgCombination.getSampleType(_combinationStreamArray));
+        _mvgAvgCombination.enter(_combinationStreamArray, _mvgAvgCombinationStream);
+    }
 
-		_butfiltLongTermStream = Stream.create(_butfiltLongTerm.getSampleNumber(_mvgAvgLongTermStream.num), _butfiltLongTerm.getSampleDimension(_mvgAvgLongTermStreamArray), Util.calcSampleRate(_butfiltLongTerm, _mvgAvgLongTermStream), _butfiltLongTerm.getSampleType(_mvgAvgLongTermStreamArray));
-		_butfiltLongTerm.enter(_mvgAvgLongTermStreamArray, _butfiltLongTermStream);
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        int n = stream_in[0].num;
+        double sr = stream_in[0].sr;
 
-		// Moving average short term
-		_mvgAvgShortTerm = new MvgAvgVar();
-		_mvgAvgShortTerm.options.format.set(MvgAvgVar.Format.AVERAGE);
-		_mvgAvgShortTerm.options.method.set(MvgAvgVar.Method.SLIDING);
-		_mvgAvgShortTerm.options.window.set(5.);
+        // Adjust stream size
+        _detrendStream.adjust(n);
+        _detrendNormMinMaxStream.adjust(n);
+        _mvgAvgLongTermStream.adjust(n);
+        _butfiltLongTermStream.adjust(n);
+        _mvgAvgShortTermStream.adjust(n);
+        _combinationStream.adjust(n);
+        _mvgAvgCombinationStream.adjust(n);
 
-		_mvgAvgShortTermStream = Stream.create(_mvgAvgShortTerm.getSampleNumber(_detrendNormMinMaxStream.num), _mvgAvgShortTerm.getSampleDimension(_detrendNormMinMaxStreamArray), Util.calcSampleRate(_mvgAvgShortTerm, _detrendNormMinMaxStream), _mvgAvgShortTerm.getSampleType(_detrendNormMinMaxStreamArray));
-		_mvgAvgShortTermStreamArray = new Stream[]{_mvgAvgShortTermStream};
-		_mvgAvgShortTerm.enter(_detrendNormMinMaxStreamArray, _mvgAvgShortTermStream);
+        _detrend.transform(stream_in, _detrendStream);
+        _detrendNormMinMax.transform(_detrendStreamArray, _detrendNormMinMaxStream);
 
-		// GSR Arousal Combination
-		_combination = new GSRArousalCombination();
+        // Copy stream
+        Stream detrendNormMinMaxStreamCopy = _detrendNormMinMaxStream.clone();
+        Stream[] detrendNormMinMaxStreamCopyArray = new Stream[]{detrendNormMinMaxStreamCopy};
 
-		_combinationStream = Stream.create(_combination.getSampleNumber(_mvgAvgShortTermStream.num), _combination.getSampleDimension(_mvgAvgShortTermStreamArray), Util.calcSampleRate(_combination, _mvgAvgShortTermStream), _combination.getSampleType(_mvgAvgShortTermStreamArray));
-		_combinationStreamArray = new Stream[]{_combinationStream};
-		_combinationInput = new Stream[]{_butfiltLongTermStream, _mvgAvgShortTermStream};
-		_combination.enter(_combinationInput, _combinationStream);
+        _mvgAvgLongTerm.transform(_detrendNormMinMaxStreamArray, _mvgAvgLongTermStream);
+        _butfiltLongTerm.transform(_mvgAvgLongTermStreamArray, _butfiltLongTermStream);
+        _mvgAvgShortTerm.transform(detrendNormMinMaxStreamCopyArray, _mvgAvgShortTermStream);
 
-		// Moving average combination
-		_mvgAvgCombination = new MvgAvgVar();
-		_mvgAvgCombination.options.format.set(MvgAvgVar.Format.AVERAGE);
-		_mvgAvgCombination.options.method.set(MvgAvgVar.Method.SLIDING);
-		_mvgAvgCombination.options.window.set(30.);
+        _combination.transform(_combinationInput, _combinationStream);
+        _mvgAvgCombination.transform(_combinationStreamArray, _mvgAvgCombinationStream);
 
-		_mvgAvgCombinationStream = Stream.create(_mvgAvgCombination.getSampleNumber(_combinationStream.num), _mvgAvgCombination.getSampleDimension(_combinationStreamArray), Util.calcSampleRate(_mvgAvgCombination, _combinationStream), _mvgAvgCombination.getSampleType(_combinationStreamArray));
-		_mvgAvgCombination.enter(_combinationStreamArray, _mvgAvgCombinationStream);
-	}
+        float[] ptrResult = _mvgAvgCombinationStream.ptrF();
+        float[] ptrOut = stream_out.ptrF();
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		int n = stream_in[0].num;
-		double sr = stream_in[0].sr;
+        for (int nSamp = 0; nSamp < stream_in[0].num; nSamp++) {
+            ptrOut[nSamp] = ptrResult[nSamp];
+        }
+    }
 
-		// Adjust stream size
-		_detrendStream.adjust(n);
-		_detrendNormMinMaxStream.adjust(n);
-		_mvgAvgLongTermStream.adjust(n);
-		_butfiltLongTermStream.adjust(n);
-		_mvgAvgShortTermStream.adjust(n);
-		_combinationStream.adjust(n);
-		_mvgAvgCombinationStream.adjust(n);
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        return 1;
+    }
 
-		_detrend.transform(stream_in, _detrendStream);
-		_detrendNormMinMax.transform(_detrendStreamArray, _detrendNormMinMaxStream);
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return stream_in[0].bytes;
+    }
 
-		// Copy stream
-		Stream detrendNormMinMaxStreamCopy = _detrendNormMinMaxStream.clone();
-		Stream[] detrendNormMinMaxStreamCopyArray = new Stream[]{detrendNormMinMaxStreamCopy};
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.FLOAT) {
+            Log.e("unsupported input type");
+        }
 
-		_mvgAvgLongTerm.transform(_detrendNormMinMaxStreamArray, _mvgAvgLongTermStream);
-		_butfiltLongTerm.transform(_mvgAvgLongTermStreamArray, _butfiltLongTermStream);
-		_mvgAvgShortTerm.transform(detrendNormMinMaxStreamCopyArray, _mvgAvgShortTermStream);
+        return Cons.Type.FLOAT;
+    }
 
-		_combination.transform(_combinationInput, _combinationStream);
-		_mvgAvgCombination.transform(_combinationStreamArray , _mvgAvgCombinationStream);
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
 
-		float[] ptrResult = _mvgAvgCombinationStream.ptrF();
-		float[] ptrOut = stream_out.ptrF();
+    @Override
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[stream_in[0].dim];
+        System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
+    }
 
-		for (int nSamp = 0; nSamp < stream_in[0].num; nSamp++)
-		{
-			ptrOut[nSamp] = ptrResult[nSamp];
-		}
-	}
+    public class Options extends OptionList {
+        public final Option<Double> windowSizeShortTerm = new Option<>("windowSizeShortTerm", 5., Double.class, "Size of short time window in seconds");
+        public final Option<Double> windowSizeLongTerm = new Option<>("windowSizeLongTerm", 60., Double.class, "Size of long time window in seconds");
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		return 1;
-	}
-
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return stream_in[0].bytes;
-	}
-
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		if (stream_in[0].type != Cons.Type.FLOAT)
-		{
-			Log.e("unsupported input type");
-		}
-
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return sampleNumber_in;
-	}
-
-	@Override
-	protected void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[stream_in[0].dim];
-		System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
-	}
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

@@ -58,32 +58,8 @@ import hcm.ssj.file.IFileWriter;
  * Writes wav files.<br>
  * Created by Frank Gaibler and Ionut Damian on 12.12.2016.
  */
-public class WavWriter extends Consumer implements IFileWriter
-{
-    @Override
-    public OptionList getOptions()
-    {
-        return options;
-    }
-
-    private enum DataFormat
-    {
-        BYTE(Microphone.audioFormatSampleBytes(AudioFormat.ENCODING_PCM_8BIT)),
-        SHORT(Microphone.audioFormatSampleBytes(AudioFormat.ENCODING_PCM_16BIT)),
-        FLOAT_8(BYTE.size),
-        FLOAT_16(SHORT.size);
-
-        private int size;
-
-        /**
-         * @param i int
-         */
-        DataFormat(int i)
-        {
-            size = i;
-        }
-    }
-
+public class WavWriter extends Consumer implements IFileWriter {
+    public final WavWriter.Options options = new WavWriter.Options();
     //encoder
     protected double dFrameRate;
     //
@@ -92,89 +68,81 @@ public class WavWriter extends Consumer implements IFileWriter
     //
     protected File file = null;
     private BufferedOutputStream outputStream;
-
-    public final WavWriter.Options options = new WavWriter.Options();
     //
     private int iSampleRate;
     private int iSampleNumber;
     private int iSampleDimension;
     //
     private WavWriter.DataFormat dataFormat = null;
-
-
-    /**
-     * All options for the audio writer
-     */
-    public class Options extends IFileWriter.Options
-    {
-        public final Option<Cons.AudioFormat> audioFormat = new Option<>("audioFormat", Cons.AudioFormat.ENCODING_DEFAULT, Cons.AudioFormat.class, "");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            super();
-            addOptions();
-        }
-    }
-
     /**
      *
      */
-    public WavWriter()
-    {
+    public WavWriter() {
         _name = this.getClass().getSimpleName();
     }
 
     /**
-	 * @param stream_in Stream[]
-	 */
+     * Code taken from : http://stackoverflow.com/questions/9179536/writing-pcm-recorded-data-into-a-wav-file-java-android
+     * by: Oliver Mahoney, Oak Bytes
+     */
+    private static byte[] intToByteArray(int i) {
+        byte[] b = new byte[4];
+        b[0] = (byte) (i & 0x00FF);
+        b[1] = (byte) ((i >> 8) & 0x000000FF);
+        b[2] = (byte) ((i >> 16) & 0x000000FF);
+        b[3] = (byte) ((i >> 24) & 0x000000FF);
+        return b;
+    }
+
+    /**
+     * Convert a short to a byte array
+     * code taken from : http://stackoverflow.com/questions/9179536/writing-pcm-recorded-data-into-a-wav-file-java-android
+     * by: Oliver Mahoney, Oak Bytes
+     */
+    private static byte[] shortToByteArray(short data) {
+        return new byte[]{(byte) (data & 0xff), (byte) ((data >>> 8) & 0xff)};
+    }
+
     @Override
-    public final void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        if (stream_in.length != 1)
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     */
+    @Override
+    public final void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length != 1) {
             throw new SSJFatalException("Stream count not supported");
         }
-        switch (stream_in[0].type)
-        {
-            case BYTE:
-            {
+        switch (stream_in[0].type) {
+            case BYTE: {
                 dataFormat = WavWriter.DataFormat.BYTE;
                 break;
             }
-            case SHORT:
-            {
+            case SHORT: {
                 dataFormat = WavWriter.DataFormat.SHORT;
                 break;
             }
-            case FLOAT:
-            {
-                if (options.audioFormat.get() == Cons.AudioFormat.ENCODING_DEFAULT || options.audioFormat.get() == Cons.AudioFormat.ENCODING_PCM_16BIT)
-                {
+            case FLOAT: {
+                if (options.audioFormat.get() == Cons.AudioFormat.ENCODING_DEFAULT || options.audioFormat.get() == Cons.AudioFormat.ENCODING_PCM_16BIT) {
                     dataFormat = WavWriter.DataFormat.FLOAT_16;
-                } else if (options.audioFormat.get() == Cons.AudioFormat.ENCODING_PCM_8BIT)
-                {
+                } else if (options.audioFormat.get() == Cons.AudioFormat.ENCODING_PCM_8BIT) {
                     dataFormat = WavWriter.DataFormat.FLOAT_8;
-                } else
-                {
+                } else {
                     throw new SSJFatalException("Audio format not supported");
                 }
                 break;
             }
-            default:
-            {
+            default: {
                 throw new SSJFatalException("Stream type not supported");
             }
         }
 
-        try
-        {
+        try {
             initFiles(stream_in[0], options);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("error initializing files", e);
         }
 
@@ -187,39 +155,31 @@ public class WavWriter extends Consumer implements IFileWriter
         aByShuffle = new byte[(int) (iSampleNumber / dFrameRate + 0.5)];
         lFrameIndex = 0;
 
-        try
-        {
+        try {
             outputStream = new BufferedOutputStream(new FileOutputStream(file));
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             throw new SSJFatalException("RawEncoder creation failed: " + ex.getMessage());
         }
     }
 
     /**
      * @param stream_in Stream[]
-	 * @param trigger
+     * @param trigger
      */
     @Override
-    protected final void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
-        switch (dataFormat)
-        {
-            case BYTE:
-            {
+    protected final void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        switch (dataFormat) {
+            case BYTE: {
                 byte[] in = stream_in[0].ptrB();
-                for (int i = 0; i < in.length; i += aByShuffle.length)
-                {
+                for (int i = 0; i < in.length; i += aByShuffle.length) {
                     System.arraycopy(in, i, aByShuffle, 0, aByShuffle.length);
                     write(aByShuffle);
                 }
                 break;
             }
-            case SHORT:
-            {
+            case SHORT: {
                 short[] in = stream_in[0].ptrS();
-                for (int i = 0; i < in.length; i += aByShuffle.length)
-                {
+                for (int i = 0; i < in.length; i += aByShuffle.length) {
                     ByteBuffer.wrap(aByShuffle).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(in, i / 2, aByShuffle.length / 2);
                     write(aByShuffle);
                 }
@@ -227,22 +187,17 @@ public class WavWriter extends Consumer implements IFileWriter
             }
             case FLOAT_8:
                 float[] in = stream_in[0].ptrF();
-                for (int i = 0; i < in.length; )
-                {
-                    for (int j = 0; j < aByShuffle.length; j++, i += aByShuffle.length)
-                    {
+                for (int i = 0; i < in.length; ) {
+                    for (int j = 0; j < aByShuffle.length; j++, i += aByShuffle.length) {
                         aByShuffle[j] = (byte) (in[i] * 128);
                     }
                     write(aByShuffle);
                 }
                 break;
-            case FLOAT_16:
-            {
+            case FLOAT_16: {
                 float[] in16 = stream_in[0].ptrF();
-                for (int i = 0; i < in16.length; )
-                {
-                    for (int j = 0; j < aByShuffle.length; i++, j += 2)
-                    {
+                for (int i = 0; i < in16.length; ) {
+                    for (int j = 0; j < aByShuffle.length; i++, j += 2) {
                         short value = (short) (in16[i] * 32768);
                         aByShuffle[j] = (byte) (value & 0xff);
                         aByShuffle[j + 1] = (byte) ((value >> 8) & 0xff);
@@ -251,8 +206,7 @@ public class WavWriter extends Consumer implements IFileWriter
                 }
                 break;
             }
-            default:
-            {
+            default: {
                 Log.e("Data format not supported");
                 break;
             }
@@ -263,26 +217,19 @@ public class WavWriter extends Consumer implements IFileWriter
      * @param stream_in Stream[]
      */
     @Override
-    public final void flush(Stream stream_in[]) throws SSJFatalException
-    {
-        if (outputStream != null)
-        {
-            try
-            {
+    public final void flush(Stream[] stream_in) throws SSJFatalException {
+        if (outputStream != null) {
+            try {
                 outputStream.flush();
                 outputStream.close();
-            } catch (IOException ex)
-            {
+            } catch (IOException ex) {
                 Log.e("RawEncoder closing: " + ex.getMessage());
             }
         }
 
-        try
-        {
+        try {
             writeWavHeader(file);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("error writing header", e);
         }
 
@@ -294,23 +241,18 @@ public class WavWriter extends Consumer implements IFileWriter
      *
      * @param options Options
      */
-    protected final void initFiles(Stream in, Options options) throws IOException
-    {
-        if (options.filePath.get() == null)
-        {
+    protected final void initFiles(Stream in, Options options) throws IOException {
+        if (options.filePath.get() == null) {
             Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
             options.filePath.set(new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE));
         }
         File fileDirectory = new File(options.filePath.parseWildcards());
-        if (!fileDirectory.exists())
-        {
-            if (!fileDirectory.mkdirs())
-            {
+        if (!fileDirectory.exists()) {
+            if (!fileDirectory.mkdirs()) {
                 throw new IOException(fileDirectory.getName() + " could not be created");
             }
         }
-        if (options.fileName.get() == null)
-        {
+        if (options.fileName.get() == null) {
             String defaultName = TextUtils.join("_", in.desc) + ".wav";
             Log.w("file name not set, setting to " + defaultName);
             options.fileName.set(defaultName);
@@ -321,13 +263,10 @@ public class WavWriter extends Consumer implements IFileWriter
     /**
      * @param frameData byte[]
      */
-    protected final void write(byte[] frameData)
-    {
-        try
-        {
+    protected final void write(byte[] frameData) {
+        try {
             outputStream.write(frameData, 0, frameData.length);
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             Log.e("RawEncoder: " + ex.getMessage());
         }
     }
@@ -336,10 +275,10 @@ public class WavWriter extends Consumer implements IFileWriter
      * Writes a PCM Wav header at the start of the provided file
      * code taken from : http://stackoverflow.com/questions/9179536/writing-pcm-recorded-data-into-a-wav-file-java-android
      * by: Oliver Mahoney, Oak Bytes
+     *
      * @param fileToConvert File
      */
-    private void writeWavHeader(File fileToConvert) throws IOException
-    {
+    private void writeWavHeader(File fileToConvert) throws IOException {
         long mySubChunk1Size = 16;
         int myBitsPerSample = 16;
         int myFormat = 1;
@@ -350,13 +289,11 @@ public class WavWriter extends Consumer implements IFileWriter
 
         int size = (int) fileToConvert.length();
         byte[] bytes = new byte[size];
-        try
-        {
+        try {
             BufferedInputStream buf = new BufferedInputStream(new FileInputStream(fileToConvert));
             buf.read(bytes, 0, bytes.length);
             buf.close();
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
         long myDataSize = bytes.length;
@@ -385,33 +322,39 @@ public class WavWriter extends Consumer implements IFileWriter
 
         outFile.flush();
         outFile.close();
-        if (!fileToConvert.delete())
-        {
+        if (!fileToConvert.delete()) {
             throw new IOException("error deleting temp file");
         }
     }
 
-    /**
-     * Code taken from : http://stackoverflow.com/questions/9179536/writing-pcm-recorded-data-into-a-wav-file-java-android
-     * by: Oliver Mahoney, Oak Bytes
-     */
-    private static byte[] intToByteArray(int i)
-    {
-        byte[] b = new byte[4];
-        b[0] = (byte) (i & 0x00FF);
-        b[1] = (byte) ((i >> 8) & 0x000000FF);
-        b[2] = (byte) ((i >> 16) & 0x000000FF);
-        b[3] = (byte) ((i >> 24) & 0x000000FF);
-        return b;
+    private enum DataFormat {
+        BYTE(Microphone.audioFormatSampleBytes(AudioFormat.ENCODING_PCM_8BIT)),
+        SHORT(Microphone.audioFormatSampleBytes(AudioFormat.ENCODING_PCM_16BIT)),
+        FLOAT_8(BYTE.size),
+        FLOAT_16(SHORT.size);
+
+        private final int size;
+
+        /**
+         * @param i int
+         */
+        DataFormat(int i) {
+            size = i;
+        }
     }
 
     /**
-     * Convert a short to a byte array
-     * code taken from : http://stackoverflow.com/questions/9179536/writing-pcm-recorded-data-into-a-wav-file-java-android
-     * by: Oliver Mahoney, Oak Bytes
+     * All options for the audio writer
      */
-    private static byte[] shortToByteArray(short data)
-    {
-        return new byte[]{(byte) (data & 0xff), (byte) ((data >>> 8) & 0xff)};
+    public class Options extends IFileWriter.Options {
+        public final Option<Cons.AudioFormat> audioFormat = new Option<>("audioFormat", Cons.AudioFormat.ENCODING_DEFAULT, Cons.AudioFormat.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            super();
+            addOptions();
+        }
     }
 }

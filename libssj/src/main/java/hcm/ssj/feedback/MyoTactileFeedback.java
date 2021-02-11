@@ -44,100 +44,80 @@ import hcm.ssj.myo.Vibrate2Command;
  * Created by Antonio Grieco on 06.09.2017.
  */
 
-public class MyoTactileFeedback extends Feedback
-{
-	public class Options extends Feedback.Options
-	{
-		public final Option<int[]> duration = new Option<>("duration", new int[]{500}, int[].class, "duration of tactile feedback");
-		public final Option<byte[]> intensity = new Option<>("intensity", new byte[]{(byte) 150}, byte[].class, "intensity of tactile feedback");
-		public final Option<String> deviceId = new Option<>("deviceId", null, String.class, "device Id");
+public class MyoTactileFeedback extends Feedback {
+    public final Options options = new Options();
+    private Myo myo = null;
+    private hcm.ssj.myo.Myo myoConnector = null;
+    private Vibrate2Command cmd = null;
+    public MyoTactileFeedback() {
+        _name = "MyoTactileFeedback";
+        Log.d("Instantiated MyoTactileFeedback " + this.hashCode());
+    }
 
-		private Options()
-		{
-			super();
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+    @Override
+    public Feedback.Options getOptions() {
+        return options;
+    }
 
-	private Myo myo = null;
-	private hcm.ssj.myo.Myo myoConnector = null;
-	private Vibrate2Command cmd = null;
-
-	public MyoTactileFeedback()
-	{
-		_name = "MyoTactileFeedback";
-		Log.d("Instantiated MyoTactileFeedback " + this.hashCode());
-	}
-
-	@Override
-	public Feedback.Options getOptions()
-	{
-		return options;
-	}
-
-	@Override
-	public void enterFeedback() throws SSJFatalException
-	{
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new SSJFatalException("no input channels");
-		}
+    @Override
+    public void enterFeedback() throws SSJFatalException {
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new SSJFatalException("no input channels");
+        }
 
 
-		Hub hub = Hub.getInstance();
+        Hub hub = Hub.getInstance();
 
-		if (hub.getConnectedDevices().isEmpty())
-		{
-			myoConnector = new hcm.ssj.myo.Myo();
-			myoConnector.options.macAddress.set(options.deviceId.get());
-			try
-			{
-				myoConnector.connect();
-			}
-			catch (hcm.ssj.core.SSJFatalException e)
-			{
-				e.printStackTrace();
-			}
-		}
+        if (hub.getConnectedDevices().isEmpty()) {
+            myoConnector = new hcm.ssj.myo.Myo();
+            myoConnector.options.macAddress.set(options.deviceId.get());
+            try {
+                myoConnector.connect();
+            } catch (hcm.ssj.core.SSJFatalException e) {
+                e.printStackTrace();
+            }
+        }
 
-		long time = SystemClock.elapsedRealtime();
-		while (hub.getConnectedDevices().isEmpty() && SystemClock.elapsedRealtime() - time < Pipeline.getInstance().options.waitSensorConnect.get() * 1000)
-		{
-			try
-			{
-				Thread.sleep(Cons.SLEEP_IN_LOOP);
-			}
-			catch (InterruptedException e)
-			{
-				Log.d("connection interrupted", e);
-			}
-		}
+        long time = SystemClock.elapsedRealtime();
+        while (hub.getConnectedDevices().isEmpty() && SystemClock.elapsedRealtime() - time < Pipeline.getInstance().options.waitSensorConnect.get() * 1000) {
+            try {
+                Thread.sleep(Cons.SLEEP_IN_LOOP);
+            } catch (InterruptedException e) {
+                Log.d("connection interrupted", e);
+            }
+        }
 
-		if (hub.getConnectedDevices().isEmpty())
-		{
-			throw new SSJFatalException("device not found");
-		}
+        if (hub.getConnectedDevices().isEmpty()) {
+            throw new SSJFatalException("device not found");
+        }
 
-		Log.i("connected to Myo");
+        Log.i("connected to Myo");
 
-		myo = hub.getConnectedDevices().get(0);
-		cmd = new Vibrate2Command(hub);
-	}
+        myo = hub.getConnectedDevices().get(0);
+        cmd = new Vibrate2Command(hub);
+    }
 
-	@Override
-	public void notifyFeedback(Event event)
-	{
-		Log.i("vibration " + options.duration.get()[0] + "/" + (int) options.intensity.get()[0]);
-		cmd.vibrate(myo, options.duration.get(), options.intensity.get());
-	}
+    @Override
+    public void notifyFeedback(Event event) {
+        Log.i("vibration " + options.duration.get()[0] + "/" + (int) options.intensity.get()[0]);
+        cmd.vibrate(myo, options.duration.get(), options.intensity.get());
+    }
 
-	@Override
-	public void flush() throws SSJFatalException
-	{
-		if (myoConnector != null)
-		{
-			myoConnector.disconnect();
-		}
-	}
+    @Override
+    public void flush() throws SSJFatalException {
+        if (myoConnector != null) {
+            myoConnector.disconnect();
+        }
+    }
+
+    public class Options extends Feedback.Options {
+        public final Option<int[]> duration = new Option<>("duration", new int[]{500}, int[].class, "duration of tactile feedback");
+        public final Option<byte[]> intensity = new Option<>("intensity", new byte[]{(byte) 150}, byte[].class, "intensity of tactile feedback");
+        public final Option<String> deviceId = new Option<>("deviceId", null, String.class, "device Id");
+
+        private Options() {
+            super();
+            addOptions();
+        }
+    }
 }

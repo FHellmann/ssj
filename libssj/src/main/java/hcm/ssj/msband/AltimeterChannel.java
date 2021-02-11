@@ -38,95 +38,81 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class AltimeterChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class AltimeterChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
+    public AltimeterChannel() {
+        _name = "MSBand_Altimeter";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.Altimeter, true, 0);
+    }
 
-	protected BandListener _listener;
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	public AltimeterChannel()
-	{
-		_name = "MSBand_Altimeter";
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-	@Override
-	public void init() throws SSJException
-	{
-		((MSBand)_sensor).configureChannel(MSBand.Channel.Altimeter, true, 0);
-	}
+        long[] out = stream_out.ptrL();
+        out[0] = _listener.getFlightsAscended();
+        out[1] = _listener.getFlightsDescended();
+        out[2] = _listener.getSteppingGain();
+        out[3] = _listener.getSteppingLoss();
+        out[4] = _listener.getStepsAscended();
+        out[5] = _listener.getStepsDescended();
+        out[6] = _listener.getAltimeterGain();
+        out[7] = _listener.getAltimeterLoss();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		long[] out = stream_out.ptrL();
-		out[0] = _listener.getFlightsAscended();
-		out[1] = _listener.getFlightsDescended();
-		out[2] = _listener.getSteppingGain();
-		out[3] = _listener.getSteppingLoss();
-		out[4] = _listener.getStepsAscended();
-		out[5] = _listener.getStepsDescended();
-		out[6] = _listener.getAltimeterGain();
-		out[7] = _listener.getAltimeterLoss();
+    @Override
+    protected int getSampleDimension() {
+        return 8;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.LONG;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "FlightsAscended";
+        stream_out.desc[1] = "FlightsDescended";
+        stream_out.desc[2] = "SteppingGain";
+        stream_out.desc[3] = "SteppingLoss";
+        stream_out.desc[4] = "StepsAscended";
+        stream_out.desc[5] = "StepsDescended";
+        stream_out.desc[6] = "AltimeterGain";
+        stream_out.desc[7] = "AltimeterLoss";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 8;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.LONG;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "FlightsAscended";
-		stream_out.desc[1] = "FlightsDescended";
-		stream_out.desc[2] = "SteppingGain";
-		stream_out.desc[3] = "SteppingLoss";
-		stream_out.desc[4] = "StepsAscended";
-		stream_out.desc[5] = "StepsDescended";
-		stream_out.desc[6] = "AltimeterGain";
-		stream_out.desc[7] = "AltimeterLoss";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

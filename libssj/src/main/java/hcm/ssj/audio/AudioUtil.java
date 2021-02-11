@@ -30,33 +30,30 @@ package hcm.ssj.audio;
 /**
  * Created by Ionut Damian on 21.12.2017.
  */
-public class AudioUtil
-{
-	/**
-	 * Modified Bessel function I0. Abramowicz and Stegun, p. 378.
-	 *
-	 * Based on code from the PRAAT Toolbox by Paul Boersma and David Weenink.
-	 * http://www.fon.hum.uva.nl/praat/
-	 */
-	public static double bessel_i0_f(double x)
-	{
-		if (x < 0.0) return bessel_i0_f(-x);
-		if (x < 3.75)
-		{
+public class AudioUtil {
+    /**
+     * Modified Bessel function I0. Abramowicz and Stegun, p. 378.
+     * <p>
+     * Based on code from the PRAAT Toolbox by Paul Boersma and David Weenink.
+     * http://www.fon.hum.uva.nl/praat/
+     */
+    public static double bessel_i0_f(double x) {
+        if (x < 0.0) return bessel_i0_f(-x);
+        if (x < 3.75) {
             /* Formula 9.8.1. Accuracy 1.6e-7. */
-			double t = x / 3.75;
-			t *= t;
-			return 1.0 + t * (3.5156229 + t * (3.0899424 + t * (1.2067492
-					+ t * (0.2659732 + t * (0.0360768 + t * 0.0045813)))));
-		}
+            double t = x / 3.75;
+            t *= t;
+            return 1.0 + t * (3.5156229 + t * (3.0899424 + t * (1.2067492
+                    + t * (0.2659732 + t * (0.0360768 + t * 0.0045813)))));
+        }
         /*
             otherwise: x >= 3.75
         */
         /* Formula 9.8.2. Accuracy of the polynomial factor 1.9e-7. */
-		double t = 3.75 / x;   /* <= 1.0 */
-		return Math.exp(x) / Math.sqrt(x) * (0.39894228 + t * (0.01328592
-				+ t * (0.00225319 + t * (-0.00157565 + t * (0.00916281
-				+ t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633
-				+ t * 0.00392377))))))));
-	}
+        double t = 3.75 / x;   /* <= 1.0 */
+        return Math.exp(x) / Math.sqrt(x) * (0.39894228 + t * (0.01328592
+                + t * (0.00225319 + t * (-0.00157565 + t * (0.00916281
+                + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633
+                + t * 0.00392377))))))));
+    }
 }

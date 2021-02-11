@@ -27,9 +27,9 @@
 
 package hcm.ssj.bleSensor;
 /*
- * 
+ *
  * https://github.com/StevenRudenko/BleSensorTag/blob/master/src/sample/ble/sensortag/ble/BleDevicesScanner.java
- * 
+ *
  */
 
 
@@ -40,11 +40,9 @@ import android.os.Looper;
 
 
 public class BleDevicesScanner implements Runnable, BluetoothAdapter.LeScanCallback {
-    private static final String TAG = BleDevicesScanner.class.getSimpleName();
-
-    private static final long DEFAULT_SCAN_PERIOD = 500L;
     public static final long PERIOD_SCAN_ONCE = -1;
-
+    private static final String TAG = BleDevicesScanner.class.getSimpleName();
+    private static final long DEFAULT_SCAN_PERIOD = 500L;
     private final BluetoothAdapter bluetoothAdapter;
     private final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
     private final LeScansPoster leScansPoster;

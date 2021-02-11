@@ -32,9 +32,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Color;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import androidx.appcompat.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -48,6 +45,11 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -67,13 +69,12 @@ import hcm.ssj.creator.util.Util;
  * Annotation tab for main activity.<br>
  * Created by Frank Gaibler on 23.09.2016.
  */
-public class AnnotationTab implements ITab
-{
+public class AnnotationTab implements ITab {
     private Activity activity = null;
     //tab
-    private View view;
-    private String title;
-    private int icon;
+    private final View view;
+    private final String title;
+    private final int icon;
     //annotation
     private double curAnnoStartTime = 0;
     private FloatingActionButton floatingActionButton = null;
@@ -81,7 +82,7 @@ public class AnnotationTab implements ITab
     private EditText editTextNameAnno = null;
     private LinearLayout annoClassList = null;
     private boolean running = false;
-    private BandComm bandComm;
+    private final BandComm bandComm;
     private int annoWithBand = -1;
     private CheckBox externalAnno = null;
 
@@ -90,8 +91,7 @@ public class AnnotationTab implements ITab
     /**
      * @param activity Activity
      */
-    AnnotationTab(Activity activity)
-    {
+    AnnotationTab(Activity activity) {
         this.activity = activity;
 
         anno = PipelineBuilder.getInstance().getAnnotation();
@@ -106,8 +106,7 @@ public class AnnotationTab implements ITab
     /**
      * @param context Context
      */
-    private View createContent(final Context context)
-    {
+    private View createContent(final Context context) {
         //layouts
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setLayoutParams(new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.MATCH_PARENT));
@@ -132,13 +131,10 @@ public class AnnotationTab implements ITab
         int margin = (int) (dpValue * d); // margin in pixels
         params.setMargins(0, 0, margin, margin);
         floatingActionButton.setLayoutParams(params);
-        floatingActionButton.setOnClickListener(new View.OnClickListener()
-        {
+        floatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v)
-            {
-                if (annoClassList != null)
-                {
+            public void onClick(View v) {
+                if (annoClassList != null) {
                     int id = annoClassList.getChildCount();
                     String name = context.getString(R.string.str_defaultAnno, id);
                     annoClassList.addView(createClassSwitch(context, name));
@@ -156,21 +152,17 @@ public class AnnotationTab implements ITab
         editTextNameAnno = new EditText(context);
         editTextNameAnno.setInputType(InputType.TYPE_CLASS_TEXT);
         editTextNameAnno.setText(anno.getFileName(), TextView.BufferType.NORMAL);
-        editTextNameAnno.addTextChangedListener(new TextWatcher()
-        {
+        editTextNameAnno.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after)
-            {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count)
-            {
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
 
             @Override
-            public void afterTextChanged(Editable s)
-            {
+            public void afterTextChanged(Editable s) {
                 anno.setFileName(s.toString().trim());
             }
         });
@@ -184,21 +176,17 @@ public class AnnotationTab implements ITab
         editTextPathAnno = new EditText(context);
         editTextPathAnno.setInputType(InputType.TYPE_CLASS_TEXT);
         editTextPathAnno.setText(anno.getFilePath(), TextView.BufferType.NORMAL);
-        editTextPathAnno.addTextChangedListener(new TextWatcher()
-        {
+        editTextPathAnno.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after)
-            {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count)
-            {
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
             }
 
             @Override
-            public void afterTextChanged(Editable s)
-            {
+            public void afterTextChanged(Editable s) {
                 anno.setFilePath(s.toString().trim());
             }
         });
@@ -207,17 +195,13 @@ public class AnnotationTab implements ITab
         //other options
         externalAnno = new CheckBox(context);
         externalAnno.setText(R.string.anno_msband);
-        externalAnno.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
-        {
+        externalAnno.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-            {
-                if (isChecked)
-                {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
                     bandComm.create();
                     annoWithBand = 0; //associate with first element in anno list
-                } else
-                {
+                } else {
                     bandComm.destroy();
                     annoWithBand = -1;
                 }
@@ -246,8 +230,7 @@ public class AnnotationTab implements ITab
      * @param context Context
      * @return CompoundButton
      */
-    private LinearLayout createClassSwitch(final Context context, String name)
-    {
+    private LinearLayout createClassSwitch(final Context context, String name) {
         LinearLayout layout = new LinearLayout(context);
         layout.setBackgroundColor(Color.parseColor("#EEEEEE"));
 
@@ -275,48 +258,39 @@ public class AnnotationTab implements ITab
         buttonLayout.addView(switchButton);
         layout.addView(buttonLayout);
 
-        switchButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
-        {
+        switchButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-            {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 double time = Util.getAnnotationTime();
-                if (isChecked)
-                {
-                    for (int i = 0; i < annoClassList.getChildCount(); i++)
-                    {
-                        SwitchCompat button = (SwitchCompat) ((LinearLayout)((LinearLayout)(annoClassList.getChildAt(i))).getChildAt(1)).getChildAt(0);
-                        if (button != buttonView)
-                        {
+                if (isChecked) {
+                    for (int i = 0; i < annoClassList.getChildCount(); i++) {
+                        SwitchCompat button = (SwitchCompat) ((LinearLayout) ((LinearLayout) (annoClassList.getChildAt(i))).getChildAt(1)).getChildAt(0);
+                        if (button != buttonView) {
                             button.setChecked(false);
                         }
                     }
                 }
 
                 //only modify anno when pipeline is running
-                if (Pipeline.getInstance().isRunning())
-                {
+                if (Pipeline.getInstance().isRunning()) {
                     String name = ((TextView) (((ViewGroup) (buttonView.getParent().getParent())).getChildAt(0))).getText().toString();
 
-                    if (isChecked)
-                    {
+                    if (isChecked) {
                         curAnnoStartTime = time;
 
                         //create start event
                         StringEvent ev = new StringEvent(name);
-                        ev.time = (long)(time * 1000);
+                        ev.time = (long) (time * 1000);
                         ev.dur = 0;
                         ev.state = Event.State.CONTINUED;
                         anno.getChannel().pushEvent(ev);
-                    }
-                    else
-                    {
+                    } else {
                         anno.addEntry(name, curAnnoStartTime, time);
 
                         //create end event
                         StringEvent ev = new StringEvent(name);
-                        ev.time = (long)(curAnnoStartTime * 1000);
-                        ev.dur = (int)((time - curAnnoStartTime) * 1000);
+                        ev.time = (long) (curAnnoStartTime * 1000);
+                        ev.dur = (int) ((time - curAnnoStartTime) * 1000);
                         ev.state = Event.State.COMPLETED;
                         anno.getChannel().pushEvent(ev);
 
@@ -326,14 +300,11 @@ public class AnnotationTab implements ITab
             }
         });
 
-        textView.setOnClickListener(new View.OnClickListener()
-        {
+        textView.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(final View v)
-            {
+            public void onClick(final View v) {
                 //only allow edits while pipe is not active
-                if (!running)
-                {
+                if (!running) {
                     //content
                     LinearLayout linearLayout = new LinearLayout(context);
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -345,24 +316,19 @@ public class AnnotationTab implements ITab
                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
                     builder.setTitle(R.string.str_annotation);
                     builder.setView(linearLayout);
-                    builder.setPositiveButton(R.string.str_ok, new DialogInterface.OnClickListener()
-                    {
-                        public void onClick(DialogInterface dialog, int id)
-                        {
+                    builder.setPositiveButton(R.string.str_ok, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
                             String name = editText.getText().toString().trim();
                             ((TextView) v).setText(name);
                             anno.setClasses(getAnnoClassesFromView());
                         }
                     });
                     builder.setNegativeButton(R.string.str_cancel, null);
-                    builder.setNeutralButton(R.string.str_delete, new DialogInterface.OnClickListener()
-                    {
-                        public void onClick(DialogInterface dialog, int id)
-                        {
+                    builder.setNeutralButton(R.string.str_delete, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
                             ViewGroup viewGroup = (ViewGroup) v.getParent();
-                            if (viewGroup != null)
-                            {
-                                ((SwitchCompat)((LinearLayout) viewGroup.getChildAt(1)).getChildAt(0)).setChecked(false);
+                            if (viewGroup != null) {
+                                ((SwitchCompat) ((LinearLayout) viewGroup.getChildAt(1)).getChildAt(0)).setChecked(false);
                                 anno.removeClass(((TextView) viewGroup.getChildAt(0)).getText().toString());
                                 ((ViewGroup) viewGroup.getParent()).removeView(viewGroup);
                             }
@@ -380,21 +346,17 @@ public class AnnotationTab implements ITab
     /**
      *
      */
-    void startAnnotation()
-    {
+    void startAnnotation() {
         syncWithModel();
         enableComponents(false);
         running = true;
 
-        activity.runOnUiThread(new Runnable()
-        {
+        activity.runOnUiThread(new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
                 //activate buttons
-                for (int i = 0; i < annoClassList.getChildCount(); i++)
-                {
-                    SwitchCompat button = (SwitchCompat) ((LinearLayout)((LinearLayout)(annoClassList.getChildAt(i))).getChildAt(1)).getChildAt(0);
+                for (int i = 0; i < annoClassList.getChildCount(); i++) {
+                    SwitchCompat button = (SwitchCompat) ((LinearLayout) ((LinearLayout) (annoClassList.getChildAt(i))).getChildAt(1)).getChildAt(0);
                     button.setEnabled(true);
                 }
             }
@@ -404,26 +366,19 @@ public class AnnotationTab implements ITab
     /**
      *
      */
-    void finishAnnotation()
-    {
-        try
-        {
-            if(anno != null)
+    void finishAnnotation() {
+        try {
+            if (anno != null)
                 anno.save();
-        }
-        catch (IOException | XmlPullParserException e)
-        {
+        } catch (IOException | XmlPullParserException e) {
             Log.e("unnable to save annotation file", e);
         }
 
-        activity.runOnUiThread(new Runnable()
-        {
+        activity.runOnUiThread(new Runnable() {
             @Override
-            public void run()
-            {
-                for (int i = 0; i < annoClassList.getChildCount(); i++)
-                {
-                    SwitchCompat button = (SwitchCompat) ((LinearLayout)((LinearLayout)(annoClassList.getChildAt(i))).getChildAt(1)).getChildAt(0);
+            public void run() {
+                for (int i = 0; i < annoClassList.getChildCount(); i++) {
+                    SwitchCompat button = (SwitchCompat) ((LinearLayout) ((LinearLayout) (annoClassList.getChildAt(i))).getChildAt(1)).getChildAt(0);
                     button.setChecked(false);
                     button.setEnabled(false);
                 }
@@ -431,11 +386,9 @@ public class AnnotationTab implements ITab
         });
 
         //wait for buttons to "uncheck"
-        try
-        {
+        try {
             Thread.sleep(100);
-        } catch (InterruptedException e)
-        {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -446,35 +399,25 @@ public class AnnotationTab implements ITab
     /**
      * @param enable boolean
      */
-    private void enableComponents(final boolean enable)
-    {
-        if (floatingActionButton != null)
-        {
-            floatingActionButton.post(new Runnable()
-            {
-                public void run()
-                {
+    private void enableComponents(final boolean enable) {
+        if (floatingActionButton != null) {
+            floatingActionButton.post(new Runnable() {
+                public void run() {
                     floatingActionButton.setVisibility(enable ? View.VISIBLE : View.INVISIBLE);
                     floatingActionButton.setEnabled(enable);
                 }
             });
         }
-        if (editTextPathAnno != null)
-        {
-            editTextPathAnno.post(new Runnable()
-            {
-                public void run()
-                {
+        if (editTextPathAnno != null) {
+            editTextPathAnno.post(new Runnable() {
+                public void run() {
                     editTextPathAnno.setEnabled(enable);
                 }
             });
         }
-        if (editTextNameAnno != null)
-        {
-            editTextNameAnno.post(new Runnable()
-            {
-                public void run()
-                {
+        if (editTextNameAnno != null) {
+            editTextNameAnno.post(new Runnable() {
+                public void run() {
                     editTextNameAnno.setEnabled(enable);
                 }
             });
@@ -485,8 +428,7 @@ public class AnnotationTab implements ITab
      * @return View
      */
     @Override
-    public View getView()
-    {
+    public View getView() {
         return view;
     }
 
@@ -494,8 +436,7 @@ public class AnnotationTab implements ITab
      * @return String
      */
     @Override
-    public String getTitle()
-    {
+    public String getTitle() {
         return title;
     }
 
@@ -503,16 +444,14 @@ public class AnnotationTab implements ITab
      * @return int
      */
     @Override
-    public int getIcon()
-    {
+    public int getIcon() {
         return icon;
     }
 
     /**
      * @return int
      */
-    public int getBandAnnoButton()
-    {
+    public int getBandAnnoButton() {
         return annoWithBand;
     }
 
@@ -521,23 +460,18 @@ public class AnnotationTab implements ITab
      * @param value boolean
      * @return boolean
      */
-    public boolean toggleAnnoButton(int id, final boolean value)
-    {
-        if (annoClassList == null || activity == null || !running)
-        {
+    public boolean toggleAnnoButton(int id, final boolean value) {
+        if (annoClassList == null || activity == null || !running) {
             return false;
         }
         final LinearLayout anno = (LinearLayout) annoClassList.getChildAt(id);
-        if (anno == null)
-        {
+        if (anno == null) {
             return false;
         }
-        activity.runOnUiThread(new Runnable()
-        {
+        activity.runOnUiThread(new Runnable() {
             @Override
-            public void run()
-            {
-                SwitchCompat button = (SwitchCompat) ((LinearLayout)anno.getChildAt(1)).getChildAt(0);
+            public void run() {
+                SwitchCompat button = (SwitchCompat) ((LinearLayout) anno.getChildAt(1)).getChildAt(0);
                 if (button.isEnabled())
                     button.setChecked(value);
             }
@@ -545,49 +479,40 @@ public class AnnotationTab implements ITab
         return true;
     }
 
-    public String[] getAnnoClassesFromView()
-    {
+    public String[] getAnnoClassesFromView() {
         if (annoClassList == null)
             return null;
 
         String[] classes = new String[annoClassList.getChildCount()];
-        for(int i = 0; i < annoClassList.getChildCount(); i++)
-        {
+        for (int i = 0; i < annoClassList.getChildCount(); i++) {
             LinearLayout anno = (LinearLayout) annoClassList.getChildAt(i);
             classes[i] = ((TextView) anno.getChildAt(0)).getText().toString();
         }
         return classes;
     }
 
-    public void setAnnoClasses(String[] classes)
-    {
+    public void setAnnoClasses(String[] classes) {
         if (annoClassList == null)
             return;
 
         //clear existing annotations
         annoClassList.removeAllViews();
 
-        for (String aClass : classes)
-        {
+        for (String aClass : classes) {
             annoClassList.addView(createClassSwitch(activity, aClass));
         }
     }
 
-    public void syncWithModel()
-    {
-        activity.runOnUiThread(new Runnable()
-        {
+    public void syncWithModel() {
+        activity.runOnUiThread(new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
                 setAnnoClasses(anno.getClassArray());
 
-                if (editTextPathAnno != null)
-                {
+                if (editTextPathAnno != null) {
                     editTextPathAnno.setText(anno.getFilePath());
                 }
-                if (editTextNameAnno != null)
-                {
+                if (editTextNameAnno != null) {
                     editTextNameAnno.setText(anno.getFileName());
                 }
             }

@@ -38,72 +38,60 @@ import hcm.ssj.core.stream.Stream;
  * Created by Michael Dietz on 08.03.2017.
  */
 
-public class BeaconChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class BeaconChannel extends SensorChannel {
+    public final Options options = new Options();
+    BeaconListener listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 5, Integer.class, "");
-		public final Option<String>  identifier = new Option<>("identifier", "", String.class, "MAC address or UUID:Major:Minor");
+    public BeaconChannel() {
+        _name = "BeaconChannel";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        listener = ((EstimoteBeacon) _sensor).listener;
+    }
 
-	BeaconListener listener;
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        float[] out = stream_out.ptrF();
+        out[0] = (float) listener.getDistance(options.identifier.get());
 
-	public BeaconChannel()
-	{
-		_name = "BeaconChannel";
-	}
+        return true;
+    }
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		listener = ((EstimoteBeacon) _sensor).listener;
-	}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		float[] out = stream_out.ptrF();
-		out[0] = (float) listener.getDistance(options.identifier.get());
+    @Override
+    protected int getSampleDimension() {
+        return 1;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 1;
-	}
+        stream_out.desc[0] = "Distance";
+    }
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 5, Integer.class, "");
+        public final Option<String> identifier = new Option<>("identifier", "", String.class, "MAC address or UUID:Major:Minor");
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-
-		stream_out.desc[0] = "Distance";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

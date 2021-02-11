@@ -41,64 +41,37 @@ import hcm.ssj.file.FileCons;
  * File writer for SSJ.<br>
  * Created by Frank Gaibler on 20.08.2015.
  */
-public class SSITransformer extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     *
-     */
-    public class Options extends OptionList
-    {
-        public final Option<SSI.TransformerName> name = new Option<>("name", SSI.TransformerName.Mean, SSI.TransformerName.class, "name of the SSI transformer");
-        public final Option<String[]> ssioptions = new Option<>("ssioptions", null, String[].class, "options of the SSI transformer. Format: [name->value, name->value, ...]");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class SSITransformer extends Transformer {
     public final Options options = new Options();
-
     private long ssi_object = 0;
 
-    public SSITransformer()
-    {
+    public SSITransformer() {
         _name = this.getClass().getSimpleName();
     }
 
     @Override
-    public void init(double frame, double delta) throws SSJException
-    {
-        Log.i("loading SSI libraries (" + SSI.getVersion()+ ")");
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void init(double frame, double delta) throws SSJException {
+        Log.i("loading SSI libraries (" + SSI.getVersion() + ")");
         ssi_object = SSI.create(options.name.get().toString(), options.name.get().lib, FileCons.INTERNAL_LIB_DIR);
-        if(ssi_object == 0)
-        {
+        if (ssi_object == 0) {
             throw new SSJException("error creating SSI transformer");
         }
 
         //set options
-        if(options.ssioptions.get() != null)
-        {
-            for (String option : options.ssioptions.get())
-            {
+        if (options.ssioptions.get() != null) {
+            for (String option : options.ssioptions.get()) {
                 String[] pair = option.split("->");
-                if (pair.length != 2)
-                {
+                if (pair.length != 2) {
                     Log.w("misformed ssi option: " + option + ". Should be 'name->pair'.");
                     continue;
                 }
 
-                if (!SSI.setOption(ssi_object, pair[0], pair[1]))
-                {
+                if (!SSI.setOption(ssi_object, pair[0], pair[1])) {
                     Log.w("unable to set option " + pair[0] + " to value " + pair[1]);
                 }
             }
@@ -106,22 +79,18 @@ public class SSITransformer extends Transformer
     }
 
     /**
-	 * @param stream_in Stream[]
-	 */
+     * @param stream_in Stream[]
+     */
     @Override
-    public final void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-		if (ssi_object != 0)
-		{
-			SSI.transformEnter(ssi_object, stream_in, stream_out);
-		}
+    public final void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        if (ssi_object != 0) {
+            SSI.transformEnter(ssi_object, stream_in, stream_out);
+        }
     }
 
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        if (ssi_object != 0)
-        {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        if (ssi_object != 0) {
             SSI.transform(ssi_object, stream_in, stream_out);
         }
     }
@@ -130,19 +99,15 @@ public class SSITransformer extends Transformer
      * @param stream_in Stream[]
      */
     @Override
-    public final void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        if (ssi_object != 0)
-        {
+    public final void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        if (ssi_object != 0) {
             SSI.transformFlush(ssi_object, stream_in, stream_out);
         }
     }
 
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
-        if(ssi_object == 0)
-        {
+    public int getSampleDimension(Stream[] stream_in) {
+        if (ssi_object == 0) {
             Log.e("ssi interface not initialized");
             return 0;
         }
@@ -151,10 +116,8 @@ public class SSITransformer extends Transformer
     }
 
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
-        if(ssi_object == 0)
-        {
+    public int getSampleBytes(Stream[] stream_in) {
+        if (ssi_object == 0) {
             Log.e("ssi interface not initialized");
             return 0;
         }
@@ -163,18 +126,15 @@ public class SSITransformer extends Transformer
     }
 
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
-        if(ssi_object == 0)
-        {
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (ssi_object == 0) {
             Log.e("ssi interface not initialized");
             return null;
         }
 
         int type = SSI.getSampleTypeOut(ssi_object, stream_in[0].type);
 
-        switch(type)
-        {
+        switch (type) {
             default: //unsigned and unknown
             case 0: //SSI_UNDEF
                 return Cons.Type.UNDEF;
@@ -198,17 +158,30 @@ public class SSITransformer extends Transformer
     }
 
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return SSI.getSampleNumberOut(ssi_object, sampleNumber_in);
     }
 
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         stream_out.desc = new String[stream_out.dim];
 
-        for(int i = 0; i < stream_out.dim; i++)
+        for (int i = 0; i < stream_out.dim; i++)
             stream_out.desc[i] = "SSI_" + options.name.get() + "_" + i;
+    }
+
+    /**
+     *
+     */
+    public class Options extends OptionList {
+        public final Option<SSI.TransformerName> name = new Option<>("name", SSI.TransformerName.Mean, SSI.TransformerName.class, "name of the SSI transformer");
+        public final Option<String[]> ssioptions = new Option<>("ssioptions", null, String[].class, "options of the SSI transformer. Format: [name->value, name->value, ...]");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

@@ -31,7 +31,6 @@ package hcm.ssj.creator.view.Feedback;
  * Created by Antonio Grieco on 05.10.2017.
  */
 
-public interface FeedbackListener
-{
-	void onComponentAdded();
+public interface FeedbackListener {
+    void onComponentAdded();
 }

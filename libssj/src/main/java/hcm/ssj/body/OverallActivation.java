@@ -42,42 +42,27 @@ import hcm.ssj.core.stream.Stream;
  */
 public class OverallActivation extends Transformer {
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
     public final Options options = new Options();
+    float[] _displacement;
 
-    public OverallActivation()
-    {
+    public OverallActivation() {
         _name = "OverallActivation";
     }
 
-    float _displacement[];
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
     @Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         Stream acc = null;
-        for(Stream s : stream_in) {
-			if (s.findDataClass("AccX") >= 0)
-			{
-				acc = s;
-			}
+        for (Stream s : stream_in) {
+            if (s.findDataClass("AccX") >= 0) {
+                acc = s;
+            }
         }
-        if(acc == null || acc.dim != 3) {
+        if (acc == null || acc.dim != 3) {
             Log.w("non-standard input stream");
         }
 
@@ -85,33 +70,30 @@ public class OverallActivation extends Transformer {
     }
 
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         float[] out = stream_out.ptrF();
         out[0] = computeOA(stream_in[0]);
     }
 
-    public float computeOA(Stream stream)
-    {
-        float ptr[] = stream.ptrF();
+    public float computeOA(Stream stream) {
+        float[] ptr = stream.ptrF();
         Arrays.fill(_displacement, 0);
 
-		/*
-		 * compute displacement for each dimension
-		 */
+        /*
+         * compute displacement for each dimension
+         */
         float a;
-        for (int i = 0; i < stream.dim; ++i)
-        {
+        for (int i = 0; i < stream.dim; ++i) {
             float velOld = 0;
             float velNew = 0;
 
-            for (int j = 0; j < stream.num; ++j)
-            {
+            for (int j = 0; j < stream.num; ++j) {
                 a = (Math.abs(ptr[j * stream.dim + i]) < 0.1) ? 0 : ptr[j * stream.dim + i];
 
                 // v1 = a * t + v0
                 velNew = (float) (a * stream.step) + velOld;
-                if(velNew < 0) velNew = 0; //ignore negative velocities -> this can happen at the start of a frame
+                if (velNew < 0)
+                    velNew = 0; //ignore negative velocities -> this can happen at the start of a frame
 
                 // d = v0 * t + 0.5 * a * t²  or  d = v0 * t + 0.5 * (v1 - v0) * t
                 _displacement[i] += velOld * stream.step + 0.5 * (velNew - velOld) * stream.step;
@@ -121,12 +103,11 @@ public class OverallActivation extends Transformer {
             }
         }
 
-		/*
-		 * compute displacement by summing up the displacement of all dimensions
-		 */
+        /*
+         * compute displacement by summing up the displacement of all dimensions
+         */
         float displacement = 0;
-        for (int i = 0; i < stream.dim; ++i)
-        {
+        for (int i = 0; i < stream.dim; ++i) {
             displacement += _displacement[i];
         }
 
@@ -134,44 +115,48 @@ public class OverallActivation extends Transformer {
     }
 
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {}
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
 
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         return 1;
     }
 
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return 1;
     }
 
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
-        if(stream_in[0].bytes != 4)
+    public int getSampleBytes(Stream[] stream_in) {
+        if (stream_in[0].bytes != 4)
             Log.e("Unsupported input stream type");
 
         return 4;
     }
 
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
-        if(stream_in[0].type != Cons.Type.FLOAT)
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.FLOAT)
             Log.e("Unsupported input stream type");
 
         return Cons.Type.FLOAT;
     }
 
     @Override
-    public void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    public void describeOutput(Stream[] stream_in, Stream stream_out) {
         stream_out.desc = new String[stream_out.dim];
         stream_out.desc[0] = "Activation";
+    }
+
+    public class Options extends OptionList {
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 
 }

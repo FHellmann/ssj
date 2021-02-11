@@ -30,12 +30,13 @@ package hcm.ssj.creator.dialogs;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.fragment.app.DialogFragment;
-import androidx.appcompat.app.AlertDialog;
 import android.view.View;
 import android.widget.ExpandableListView;
 import android.widget.ListView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.DialogFragment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,11 +54,10 @@ import hcm.ssj.creator.core.SSJDescriptor;
  * A Dialog to confirm actions.<br>
  * Created by Frank Gaibler on 16.09.2015.
  */
-public class AddDialog extends DialogFragment
-{
+public class AddDialog extends DialogFragment {
     private int titleMessage = R.string.app_name;
     private LinkedHashMap<String, ArrayList<Class>> hashMap = null;
-    private ArrayList<Listener> alListeners = new ArrayList<>();
+    private final ArrayList<Listener> alListeners = new ArrayList<>();
     private ExpandableListView listView;
     //ExpandableListView doesn't track selected items correctly, so it is done manually
     private boolean[][] itemState = null;
@@ -69,31 +69,23 @@ public class AddDialog extends DialogFragment
      */
     @Override
     @NonNull
-    public Dialog onCreateDialog(Bundle savedInstanceState)
-    {
-        if (hashMap == null)
-        {
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        if (hashMap == null) {
             throw new RuntimeException();
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(titleMessage);
-        builder.setPositiveButton(R.string.str_ok, new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int id)
-                    {
+        builder.setPositiveButton(R.string.str_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
                         boolean written = false;
-                        if (hashMap != null)
-                        {
+                        if (hashMap != null) {
                             int x = 0;
-                            for (Map.Entry<String, ArrayList<Class>> entry : hashMap.entrySet())
-                            {
+                            for (Map.Entry<String, ArrayList<Class>> entry : hashMap.entrySet()) {
                                 int y = 0;
                                 ArrayList<Class> arrayList = entry.getValue();
-                                for (Class clazz : arrayList)
-                                {
-                                    if (itemState[x][y])
-                                    {
+                                for (Class clazz : arrayList) {
+                                    if (itemState[x][y]) {
                                         written = true;
                                         PipelineBuilder.getInstance().add(SSJDescriptor.instantiate(clazz));
                                     }
@@ -102,25 +94,19 @@ public class AddDialog extends DialogFragment
                                 x++;
                             }
                         }
-                        for (Listener listener : alListeners)
-                        {
-                            if (written)
-                            {
+                        for (Listener listener : alListeners) {
+                            if (written) {
                                 listener.onPositiveEvent(null);
-                            } else
-                            {
+                            } else {
                                 listener.onNegativeEvent(null);
                             }
                         }
                     }
                 }
         );
-        builder.setNegativeButton(R.string.str_cancel, new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        for (Listener listener : alListeners)
-                        {
+        builder.setNegativeButton(R.string.str_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        for (Listener listener : alListeners) {
                             listener.onNegativeEvent(null);
                         }
                     }
@@ -131,8 +117,7 @@ public class AddDialog extends DialogFragment
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         setListListeners();
 
-        if (hashMap != null && hashMap.size() > 0)
-        {
+        if (hashMap != null && hashMap.size() > 0) {
             ListAdapter listAdapter = new ListAdapter(getContext(), hashMap);
             listView.setAdapter(listAdapter);
         }
@@ -144,52 +129,40 @@ public class AddDialog extends DialogFragment
     /**
      * ExpandableListView doesn't track selected items correctly, so it is done manually
      */
-    private void setListListeners()
-    {
-        listView.setOnChildClickListener(new ExpandableListView.OnChildClickListener()
-        {
+    private void setListListeners() {
+        listView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             @Override
-            public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id)
-            {
+            public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
                 int index = parent.getFlatListPosition(ExpandableListView.getPackedPositionForChild(groupPosition, childPosition));
                 parent.setItemChecked(index, !parent.isItemChecked(index));
                 itemState[groupPosition][childPosition] = !itemState[groupPosition][childPosition];
                 return true;
             }
         });
-        listView.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener()
-        {
+        listView.setOnGroupClickListener(new ExpandableListView.OnGroupClickListener() {
             @Override
-            public boolean onGroupClick(ExpandableListView parent, View v, int groupPosition, long id)
-            {
+            public boolean onGroupClick(ExpandableListView parent, View v, int groupPosition, long id) {
                 //get current position
                 int currentPosition = 1;
-                for (int i = 0; i < groupPosition; i++, currentPosition++)
-                {
-                    if (listView.isGroupExpanded(i))
-                    {
+                for (int i = 0; i < groupPosition; i++, currentPosition++) {
+                    if (listView.isGroupExpanded(i)) {
                         currentPosition += listView.getExpandableListAdapter().getChildrenCount(i);
                     }
                 }
                 //shift values as needed
                 int children = listView.getExpandableListAdapter().getChildrenCount(groupPosition);
-                if (listView.isGroupExpanded(groupPosition))
-                {
+                if (listView.isGroupExpanded(groupPosition)) {
                     //currently closing
-                    for (int i = currentPosition; i < allItems; i++)
-                    {
+                    for (int i = currentPosition; i < allItems; i++) {
                         listView.setItemChecked(i, listView.isItemChecked(i + children));
                     }
-                } else
-                {
+                } else {
                     //currently expanding
-                    for (int i = allItems + 1; i > currentPosition; i--)
-                    {
+                    for (int i = allItems + 1; i > currentPosition; i--) {
                         listView.setItemChecked(i, listView.isItemChecked(i - children));
                     }
                     //set values for expanded group from memory
-                    for (int i = currentPosition, j = 0; j < children; i++, j++)
-                    {
+                    for (int i = currentPosition, j = 0; j < children; i++, j++) {
                         listView.setItemChecked(i, itemState[groupPosition][j]);
                     }
                 }
@@ -201,49 +174,41 @@ public class AddDialog extends DialogFragment
     /**
      * @param title int
      */
-    public void setTitleMessage(int title)
-    {
+    public void setTitleMessage(int title) {
         this.titleMessage = title;
     }
 
     /**
      * @param clazzes Class[]
      */
-    public void setOption(ArrayList<Class> clazzes)
-    {
+    public void setOption(ArrayList<Class> clazzes) {
         hashMap = new LinkedHashMap<>();
         //get each package once
         HashSet<Package> hashSet = new HashSet<>();
-        for (Class clazz : clazzes)
-        {
+        for (Class clazz : clazzes) {
             hashSet.add(clazz.getPackage());
         }
         //only show last part of the package name
         String[] packages = new String[hashSet.size()];
         int count = 0;
-        for (Package pack : hashSet)
-        {
+        for (Package pack : hashSet) {
             String name = pack.getName();
             packages[count++] = name.substring(name.lastIndexOf(".") + 1);
         }
         //sort packages by name and add them to map
         Arrays.sort(packages);
-        for (String name : packages)
-        {
+        for (String name : packages) {
             hashMap.put(name, new ArrayList<Class>());
         }
         //sort classes by name
-        Collections.sort(clazzes, new Comparator<Class>()
-        {
+        Collections.sort(clazzes, new Comparator<Class>() {
             @Override
-            public int compare(Class lhs, Class rhs)
-            {
+            public int compare(Class lhs, Class rhs) {
                 return lhs.getSimpleName().compareTo(rhs.getSimpleName());
             }
         });
         //add every class to its corresponding package
-        for (Class clazz : clazzes)
-        {
+        for (Class clazz : clazzes) {
             String name = clazz.getPackage().getName();
             hashMap.get(name.substring(name.lastIndexOf(".") + 1)).add(clazz);
         }
@@ -252,8 +217,7 @@ public class AddDialog extends DialogFragment
         count = 0;
         allItems = 0;
         allItems += hashMap.size();
-        for (Map.Entry<String, ArrayList<Class>> entry : hashMap.entrySet())
-        {
+        for (Map.Entry<String, ArrayList<Class>> entry : hashMap.entrySet()) {
             itemState[count++] = new boolean[entry.getValue().size()];
             allItems += entry.getValue().size();
         }
@@ -262,16 +226,14 @@ public class AddDialog extends DialogFragment
     /**
      * @param listener Listener
      */
-    public void addListener(Listener listener)
-    {
+    public void addListener(Listener listener) {
         alListeners.add(listener);
     }
 
     /**
      * @param listener Listener
      */
-    public void removeListener(Listener listener)
-    {
+    public void removeListener(Listener listener) {
         alListeners.remove(listener);
     }
 }

@@ -54,62 +54,13 @@ import hcm.ssj.mobileSSI.SSI;
  * Main class for creating and interfacing with SSJ pipelines.
  * Holds logic responsible for the setup and execution of pipelines.
  */
-public class Pipeline
-{
+public class Pipeline {
 
-    public class Options extends OptionList
-    {
-        /** duration of pipeline start-up phase. Default: 3 */
-        public final Option<Integer> countdown = new Option<>("countdown", 3, Integer.class, "duration of pipeline start-up phase");
-        /** size of all inter-component buffers (in seconds). Default: 2.0 */
-        public final Option<Float> bufferSize = new Option<>("bufferSize", 2.f, Float.class, "size of all inter-component buffers (in seconds)");
-        /** How long to wait for threads to finish on pipeline shutdown. Default: 30.0 */
-        public final Option<Float> waitThreadKill = new Option<>("waitThreadKill", 30f, Float.class, "How long to wait for threads to finish on pipeline shutdown");
-        /** How long to wait for a sensor to connect. Default: 30.0 */
-        public final Option<Float> waitSensorConnect = new Option<>("waitSensorConnect", 30.f, Float.class, "How long to wait for a sensor to connect");
-        /** Cross-device synchronization (requires network). Default: NONE */
-        public final Option<SyncType> sync = new Option<>("sync", SyncType.NONE, SyncType.class, "Cross-device synchronization (requires network).");
-        /** enter IP address of host pipeline for synchronization (leave empty if this is the host). Default: null */
-        public final Option<String> syncHost = new Option<>("syncHost", null, String.class, "enter IP address of host pipeline for synchronization (leave empty if this is the host)");
-        /** set port for synchronizing pipeline over network. Default: 55100 */
-        public final Option<Integer> syncPort = new Option<>("syncPort", 0, Integer.class, "port for synchronizing pipeline over network");
-        /** define time between clock sync attempts (requires CONTINUOUS sync). Default: 1.0 */
-        public final Option<Float> syncInterval = new Option<>("syncInterval", 10.0f, Float.class, "define time between clock sync attempts (requires CONTINUOUS sync)");
-        /** write system log to file. Default: false */
-        public final Option<Boolean> log = new Option<>("log", false, Boolean.class, "write system log to file");
-        /** location of log file. Default: /sdcard/SSJ/[time] */
-        public final Option<String> logpath = new Option<>("logpath", FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]", String.class, "location of log file");
-        /** show all logs greater or equal than level. Default: VERBOSE */
-        public final Option<Log.Level> loglevel = new Option<>("loglevel", Log.Level.VERBOSE, Log.Level.class, "show all logs >= level");
-        /** repeated log entries with a duration delta smaller than the timeout value are ignored. Default: 1.0 */
-        public final Option<Double> logtimeout = new Option<>("logtimeout", 1.0, Double.class, "ignore repeated entries < timeout");
-        /** Shut down pipeline if runtime error is encountered */
-        public final Option<Boolean> terminateOnError = new Option<>("terminateOnError", false, Boolean.class, "Shut down pipeline if runtime error is encountered");
-
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
-    public enum State
-    {
-        INACTIVE,
-        STARTING,
-        RUNNING,
-        STOPPING
-    }
-
-    public enum SyncType
-    {
-        NONE,
-        START_STOP,
-        CONTINUOUS
-    }
-
+    protected static Pipeline instance = null;
     public final Options options = new Options();
-
     protected String name = "SSJ_Framework";
+    ThreadPool threadPool = null;
+    ExceptionHandler exceptionHandler = null;
     private State state;
 
     private long startTime = 0; //virtual clock
@@ -118,20 +69,11 @@ public class Pipeline
     private long timeOffset = 0;
 
     private NetworkSync sync = null;
-
-    ThreadPool threadPool = null;
-    ExceptionHandler exceptionHandler = null;
-
-    private HashSet<Component> components = new HashSet<>();
-    private ArrayList<TimeBuffer> buffers = new ArrayList<>();
-    private List<PipelineStateListener> stateListeners = new ArrayList<>();
-
+    private final HashSet<Component> components = new HashSet<>();
+    private final ArrayList<TimeBuffer> buffers = new ArrayList<>();
+    private final List<PipelineStateListener> stateListeners = new ArrayList<>();
     private FileDownloader downloader;
-
-    protected static Pipeline instance = null;
-
-    private Pipeline()
-    {
+    private Pipeline() {
         setState(State.INACTIVE);
 
         //configure logger
@@ -147,55 +89,46 @@ public class Pipeline
      *
      * @return Pipeline the pipeline instance
      */
-    public static Pipeline getInstance()
-    {
+    public static Pipeline getInstance() {
         if (instance == null)
             instance = new Pipeline();
 
         return instance;
     }
 
-    public OptionList getOptions()
-    {
+    /**
+     * @return true if SSJ has already been instanced, false otherwise
+     */
+    public static boolean isInstanced() {
+        return instance != null;
+    }
+
+    /**
+     * @return current SSJ version
+     */
+    public static String getVersion() {
+        return BuildConfig.VERSION_NAME;
+    }
+
+    public OptionList getOptions() {
         return options;
     }
 
     /**
-     * Sets the pipeline state and notifies state listeners
-     * @param newState target state
-     */
-    private void setState(final State newState)
-    {
-        this.state = newState;
-
-        for (final PipelineStateListener stateListener : stateListeners)
-        {
-            new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    stateListener.stateUpdated(newState);
-                }
-            }).start();
-        }
-    }
-
-    /**
      * Adds a new pipeline state listener
+     *
      * @param listener listener
      */
-    public void registerStateListener(PipelineStateListener listener)
-    {
+    public void registerStateListener(PipelineStateListener listener) {
         stateListeners.add(listener);
     }
 
     /**
      * Removes a pipeline state listener
+     *
      * @param listener listener
      */
-    public void unregisterStateListener(PipelineStateListener listener)
-    {
+    public void unregisterStateListener(PipelineStateListener listener) {
         stateListeners.remove(listener);
     }
 
@@ -203,15 +136,13 @@ public class Pipeline
      * Starts the SSJ pipeline.
      * Automatically resets buffers and component states.
      */
-    public void start()
-    {
+    public void start() {
         setState(State.STARTING);
 
-        try
-        {
+        try {
             Log.i("starting pipeline" + '\n' +
-                  "\tSSJ v" + getVersion() + '\n' +
-                  "\tlocal time: " + Util.getTimestamp(System.currentTimeMillis()));
+                    "\tSSJ v" + getVersion() + '\n' +
+                    "\tlocal time: " + Util.getTimestamp(System.currentTimeMillis()));
 
             int coreThreads = Runtime.getRuntime().availableProcessors();
             threadPool = new ThreadPool(coreThreads, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
@@ -219,35 +150,31 @@ public class Pipeline
             //sync with other pipelines
             if (options.sync.get() != SyncType.NONE) {
                 boolean isMaster = (options.syncHost.get() == null) || (options.syncHost.get().isEmpty());
-                sync = new NetworkSync(options.sync.get(), isMaster, InetAddress.getByName(options.syncHost.get()), options.syncPort.get(), (int)(options.syncInterval.get() * 1000));
+                sync = new NetworkSync(options.sync.get(), isMaster, InetAddress.getByName(options.syncHost.get()), options.syncPort.get(), (int) (options.syncInterval.get() * 1000));
             }
 
             Log.i("preparing buffers");
             for (TimeBuffer b : buffers)
                 b.reset();
 
-            for (Component c : components)
-            {
+            for (Component c : components) {
                 Log.i("starting " + c.getComponentName());
                 c.reset();
                 threadPool.execute(c);
             }
 
-            for (int i = 0; i < options.countdown.get(); i++)
-            {
+            for (int i = 0; i < options.countdown.get(); i++) {
                 Log.i("starting pipeline in " + (options.countdown.get() - i));
                 Thread.sleep(1000);
             }
 
-            if (options.sync.get() != SyncType.NONE)
-            {
+            if (options.sync.get() != SyncType.NONE) {
                 if (options.syncHost.get() == null)
                     NetworkSync.sendStartSignal(options.syncPort.get());
-                else
-                {
+                else {
                     Log.i("waiting for start signal from host pipeline ...");
                     sync.waitForStartSignal();
-                    if(state != State.STARTING) //cancel startup if something happened while waiting for sync
+                    if (state != State.STARTING) //cancel startup if something happened while waiting for sync
                         return;
                 }
             }
@@ -258,14 +185,11 @@ public class Pipeline
             setState(State.RUNNING);
             Log.i("pipeline started");
 
-            if (options.sync.get() != SyncType.NONE)
-            {
-                if (options.syncHost.get() != null)
-                {
+            if (options.sync.get() != SyncType.NONE) {
+                if (options.syncHost.get() != null) {
                     Runnable stopper = new Runnable() {
                         @Override
-                        public void run()
-                        {
+                        public void run() {
                             sync.waitForStopSignal();
                             Log.i("received stop signal from host pipeline");
                             stop();
@@ -274,9 +198,7 @@ public class Pipeline
                     threadPool.execute(stopper);
                 }
             }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             error(this.getClass().getSimpleName(), "error starting pipeline, shutting down", e);
             stop();
         }
@@ -291,10 +213,8 @@ public class Pipeline
      * @return the same SensorChannel which was passed as parameter
      * @throws SSJException thrown is an error occurred when setting up the sensor
      */
-    public SensorChannel addSensor(Sensor s, SensorChannel c) throws SSJException
-    {
-        if(components.contains(c))
-        {
+    public SensorChannel addSensor(Sensor s, SensorChannel c) throws SSJException {
+        if (components.contains(c)) {
             Log.w("Component already added.");
             return c;
         }
@@ -302,8 +222,7 @@ public class Pipeline
         s.addChannel(c);
         c.setSensor(s);
 
-        if(!components.contains(s))
-        {
+        if (!components.contains(s)) {
             components.add(s);
             s.init();
         }
@@ -332,13 +251,12 @@ public class Pipeline
      * Adds a transformer to the pipeline and sets up the necessary output buffer.
      * init method of transformer is called before setting up buffer.
      *
-     * @param t the Transformer to be added
+     * @param t      the Transformer to be added
      * @param source the component which will provide data to the transformer
      * @return the Transformer which was passed as parameter
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public Provider addTransformer(Transformer t, Provider source) throws SSJException
-    {
+    public Provider addTransformer(Transformer t, Provider source) throws SSJException {
         Provider[] sources = {source};
         return addTransformer(t, sources, source.getOutputStream().num / source.getOutputStream().sr, 0);
     }
@@ -347,14 +265,13 @@ public class Pipeline
      * Adds a transformer to the pipeline and sets up the necessary output buffer.
      * init method of transformer is called before setting up buffer.
      *
-     * @param t the Transformer to be added
+     * @param t      the Transformer to be added
      * @param source the component which will provide data to the transformer
-     * @param frame the size of the data window which is provided every iteration to the transformer (in seconds)
+     * @param frame  the size of the data window which is provided every iteration to the transformer (in seconds)
      * @return the Transformer which was passed as parameter
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public Provider addTransformer(Transformer t, Provider source, double frame) throws SSJException
-    {
+    public Provider addTransformer(Transformer t, Provider source, double frame) throws SSJException {
         Provider[] sources = {source};
         return addTransformer(t, sources, frame, 0);
     }
@@ -363,15 +280,14 @@ public class Pipeline
      * Adds a transformer to the pipeline and sets up the necessary output buffer.
      * init method of transformer is called before setting up buffer.
      *
-     * @param t the Transformer to be added
+     * @param t      the Transformer to be added
      * @param source the component which will provide data to the transformer
-     * @param frame the size of the data window which is provided every iteration to the transformer (in seconds)
-     * @param delta the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
+     * @param frame  the size of the data window which is provided every iteration to the transformer (in seconds)
+     * @param delta  the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
      * @return the Transformer which was passed as parameter
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public Provider addTransformer(Transformer t, Provider source, double frame, double delta) throws SSJException
-    {
+    public Provider addTransformer(Transformer t, Provider source, double frame, double delta) throws SSJException {
         Provider[] sources = {source};
         return addTransformer(t, sources, frame, delta);
     }
@@ -380,17 +296,15 @@ public class Pipeline
      * Adds a transformer to the pipeline and sets up the necessary output buffer.
      * init method of transformer is called before setting up buffer.
      *
-     * @param t the Transformer to be added
+     * @param t       the Transformer to be added
      * @param sources the components which will provide data to the transformer
-     * @param frame the size of the data window which is provided every iteration to the transformer (in seconds)
-     * @param delta the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
+     * @param frame   the size of the data window which is provided every iteration to the transformer (in seconds)
+     * @param delta   the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
      * @return the Transformer which was passed as parameter
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public Provider addTransformer(Transformer t, Provider[] sources, double frame, double delta) throws SSJException
-    {
-        if(components.contains(t))
-        {
+    public Provider addTransformer(Transformer t, Provider[] sources, double frame, double delta) throws SSJException {
+        if (components.contains(t)) {
             Log.w("Component already added.");
             return t;
         }
@@ -416,7 +330,7 @@ public class Pipeline
      * Adds a consumer to the pipeline.
      * init method of consumer is called after setting up internal input buffer.
      *
-     * @param c the Consumer to be added
+     * @param c      the Consumer to be added
      * @param source the component which will provide data to the consumer
      * @throws SSJException thrown is an error occurred when setting up the component
      */
@@ -429,9 +343,9 @@ public class Pipeline
      * Adds a consumer to the pipeline.
      * init method of consumer is called after setting up internal input buffer.
      *
-     * @param c the Consumer to be added
+     * @param c      the Consumer to be added
      * @param source the component which will provide data to the consumer
-     * @param frame the size of the data window which is provided every iteration to the transformer (in seconds)
+     * @param frame  the size of the data window which is provided every iteration to the transformer (in seconds)
      * @throws SSJException thrown is an error occurred when setting up the component
      */
     public void addConsumer(Consumer c, Provider source, double frame) throws SSJException {
@@ -443,10 +357,10 @@ public class Pipeline
      * Adds a consumer to the pipeline.
      * init method of consumer is called after setting up internal input buffer.
      *
-     * @param c the Consumer to be added
+     * @param c      the Consumer to be added
      * @param source the component which will provide data to the consumer
-     * @param frame the size of the data window which is provided every iteration to the transformer (in seconds)
-     * @param delta the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
+     * @param frame  the size of the data window which is provided every iteration to the transformer (in seconds)
+     * @param delta  the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
      * @throws SSJException thrown is an error occurred when setting up the component
      */
     public void addConsumer(Consumer c, Provider source, double frame, double delta) throws SSJException {
@@ -458,16 +372,14 @@ public class Pipeline
      * Adds a consumer to the pipeline.
      * init method of consumer is called after setting up internal input buffer.
      *
-     * @param c the Consumer to be added
+     * @param c       the Consumer to be added
      * @param sources the components which will provide data to the consumer
-     * @param frame the size of the data window which is provided every iteration to the transformer (in seconds)
-     * @param delta the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
+     * @param frame   the size of the data window which is provided every iteration to the transformer (in seconds)
+     * @param delta   the amount of input data which overlaps with the previous window (in seconds). Provided in addition to the primary window ("frame").
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public void addConsumer(Consumer c, Provider[] sources, double frame, double delta) throws SSJException
-    {
-        if(components.contains(c))
-        {
+    public void addConsumer(Consumer c, Provider[] sources, double frame, double delta) throws SSJException {
+        if (components.contains(c)) {
             Log.w("Component already added.");
             return;
         }
@@ -480,14 +392,13 @@ public class Pipeline
      * Adds a consumer to the pipeline.
      * init method of consumer is called after setting up internal input buffer.
      *
-     * @param c the Consumer to be added
-     * @param source the component which will provide data to the consumer
+     * @param c       the Consumer to be added
+     * @param source  the component which will provide data to the consumer
      * @param trigger an event channel which acts as a trigger. The consumer will only process data when an event is received.
      *                The data window to be processed is defined by the timing information of the event.
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public void addConsumer(Consumer c, Provider source, EventChannel trigger) throws SSJException
-    {
+    public void addConsumer(Consumer c, Provider source, EventChannel trigger) throws SSJException {
         Provider[] sources = {source};
         addConsumer(c, sources, trigger);
     }
@@ -496,16 +407,14 @@ public class Pipeline
      * Adds a consumer to the pipeline.
      * init method of consumer is called after setting up internal input buffer.
      *
-     * @param c the Consumer to be added
+     * @param c       the Consumer to be added
      * @param sources the components which will provide data to the consumer
      * @param trigger an event channel which acts as a trigger. The consumer will only process data when an event is received.
      *                The data window to be processed is defined by the timing information of the event.
      * @throws SSJException thrown is an error occurred when setting up the component
      */
-    public void addConsumer(Consumer c, Provider[] sources, EventChannel trigger) throws SSJException
-    {
-        if(components.contains(c))
-        {
+    public void addConsumer(Consumer c, Provider[] sources, EventChannel trigger) throws SSJException {
+        if (components.contains(c)) {
             Log.w("Component already added.");
             return;
         }
@@ -523,8 +432,7 @@ public class Pipeline
      */
     public void addModel(Model m) throws SSJException {
 
-        if(components.contains(m))
-        {
+        if (components.contains(m)) {
             Log.w("Component already added.");
             return;
         }
@@ -538,11 +446,10 @@ public class Pipeline
      * Component is also added to the pipeline (if not already there)
      * This component will be notified every time the "source" component pushes an event into its channel
      *
-     * @param c the listener
+     * @param c      the listener
      * @param source the one being listened to
      */
-    public void registerEventListener(Component c, Component source)
-    {
+    public void registerEventListener(Component c, Component source) {
         registerEventListener(c, source.getEventChannelOut());
     }
 
@@ -551,11 +458,10 @@ public class Pipeline
      * Component is also added to the pipeline (if not already there)
      * This component will be notified every time a new event is pushed into the channel.
      *
-     * @param c the listener
+     * @param c       the listener
      * @param channel the channel to be listened to
      */
-    public void registerEventListener(Component c, EventChannel channel)
-    {
+    public void registerEventListener(Component c, EventChannel channel) {
         components.add(c);
         c.addEventChannelIn(channel);
     }
@@ -565,13 +471,12 @@ public class Pipeline
      * Component is also added to the pipeline (if not already there)
      * This component will be notified every time a new event is pushed a channel.
      *
-     * @param c the listener
+     * @param c        the listener
      * @param channels the channel to be listened to
      */
-    public void registerEventListener(Component c, EventChannel[] channels)
-    {
+    public void registerEventListener(Component c, EventChannel[] channels) {
         components.add(c);
-        for(EventChannel ch : channels)
+        for (EventChannel ch : channels)
             c.addEventChannelIn(ch);
     }
 
@@ -582,47 +487,39 @@ public class Pipeline
      * @param c the event provider
      * @return the output channel of the component.
      */
-    public EventChannel registerEventProvider(Component c)
-    {
+    public EventChannel registerEventProvider(Component c) {
         components.add(c);
         return c.getEventChannelOut();
     }
 
-    public void registerInFeedbackCollection(Feedback feedback, FeedbackCollection feedbackCollection, int level, FeedbackCollection.LevelBehaviour levelBehaviour)
-    {
+    public void registerInFeedbackCollection(Feedback feedback, FeedbackCollection feedbackCollection, int level, FeedbackCollection.LevelBehaviour levelBehaviour) {
         components.add(feedback);
 
-        if(feedback._evchannel_in != null)
+        if (feedback._evchannel_in != null)
             feedback._evchannel_in.clear();
 
-        for(EventChannel eventChannel : feedbackCollection._evchannel_in)
-        {
+        for (EventChannel eventChannel : feedbackCollection._evchannel_in) {
             registerEventListener(feedback, eventChannel);
         }
 
         feedbackCollection.addFeedback(feedback, level, levelBehaviour);
     }
 
-    public void registerInFeedbackCollection(FeedbackCollection feedbackCollection, List<Map<Feedback,FeedbackCollection.LevelBehaviour>> feedbackList)
-    {
+    public void registerInFeedbackCollection(FeedbackCollection feedbackCollection, List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackList) {
         feedbackCollection.removeAllFeedbacks();
 
-        for (int level = 0; level < feedbackList.size(); level++)
-        {
-            for(Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(level).entrySet())
-            {
+        for (int level = 0; level < feedbackList.size(); level++) {
+            for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(level).entrySet()) {
                 registerInFeedbackCollection(feedbackLevelBehaviourEntry.getKey(),
-                                                                   feedbackCollection,
-                                                                   level,
-                                                                   feedbackLevelBehaviourEntry.getValue());
+                        feedbackCollection,
+                        level,
+                        feedbackLevelBehaviourEntry.getValue());
             }
         }
     }
 
-    void pushData(int buffer_id, Object data, int numBytes)
-    {
-        if (!isRunning())
-        {
+    void pushData(int buffer_id, Object data, int numBytes) {
+        if (!isRunning()) {
             return;
         }
 
@@ -632,10 +529,8 @@ public class Pipeline
         buffers.get(buffer_id).push(data, numBytes);
     }
 
-    void pushZeroes(int buffer_id)
-    {
-        if (!isRunning())
-        {
+    void pushZeroes(int buffer_id) {
+        if (!isRunning()) {
             return;
         }
 
@@ -647,8 +542,7 @@ public class Pipeline
         double frame_time = getTime();
         double buffer_time = buf.getLastWrittenSampleTime();
 
-        if (buffer_time < frame_time)
-        {
+        if (buffer_time < frame_time) {
             int bytes = (int) ((frame_time - buffer_time) * buf.getSampleRate()) * buf.getBytesPerSample();
 
             if (bytes > 0)
@@ -656,10 +550,8 @@ public class Pipeline
         }
     }
 
-    void pushZeroes(int buffer_id, int num)
-    {
-        if (!isRunning())
-        {
+    void pushZeroes(int buffer_id, int num) {
+        if (!isRunning()) {
             return;
         }
 
@@ -669,10 +561,8 @@ public class Pipeline
         buffers.get(buffer_id).pushZeroes(num);
     }
 
-    boolean getData(int buffer_id, Object data, double start_time, double duration)
-    {
-        if (!isRunning())
-        {
+    boolean getData(int buffer_id, Object data, double start_time, double duration) {
+        if (!isRunning()) {
             return false;
         }
 
@@ -682,8 +572,7 @@ public class Pipeline
         TimeBuffer buf = buffers.get(buffer_id);
         int res = buf.get(data, start_time, duration);
 
-        switch (res)
-        {
+        switch (res) {
             case TimeBuffer.STATUS_INPUT_ARRAY_TOO_SMALL:
                 Log.w(buf.getOwner().getComponentName(), "input buffer too small");
                 return false;
@@ -711,10 +600,8 @@ public class Pipeline
         return true;
     }
 
-    boolean getData(int buffer_id, Object data, int startSample, int numSamples)
-    {
-        if (!isRunning())
-        {
+    boolean getData(int buffer_id, Object data, int startSample, int numSamples) {
+        if (!isRunning()) {
             return false;
         }
 
@@ -724,8 +611,7 @@ public class Pipeline
         TimeBuffer buf = buffers.get(buffer_id);
         int res = buf.get(data, startSample, numSamples);
 
-        switch (res)
-        {
+        switch (res) {
             case TimeBuffer.STATUS_INPUT_ARRAY_TOO_SMALL:
                 Log.w(buf.getOwner().getComponentName(), "input buffer too small");
                 return false;
@@ -761,19 +647,16 @@ public class Pipeline
      * Closes all buffers and shuts down all components.
      * Also writes log file to sd card (if configured).
      */
-    public void stop()
-    {
+    public void stop() {
         if (state == State.STOPPING || state == State.INACTIVE)
             return;
 
         setState(State.STOPPING);
 
         Log.i("stopping pipeline" + '\n' +
-              "\tlocal time: " + Util.getTimestamp(System.currentTimeMillis()));
-        try
-        {
-            if(sync != null)
-            {
+                "\tlocal time: " + Util.getTimestamp(System.currentTimeMillis()));
+        try {
+            if (sync != null) {
                 if (options.syncHost.get() == null)
                     NetworkSync.sendStopSignal(options.syncPort.get());
 
@@ -784,23 +667,19 @@ public class Pipeline
             for (TimeBuffer b : buffers)
                 b.close();
 
-            if(downloader != null)
-            {
+            if (downloader != null) {
                 Log.i("aborting downloads");
                 downloader.terminate();
                 downloader = null;
             }
 
             Log.i("closing components");
-            for (Component c : components)
-            {
+            for (Component c : components) {
                 Log.i("closing " + c.getComponentName());
                 //try to close everything individually to free each sensor
-                try
-                {
+                try {
                     c.close();
-                } catch (Exception e)
-                {
+                } catch (Exception e) {
                     Log.e("closing " + c.getComponentName() + " failed", e);
                 }
             }
@@ -808,30 +687,22 @@ public class Pipeline
             threadPool.shutdown();
 
             Log.i("waiting for components to terminate");
-            if(!threadPool.awaitTermination(Cons.WAIT_THREAD_TERMINATION, TimeUnit.MILLISECONDS))
+            if (!threadPool.awaitTermination(Cons.WAIT_THREAD_TERMINATION, TimeUnit.MILLISECONDS))
                 threadPool.shutdownNow();
 
             Log.i("shut down completed");
-        }
-        catch (InterruptedException e)
-        {
+        } catch (InterruptedException e) {
             threadPool.shutdownNow();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             Log.e("Exception in closing framework", e);
 
-            if (exceptionHandler != null)
-            {
+            if (exceptionHandler != null) {
                 exceptionHandler.handle("TheFramework.stop()", "Exception in closing framework", e);
-            }
-            else
-            {
+            } else {
                 setState(State.INACTIVE);
                 throw new RuntimeException(e);
             }
-        } finally
-        {
+        } finally {
             writeLogFile();
             setState(State.INACTIVE);
         }
@@ -840,18 +711,15 @@ public class Pipeline
     /**
      * Invalidates framework instance and clears all local content
      */
-    public void release()
-    {
-        if (isRunning())
-        {
+    public void release() {
+        if (isRunning()) {
             Log.w("Cannot release. Framework still active.");
             return;
         }
 
         clear();
 
-        if(downloader != null)
-        {
+        if (downloader != null) {
             downloader.terminate();
             downloader = null;
         }
@@ -862,10 +730,8 @@ public class Pipeline
     /**
      * Clears all buffers, components and internal pipeline state, but does not invalidate instance.
      */
-    public void clear()
-    {
-        if (isRunning())
-        {
+    public void clear() {
+        if (isRunning()) {
             Log.w("Cannot clear. Framework still active.");
             return;
         }
@@ -881,7 +747,7 @@ public class Pipeline
         Log.getInstance().clear();
         startTime = 0;
 
-        if(threadPool != null)
+        if (threadPool != null)
             threadPool.purge();
 
         SSI.clear();
@@ -892,49 +758,43 @@ public class Pipeline
      *
      * @param r runnable
      */
-    public void executeRunnable(Runnable r)
-    {
+    public void executeRunnable(Runnable r) {
         threadPool.execute(r);
     }
 
     /**
      * Resets pipeline "create" timestamp
      */
-    public void resetCreateTime()
-    {
+    public void resetCreateTime() {
         createTime = System.currentTimeMillis();
     }
 
-    private void writeLogFile()
-    {
-        if (options.log.get())
-        {
+    private void writeLogFile() {
+        if (options.log.get()) {
             Log.getInstance().saveToFile(options.logpath.parseWildcards());
         }
     }
 
     /**
      * Marks the occurence of an unrecoverable error, reports it and attempts to shut down the pipeline
+     *
      * @param location where the error occurred
-     * @param message error message
-     * @param e exception which caused the error, can be null
+     * @param message  error message
+     * @param e        exception which caused the error, can be null
      */
-    void error(String location, String message, Throwable e)
-    {
+    void error(String location, String message, Throwable e) {
         Log.e(location, message, e);
         writeLogFile();
 
-        if (exceptionHandler != null)
-        {
+        if (exceptionHandler != null) {
             exceptionHandler.handle(location, message, e);
         }
 
-        if(options.terminateOnError.get() && isRunning())
+        if (options.terminateOnError.get() && isRunning())
             stop();
     }
 
-    void sync(int bufferID)
-    {
+    void sync(int bufferID) {
         if (!isRunning())
             return;
 
@@ -943,78 +803,74 @@ public class Pipeline
 
     /**
      * Downloads multiple files to the sd card
+     *
      * @param fileNames array containing the names of the files to download
-     * @param from remote path from which to download files
-     * @param to path to download to
-     * @param wait if true, function blocks until download is finished
+     * @param from      remote path from which to download files
+     * @param to        path to download to
+     * @param wait      if true, function blocks until download is finished
      */
-    public void download(String[] fileNames, String from, String to, boolean wait)
-    {
-        if(downloader == null || downloader.isTerminating())
+    public void download(String[] fileNames, String from, String to, boolean wait) {
+        if (downloader == null || downloader.isTerminating())
             downloader = new FileDownloader();
 
         FileDownloader.Task t = null;
-        for(String fileName : fileNames)
-        {
+        for (String fileName : fileNames) {
             t = downloader.addToQueue(fileName, from, to);
-            if(t == null)
+            if (t == null)
                 return;
         }
 
-        if(!downloader.isAlive())
+        if (!downloader.isAlive())
             downloader.start();
 
-        if(wait) downloader.wait(t);
+        if (wait) downloader.wait(t);
     }
 
     /**
      * Downloads a file to the sd card
+     *
      * @param fileName name of the file
-     * @param from remote path from which to download file
-     * @param to path to download to
-     * @param wait if true, function blocks until download is finished
+     * @param from     remote path from which to download file
+     * @param to       path to download to
+     * @param wait     if true, function blocks until download is finished
      */
-    public void download(String fileName, String from, String to, boolean wait) throws IOException
-    {
-        if(fileName == null || fileName.isEmpty()
-        || from == null || from.isEmpty()
-        || to == null || to.isEmpty())
+    public void download(String fileName, String from, String to, boolean wait) throws IOException {
+        if (fileName == null || fileName.isEmpty()
+                || from == null || from.isEmpty()
+                || to == null || to.isEmpty())
             throw new IOException("download source or destination is empty");
 
-        if(downloader == null || downloader.isTerminating())
+        if (downloader == null || downloader.isTerminating())
             downloader = new FileDownloader();
 
         FileDownloader.Task t = downloader.addToQueue(fileName, from, to);
-        if(t == null)
+        if (t == null)
             return;
 
-        if(!downloader.isAlive())
+        if (!downloader.isAlive())
             downloader.start();
 
-        if(wait) downloader.wait(t);
+        if (wait) downloader.wait(t);
     }
 
     /**
      * @return elapsed time since start of the pipeline (in seconds)
      */
-    public double getTime()
-    {
+    public double getTime() {
         return getTimeMs() / 1000.0;
     }
 
     /**
      * @return elapsed time since start of the pipeline (in milliseconds)
      */
-    public long getTimeMs()
-    {
+    public long getTimeMs() {
         if (startTime == 0)
             return 0;
 
         return SystemClock.elapsedRealtime() - startTime + timeOffset;
     }
 
-    void adjustTime(long offset)
-    {
+    void adjustTime(long offset) {
         Log.d("adjusting clock by " + offset + " ms");
         timeOffset += offset;
     }
@@ -1022,8 +878,7 @@ public class Pipeline
     /**
      * @return system time at which the pipeline started
      */
-    public long getStartTimeMs()
-    {
+    public long getStartTimeMs() {
         return startTimeSystem;
     }
 
@@ -1031,49 +886,47 @@ public class Pipeline
      * @return system time at which the pipeline instance was created.
      * Timestamp can be modified using "resetCreateTime()"
      */
-    public long getCreateTimeMs()
-    {
+    public long getCreateTimeMs() {
         return createTime;
-    }
-
-    /**
-     * @return true if SSJ has already been instanced, false otherwise
-     */
-    public static boolean isInstanced()
-    {
-        return instance != null;
     }
 
     /**
      * @return current state of the framework
      */
-    public State getState()
-    {
+    public State getState() {
         return state;
+    }
+
+    /**
+     * Sets the pipeline state and notifies state listeners
+     *
+     * @param newState target state
+     */
+    private void setState(final State newState) {
+        this.state = newState;
+
+        for (final PipelineStateListener stateListener : stateListeners) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    stateListener.stateUpdated(newState);
+                }
+            }).start();
+        }
     }
 
     /**
      * @return true if pipeline is running, false otherwise
      */
-    public boolean isRunning()
-    {
+    public boolean isRunning() {
         return state == State.RUNNING;
     }
 
     /**
      * @return true if pipeline shut down has been initiated, false otherwise
      */
-    public boolean isStopping()
-    {
+    public boolean isStopping() {
         return state == State.STOPPING;
-    }
-
-    /**
-     * @return current SSJ version
-     */
-    public static String getVersion()
-    {
-        return BuildConfig.VERSION_NAME;
     }
 
     /**
@@ -1082,8 +935,79 @@ public class Pipeline
      *
      * @param h a class which implements the ExceptionHandler interface
      */
-    public void setExceptionHandler(ExceptionHandler h)
-    {
+    public void setExceptionHandler(ExceptionHandler h) {
         exceptionHandler = h;
+    }
+
+    public enum State {
+        INACTIVE,
+        STARTING,
+        RUNNING,
+        STOPPING
+    }
+
+    public enum SyncType {
+        NONE,
+        START_STOP,
+        CONTINUOUS
+    }
+
+    public class Options extends OptionList {
+        /**
+         * duration of pipeline start-up phase. Default: 3
+         */
+        public final Option<Integer> countdown = new Option<>("countdown", 3, Integer.class, "duration of pipeline start-up phase");
+        /**
+         * size of all inter-component buffers (in seconds). Default: 2.0
+         */
+        public final Option<Float> bufferSize = new Option<>("bufferSize", 2.f, Float.class, "size of all inter-component buffers (in seconds)");
+        /**
+         * How long to wait for threads to finish on pipeline shutdown. Default: 30.0
+         */
+        public final Option<Float> waitThreadKill = new Option<>("waitThreadKill", 30f, Float.class, "How long to wait for threads to finish on pipeline shutdown");
+        /**
+         * How long to wait for a sensor to connect. Default: 30.0
+         */
+        public final Option<Float> waitSensorConnect = new Option<>("waitSensorConnect", 30.f, Float.class, "How long to wait for a sensor to connect");
+        /**
+         * Cross-device synchronization (requires network). Default: NONE
+         */
+        public final Option<SyncType> sync = new Option<>("sync", SyncType.NONE, SyncType.class, "Cross-device synchronization (requires network).");
+        /**
+         * enter IP address of host pipeline for synchronization (leave empty if this is the host). Default: null
+         */
+        public final Option<String> syncHost = new Option<>("syncHost", null, String.class, "enter IP address of host pipeline for synchronization (leave empty if this is the host)");
+        /**
+         * set port for synchronizing pipeline over network. Default: 55100
+         */
+        public final Option<Integer> syncPort = new Option<>("syncPort", 0, Integer.class, "port for synchronizing pipeline over network");
+        /**
+         * define time between clock sync attempts (requires CONTINUOUS sync). Default: 1.0
+         */
+        public final Option<Float> syncInterval = new Option<>("syncInterval", 10.0f, Float.class, "define time between clock sync attempts (requires CONTINUOUS sync)");
+        /**
+         * write system log to file. Default: false
+         */
+        public final Option<Boolean> log = new Option<>("log", false, Boolean.class, "write system log to file");
+        /**
+         * location of log file. Default: /sdcard/SSJ/[time]
+         */
+        public final Option<String> logpath = new Option<>("logpath", FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]", String.class, "location of log file");
+        /**
+         * show all logs greater or equal than level. Default: VERBOSE
+         */
+        public final Option<Log.Level> loglevel = new Option<>("loglevel", Log.Level.VERBOSE, Log.Level.class, "show all logs >= level");
+        /**
+         * repeated log entries with a duration delta smaller than the timeout value are ignored. Default: 1.0
+         */
+        public final Option<Double> logtimeout = new Option<>("logtimeout", 1.0, Double.class, "ignore repeated entries < timeout");
+        /**
+         * Shut down pipeline if runtime error is encountered
+         */
+        public final Option<Boolean> terminateOnError = new Option<>("terminateOnError", false, Boolean.class, "Shut down pipeline if runtime error is encountered");
+
+        private Options() {
+            addOptions();
+        }
     }
 }

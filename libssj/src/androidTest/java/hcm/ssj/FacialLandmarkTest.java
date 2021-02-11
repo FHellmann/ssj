@@ -35,7 +35,6 @@ import org.junit.runner.RunWith;
 
 import hcm.ssj.camera.CameraChannel;
 import hcm.ssj.camera.CameraSensor;
-import hcm.ssj.camera.ImageResizer;
 import hcm.ssj.camera.NV21ToRGBDecoder;
 import hcm.ssj.core.Cons;
 import hcm.ssj.core.Pipeline;
@@ -47,59 +46,54 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class FacialLandmarkTest
-{
-	@Test
-	public void testFacialLandmarks() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class FacialLandmarkTest {
+    @Test
+    public void testFacialLandmarks() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Option parameters for camera sensor
-		double sampleRate = 1;
-		int width = 640;
-		int height = 480;
+        // Option parameters for camera sensor
+        double sampleRate = 1;
+        int width = 640;
+        int height = 480;
 
-		// Instantiate camera sensor and set options
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.FRONT_CAMERA);
-		cameraSensor.options.width.set(width);
-		cameraSensor.options.height.set(height);
-		cameraSensor.options.previewFpsRangeMin.set(15);
-		cameraSensor.options.previewFpsRangeMax.set(15);
+        // Instantiate camera sensor and set options
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.FRONT_CAMERA);
+        cameraSensor.options.width.set(width);
+        cameraSensor.options.height.set(height);
+        cameraSensor.options.previewFpsRangeMin.set(15);
+        cameraSensor.options.previewFpsRangeMax.set(15);
 
-		// Add sensor to the pipeline
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set(sampleRate);
-		frame.addSensor(cameraSensor, cameraChannel);
+        // Add sensor to the pipeline
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set(sampleRate);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		// Set up a NV21 decoder
-		NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
-		frame.addTransformer(decoder, cameraChannel, 1, 0);
+        // Set up a NV21 decoder
+        NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
+        frame.addTransformer(decoder, cameraChannel, 1, 0);
 
-		// Add landmark detector
-		FaceLandmarks landmarkTransformer = new FaceLandmarks();
-		landmarkTransformer.options.rotation.set(-90);
-		landmarkTransformer.options.useLegacyModel.set(true);
-		frame.addTransformer(landmarkTransformer, decoder, 1, 0);
+        // Add landmark detector
+        FaceLandmarks landmarkTransformer = new FaceLandmarks();
+        landmarkTransformer.options.rotation.set(-90);
+        landmarkTransformer.options.useLegacyModel.set(true);
+        frame.addTransformer(landmarkTransformer, decoder, 1, 0);
 
-		// Add logger
-		Logger logger = new Logger();
-		frame.addConsumer(logger, landmarkTransformer, 1, 0);
+        // Add logger
+        Logger logger = new Logger();
+        frame.addConsumer(logger, landmarkTransformer, 1, 0);
 
-		// Start pipeline
-		frame.start();
+        // Start pipeline
+        frame.start();
 
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		frame.release();
-	}
+        frame.stop();
+        frame.release();
+    }
 }

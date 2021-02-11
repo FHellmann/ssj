@@ -38,16 +38,73 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 01.04.2015.
  */
-public class AccelerationChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class AccelerationChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected MyoListener _listener;
 
-	public class Options extends OptionList
-    {
+    public AccelerationChannel() {
+        _name = "Myo_Acceleration";
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((Myo) _sensor).listener;
+
+        if (stream_out.num != 1) {
+            Log.w("unsupported stream format. sample number = " + stream_out.num);
+        }
+    }
+
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        float[] out = stream_out.ptrF();
+
+        out[0] = _listener.accelerationX;
+        out[1] = _listener.accelerationY;
+        out[2] = _listener.accelerationZ;
+
+        return true;
+    }
+
+    @Override
+    public void flush(Stream stream_out) throws SSJFatalException {
+    }
+
+    @Override
+    public double getSampleRate() {
+        return options.sampleRate.get();
+    }
+
+    @Override
+    public int getSampleDimension() {
+        return 3;
+    }
+
+    @Override
+    public int getSampleBytes() {
+        return 4;
+    }
+
+    @Override
+    public Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
+
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+
+        stream_out.desc[0] = "AccX";
+        stream_out.desc[1] = "AccY";
+        stream_out.desc[2] = "AccZ";
+    }
+
+    public class Options extends OptionList {
         public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "");
 
         /**
@@ -57,74 +114,4 @@ public class AccelerationChannel extends SensorChannel
             addOptions();
         }
     }
-    public final Options options = new Options();
-
-    protected MyoListener _listener;
-
-	public AccelerationChannel()
-	{
-        _name = "Myo_Acceleration";
-	}
-
-    @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-    {
-        _listener = ((Myo)_sensor).listener;
-
-		if (stream_out.num != 1)
-		{
-			Log.w("unsupported stream format. sample number = " + stream_out.num);
-		}
-    }
-
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		float[] out = stream_out.ptrF();
-
-        out[0] = _listener.accelerationX;
-		out[1] = _listener.accelerationY;
-        out[2] = _listener.accelerationZ;
-
-        return true;
-	}
-
-    @Override
-	public void flush(Stream stream_out) throws SSJFatalException
-    {
-    }
-
-    @Override
-    public double getSampleRate()
-    {
-        return options.sampleRate.get();
-    }
-
-    @Override
-    public int getSampleDimension()
-    {
-        return 3;
-    }
-
-    @Override
-    public int getSampleBytes()
-    {
-        return 4;
-    }
-
-    @Override
-    public Cons.Type getSampleType()
-    {
-        return Cons.Type.FLOAT;
-    }
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-
-		stream_out.desc[0] = "AccX";
-		stream_out.desc[1] = "AccY";
-		stream_out.desc[2] = "AccZ";
-	}
 }

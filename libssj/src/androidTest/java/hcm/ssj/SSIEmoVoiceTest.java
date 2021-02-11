@@ -53,62 +53,57 @@ import static androidx.test.InstrumentationRegistry.getContext;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class SSIEmoVoiceTest
-{
-	@Test
-	public void testEmoVoice() throws Exception
-	{
-		// Copy model resources
-		File dir = getContext().getFilesDir();
-		String modelName = "emovoice.trainer";
-		TestHelper.copyAssetToFile(modelName, new File(dir, modelName));
-		TestHelper.copyAssetToFile("emovoice.model", new File(dir, "emovoice.model"));
+public class SSIEmoVoiceTest {
+    @Test
+    public void testEmoVoice() throws Exception {
+        // Copy model resources
+        File dir = getContext().getFilesDir();
+        String modelName = "emovoice.trainer";
+        TestHelper.copyAssetToFile(modelName, new File(dir, modelName));
+        TestHelper.copyAssetToFile("emovoice.model", new File(dir, "emovoice.model"));
 
-		// Setup framework
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+        // Setup framework
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		Microphone microphone = new Microphone();
-		AudioChannel audioChannel = new AudioChannel();
-		audioChannel.options.sampleRate.set(8000);
-		audioChannel.options.scale.set(true);
-		frame.addSensor(microphone, audioChannel);
+        // Sensor
+        Microphone microphone = new Microphone();
+        AudioChannel audioChannel = new AudioChannel();
+        audioChannel.options.sampleRate.set(8000);
+        audioChannel.options.scale.set(true);
+        frame.addSensor(microphone, audioChannel);
 
-		// Feature transformer
-		SSITransformer emovoiceFeatures = new SSITransformer();
-		emovoiceFeatures.options.name.set(SSI.TransformerName.EmoVoiceFeat);
-		emovoiceFeatures.options.ssioptions.set(new String[]{"maj->1", "min->0"});
-		frame.addTransformer(emovoiceFeatures, audioChannel, 1.35);
+        // Feature transformer
+        SSITransformer emovoiceFeatures = new SSITransformer();
+        emovoiceFeatures.options.name.set(SSI.TransformerName.EmoVoiceFeat);
+        emovoiceFeatures.options.ssioptions.set(new String[]{"maj->1", "min->0"});
+        frame.addTransformer(emovoiceFeatures, audioChannel, 1.35);
 
-		// Classifier
-		NaiveBayes naiveBayes = new NaiveBayes();
-		naiveBayes.options.file.setValue(dir.getAbsolutePath() + File.separator + modelName);
-		frame.addModel(naiveBayes);
+        // Classifier
+        NaiveBayes naiveBayes = new NaiveBayes();
+        naiveBayes.options.file.setValue(dir.getAbsolutePath() + File.separator + modelName);
+        frame.addModel(naiveBayes);
 
-		ClassifierT classifier = new ClassifierT();
-		classifier.setModel(naiveBayes);
-		frame.addTransformer(classifier, emovoiceFeatures, 1.35, 0);
+        ClassifierT classifier = new ClassifierT();
+        classifier.setModel(naiveBayes);
+        frame.addTransformer(classifier, emovoiceFeatures, 1.35, 0);
 
-		// Logger
-		Logger log = new Logger();
-		//frame.addConsumer(log, emovoiceFeatures, 1, 0);
-		frame.addConsumer(log, classifier, 1.35, 0);
+        // Logger
+        Logger log = new Logger();
+        //frame.addConsumer(log, emovoiceFeatures, 1, 0);
+        frame.addConsumer(log, classifier, 1.35, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Run test
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Run test
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		frame.release();
-	}
+        frame.stop();
+        frame.release();
+    }
 }

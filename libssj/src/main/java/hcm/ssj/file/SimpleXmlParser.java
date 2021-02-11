@@ -40,8 +40,7 @@ import java.util.ArrayList;
  * A generic XML-Parser for one tag and its attributes.<br>
  * Created by Frank Gaibler on 23.09.2015.
  */
-public class SimpleXmlParser
-{
+public class SimpleXmlParser {
     private static final String namespace = null;
     private String[] searchPath = null;
     private String[] searchAttributes = null;
@@ -55,21 +54,18 @@ public class SimpleXmlParser
      * @throws XmlPullParserException
      * @throws IOException
      */
-    public XmlValues parse(InputStream in, String[] searchPath, String[] searchAttributes) throws XmlPullParserException, IOException
-    {
+    public XmlValues parse(InputStream in, String[] searchPath, String[] searchAttributes) throws XmlPullParserException, IOException {
         this.searchPath = searchPath;
         this.searchAttributes = searchAttributes;
         xmlValues = new XmlValues();
-        try
-        {
+        try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(in, null);
             parser.nextTag();
             search(parser, 0);
             return xmlValues;
-        } finally
-        {
+        } finally {
             in.close();
         }
     }
@@ -80,23 +76,16 @@ public class SimpleXmlParser
      * @throws XmlPullParserException
      * @throws IOException
      */
-    private void search(XmlPullParser parser, int depth) throws XmlPullParserException, IOException
-    {
+    private void search(XmlPullParser parser, int depth) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, namespace, searchPath[depth]);
-        if (searchPath.length - 1 == depth)
-        {
+        if (searchPath.length - 1 == depth) {
             readValues(parser, depth);
-        } else
-        {
-            while (parser.next() != XmlPullParser.END_TAG)
-            {
-                if (parser.getEventType() == XmlPullParser.START_TAG)
-                {
-                    if (parser.getName().equals(searchPath[depth + 1]))
-                    {
+        } else {
+            while (parser.next() != XmlPullParser.END_TAG) {
+                if (parser.getEventType() == XmlPullParser.START_TAG) {
+                    if (parser.getName().equals(searchPath[depth + 1])) {
                         search(parser, depth + 1);
-                    } else
-                    {
+                    } else {
                         skip(parser);
                     }
                 }
@@ -110,21 +99,16 @@ public class SimpleXmlParser
      * @throws IOException
      * @throws XmlPullParserException
      */
-    private void readValues(XmlPullParser parser, int depth) throws IOException, XmlPullParserException
-    {
+    private void readValues(XmlPullParser parser, int depth) throws IOException, XmlPullParserException {
         String name = searchPath[depth];
         parser.require(XmlPullParser.START_TAG, namespace, name);
-        if (searchAttributes == null)
-        {
+        if (searchAttributes == null) {
             xmlValues.foundTag.add(readText(parser));
-        } else
-        {
+        } else {
             String tag = parser.getName();
-            if (tag.equals(name))
-            {
+            if (tag.equals(name)) {
                 String[] attributes = new String[searchAttributes.length];
-                for (int i = 0; i < searchAttributes.length; i++)
-                {
+                for (int i = 0; i < searchAttributes.length; i++) {
                     attributes[i] = parser.getAttributeValue(null, searchAttributes[i]);
                 }
                 xmlValues.foundAttributes.add(attributes);
@@ -139,11 +123,9 @@ public class SimpleXmlParser
      * @throws IOException
      * @throws XmlPullParserException
      */
-    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException
-    {
+    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
         String result = "";
-        if (parser.next() == XmlPullParser.TEXT)
-        {
+        if (parser.next() == XmlPullParser.TEXT) {
             result = parser.getText();
             parser.nextTag();
         }
@@ -155,17 +137,13 @@ public class SimpleXmlParser
      * @throws XmlPullParserException
      * @throws IOException
      */
-    private void skip(XmlPullParser parser) throws XmlPullParserException, IOException
-    {
-        if (parser.getEventType() != XmlPullParser.START_TAG)
-        {
+    private void skip(XmlPullParser parser) throws XmlPullParserException, IOException {
+        if (parser.getEventType() != XmlPullParser.START_TAG) {
             throw new IllegalStateException();
         }
         int depth = 1;
-        while (depth != 0)
-        {
-            switch (parser.next())
-            {
+        while (depth != 0) {
+            switch (parser.next()) {
                 case XmlPullParser.END_TAG:
                     depth--;
                     break;
@@ -179,13 +157,11 @@ public class SimpleXmlParser
     /**
      * To return the found values.
      */
-    public class XmlValues
-    {
+    public class XmlValues {
         public ArrayList<String> foundTag = new ArrayList<>();
         public ArrayList<String[]> foundAttributes = new ArrayList<>();
 
-        private XmlValues()
-        {
+        private XmlValues() {
         }
     }
 }

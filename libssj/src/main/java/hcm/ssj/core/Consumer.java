@@ -40,56 +40,50 @@ import hcm.ssj.core.stream.Stream;
  */
 public abstract class Consumer extends Component {
 
+    protected Pipeline _frame;
+    protected boolean _doWakeLock = true;
     private Stream[] _stream_in;
     private int[] _readPos = null;
     private int[] _bufferID_in;
-
     private int[] _num_frame;
     private int[] _num_delta;
-
     private EventChannel _triggerChannel = null;
-
     private Timer _timer;
 
-    protected Pipeline _frame;
-    protected boolean _doWakeLock = true;
-
-    public Consumer()
-    {
+    public Consumer() {
         _frame = Pipeline.getInstance();
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         Thread.currentThread().setName("SSJ_" + _name);
 
-        if(!_isSetup) {
+        if (!_isSetup) {
             _frame.error(_name, "not initialized", null);
             _safeToKill = true;
             return;
         }
 
         android.os.Process.setThreadPriority(threadPriority);
-        PowerManager mgr = (PowerManager)SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
+        PowerManager mgr = (PowerManager) SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = mgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, _name);
 
         Event ev = null;
         int eventID = 0;
 
         //clear data
-        if(_readPos != null)
+        if (_readPos != null)
             Arrays.fill(_readPos, 0);
-        for(int i = 0; i < _stream_in.length; i++)
+        for (int i = 0; i < _stream_in.length; i++)
             _stream_in[i].reset();
 
         try {
             enter(_stream_in);
-        } catch(SSJFatalException e) {
+        } catch (SSJFatalException e) {
             _frame.error(_name, "exception in enter", e);
             _safeToKill = true;
             return;
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(_name, "exception in enter", e);
         }
 
@@ -103,35 +97,30 @@ public abstract class Consumer extends Component {
         }
 
         //maintain update rate starting from now
-        if(_triggerChannel == null)
+        if (_triggerChannel == null)
             _timer.reset();
 
-        while(!_terminate && _frame.isRunning())
-        {
+        while (!_terminate && _frame.isRunning()) {
             try {
-                if(_triggerChannel != null) {
+                if (_triggerChannel != null) {
                     ev = _triggerChannel.getEvent(eventID++, true);
                     if (ev == null || ev.dur == 0)
                         continue;
                 }
 
-                if(_doWakeLock) wakeLock.acquire();
+                if (_doWakeLock) wakeLock.acquire();
 
                 //grab data
                 boolean ok = true;
                 int pos, numSamples;
-                for(int i = 0; i < _bufferID_in.length; i++)
-                {
-                    if(_triggerChannel != null)
-                    {
+                for (int i = 0; i < _bufferID_in.length; i++) {
+                    if (_triggerChannel != null) {
                         pos = (int) ((ev.time / 1000.0) * _stream_in[i].sr + 0.5);
                         numSamples = ((int) (((ev.time + ev.dur) / 1000.0) * _stream_in[i].sr + 0.5)) - pos;
 
                         // check if local buffer is large enough and make it larger if necessary
                         _stream_in[i].adjust(numSamples);
-                    }
-                    else
-                    {
+                    } else {
                         pos = _readPos[i];
                         _readPos[i] += _num_frame[i];
                     }
@@ -142,28 +131,28 @@ public abstract class Consumer extends Component {
                 }
 
                 //if we received data from all sources, process it
-                if(ok) {
+                if (ok) {
                     consume(_stream_in, ev);
                 }
 
                 //maintain update rate
-                if(ok && _triggerChannel == null)
+                if (ok && _triggerChannel == null)
                     _timer.sync();
 
-            } catch(SSJFatalException e) {
+            } catch (SSJFatalException e) {
                 _frame.error(_name, "exception in loop", e);
                 _safeToKill = true;
                 return;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 _frame.error(_name, "exception in loop", e);
             } finally {
-                if(_doWakeLock && wakeLock.isHeld()) wakeLock.release();
+                if (_doWakeLock && wakeLock.isHeld()) wakeLock.release();
             }
         }
 
         try {
             flush(_stream_in);
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(_name, "exception in flush", e);
         }
 
@@ -173,13 +162,16 @@ public abstract class Consumer extends Component {
     /**
      * initialization specific to sensor implementation (called by framework on instantiation)
      */
-    protected void init(Stream stream_in[]) throws SSJException {}
+    protected void init(Stream[] stream_in) throws SSJException {
+    }
 
-	/**
+    /**
      * initialization specific to sensor implementation (called by local thread after framework start)
+     *
      * @throws SSJFatalException causes immediate pipeline termination
      */
-    public void enter(Stream stream_in[]) throws SSJFatalException {}
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+    }
 
     /**
      * main processing method
@@ -189,32 +181,28 @@ public abstract class Consumer extends Component {
     /**
      * called once prior to termination
      */
-    public void flush(Stream stream_in[]) throws SSJFatalException {}
-
-    public void setEventTrigger(EventChannel channel)
-    {
-        _triggerChannel = channel;
+    public void flush(Stream[] stream_in) throws SSJFatalException {
     }
-    public EventChannel getEventTrigger()
-    {
+
+    public EventChannel getEventTrigger() {
         return _triggerChannel;
+    }
+
+    public void setEventTrigger(EventChannel channel) {
+        _triggerChannel = channel;
     }
 
     /**
      * initialization for continuous consumer
      */
-    public void setup(Provider[] sources, double frame, double delta) throws SSJException
-    {
-        for (Provider source : sources)
-        {
-            if (!source.isSetup())
-            {
+    public void setup(Provider[] sources, double frame, double delta) throws SSJException {
+        for (Provider source : sources) {
+            if (!source.isSetup()) {
                 throw new SSJException("Components must be added in the correct order. Cannot add " + _name + " before its source " + source.getComponentName());
             }
         }
 
-        try
-        {
+        try {
             _bufferID_in = new int[sources.length];
             _readPos = new int[sources.length];
             _stream_in = new Stream[sources.length];
@@ -222,15 +210,15 @@ public abstract class Consumer extends Component {
             _num_delta = new int[sources.length];
 
             //compute window sizes
-            for(int i = 0; i < sources.length; i++) {
-                _num_frame[i] = (int)(frame * sources[i].getOutputStream().sr + 0.5);
-                _num_delta[i] = (int)(delta * sources[i].getOutputStream().sr + 0.5);
+            for (int i = 0; i < sources.length; i++) {
+                _num_frame[i] = (int) (frame * sources[i].getOutputStream().sr + 0.5);
+                _num_delta[i] = (int) (delta * sources[i].getOutputStream().sr + 0.5);
             }
-            frame = (double)_num_frame[0] / sources[0].getOutputStream().sr;
-            delta = (double)_num_delta[0] / sources[0].getOutputStream().sr;
+            frame = (double) _num_frame[0] / sources[0].getOutputStream().sr;
+            delta = (double) _num_delta[0] / sources[0].getOutputStream().sr;
 
             //allocate local input buffer
-            for(int i = 0; i < sources.length; i++) {
+            for (int i = 0; i < sources.length; i++) {
                 _bufferID_in[i] = sources[i].getBufferID();
                 _stream_in[i] = Stream.create(sources[i], _num_frame[i], _num_delta[i]);
             }
@@ -241,9 +229,7 @@ public abstract class Consumer extends Component {
             // configure update rate
             _timer = new Timer(frame);
             _timer.setStartOffset(delta);
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             throw new SSJException("error configuring component", e);
         }
 
@@ -253,12 +239,9 @@ public abstract class Consumer extends Component {
     /**
      * initialization for event consumer
      */
-    public void setup(Provider[] sources) throws SSJException
-    {
-        for (Provider source : sources)
-        {
-            if (!source.isSetup())
-            {
+    public void setup(Provider[] sources) throws SSJException {
+        for (Provider source : sources) {
+            if (!source.isSetup()) {
                 throw new SSJException("Components must be added in the correct order. Cannot add " + _name + " before its source " + source.getComponentName());
             }
         }
@@ -267,16 +250,16 @@ public abstract class Consumer extends Component {
             _bufferID_in = new int[sources.length];
             _stream_in = new Stream[sources.length];
 
-            for(int i = 0; i < sources.length; i++) {
+            for (int i = 0; i < sources.length; i++) {
                 _bufferID_in[i] = sources[i].getBufferID();
 
                 //allocate local input buffer and make it one second large too avoid memory allocation at runtime
-                _stream_in[i] = Stream.create(sources[i], (int)sources[i].getOutputStream().sr);
+                _stream_in[i] = Stream.create(sources[i], (int) sources[i].getOutputStream().sr);
             }
 
             init(_stream_in);
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new SSJException("error configuring component", e);
         }
 
@@ -284,18 +267,16 @@ public abstract class Consumer extends Component {
     }
 
     @Override
-    public void close()
-    {
-        if(_triggerChannel != null)
+    public void close() {
+        if (_triggerChannel != null)
             _triggerChannel.close();
 
         super.close();
     }
 
     @Override
-    public void reset()
-    {
-        if(_triggerChannel != null)
+    public void reset() {
+        if (_triggerChannel != null)
             _triggerChannel.reset();
 
         super.reset();

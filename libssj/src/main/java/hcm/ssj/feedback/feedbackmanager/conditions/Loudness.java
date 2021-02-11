@@ -41,15 +41,13 @@ import hcm.ssj.core.event.Event;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class Loudness extends Condition
-{
+public class Loudness extends Condition {
 
     LinkedList<Float> _loudness = new LinkedList<Float>();
     int _history_size;
 
     @Override
-    public float parseEvent(Event event)
-    {
+    public float parseEvent(Event event) {
         float loudness = Float.parseFloat(event.ptrStr());
 
         _loudness.add(loudness);
@@ -61,28 +59,22 @@ public class Loudness extends Condition
         return value;
     }
 
-    private float getAvg(LinkedList<Float> vec)
-    {
-        if(vec.size() == 0)
+    private float getAvg(LinkedList<Float> vec) {
+        if (vec.size() == 0)
             return 0;
 
         float sum = 0;
-        for(float i : vec)
-        {
+        for (float i : vec) {
             sum += i;
         }
         return sum / vec.size();
     }
 
     @Override
-    protected void load(XmlPullParser xml, Context context)
-    {
-        try
-        {
+    protected void load(XmlPullParser xml, Context context) {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "condition");
-        }
-        catch (XmlPullParserException | IOException e)
-        {
+        } catch (XmlPullParserException | IOException e) {
             Log.e("error parsing config file", e);
         }
 

@@ -30,127 +30,103 @@ package hcm.ssj.signal;
 /**
  * Created by Michael Dietz on 13.08.2015.
  */
-public class Complex
-{
-	private double real;
-	private double imag;
+public class Complex {
+    private final double real;
+    private final double imag;
 
-	public Complex(double real, double imaginary)
-	{
-		this.real = real;
-		this.imag = imaginary;
-	}
+    public Complex(double real, double imaginary) {
+        this.real = real;
+        this.imag = imaginary;
+    }
 
-	public double real()
-	{
-		return this.real;
-	}
+    public double real() {
+        return this.real;
+    }
 
-	public double imag()
-	{
-		return this.imag;
-	}
+    public double imag() {
+        return this.imag;
+    }
 
-	public double mod()
-	{
-		return this.real == 0.0d && this.imag == 0.0d ? 0.0d : Math.sqrt(this.real * this.real + this.imag * this.imag);
-	}
+    public double mod() {
+        return this.real == 0.0d && this.imag == 0.0d ? 0.0d : Math.sqrt(this.real * this.real + this.imag * this.imag);
+    }
 
-	public double arg()
-	{
-		return Math.atan2(this.imag, this.real);
-	}
+    public double arg() {
+        return Math.atan2(this.imag, this.real);
+    }
 
-	public Complex conj()
-	{
-		return new Complex(this.real, -this.imag);
-	}
+    public Complex conj() {
+        return new Complex(this.real, -this.imag);
+    }
 
-	public Complex plus(Complex w)
-	{
-		return new Complex(this.real + w.real(), this.imag + w.imag());
-	}
+    public Complex plus(Complex w) {
+        return new Complex(this.real + w.real(), this.imag + w.imag());
+    }
 
-	public Complex minus(Complex w)
-	{
-		return new Complex(this.real - w.real(), this.imag - w.imag());
-	}
+    public Complex minus(Complex w) {
+        return new Complex(this.real - w.real(), this.imag - w.imag());
+    }
 
-	public Complex times(Complex w)
-	{
-		return new Complex(this.real * w.real() - this.imag * w.imag(), this.real * w.imag() + this.imag * w.real());
-	}
+    public Complex times(Complex w) {
+        return new Complex(this.real * w.real() - this.imag * w.imag(), this.real * w.imag() + this.imag * w.real());
+    }
 
-	public Complex times(double factor)
-	{
-		return new Complex(this.real * factor, this.imag * factor);
-	}
+    public Complex times(double factor) {
+        return new Complex(this.real * factor, this.imag * factor);
+    }
 
-	public Complex div(Complex w)
-	{
-		double den = Math.pow(w.mod(), 2.0d);
-		return new Complex((this.real * w.real() + this.imag * w.imag()) / den, (this.imag * w.real() - this.real * w.imag()) / den);
-	}
+    public Complex div(Complex w) {
+        double den = Math.pow(w.mod(), 2.0d);
+        return new Complex((this.real * w.real() + this.imag * w.imag()) / den, (this.imag * w.real() - this.real * w.imag()) / den);
+    }
 
-	public Complex exp()
-	{
-		return new Complex(Math.exp(this.real) * Math.cos(this.imag), Math.exp(this.real) * Math.sin(this.imag));
-	}
+    public Complex exp() {
+        return new Complex(Math.exp(this.real) * Math.cos(this.imag), Math.exp(this.real) * Math.sin(this.imag));
+    }
 
-	public Complex log()
-	{
-		return new Complex(Math.log(this.mod()), this.arg());
-	}
+    public Complex log() {
+        return new Complex(Math.log(this.mod()), this.arg());
+    }
 
-	public Complex sqrt()
-	{
-		double r = Math.sqrt(this.mod());
-		double theta = this.arg() / 2.0d;
-		return new Complex(r * Math.cos(theta), r * Math.sin(theta));
-	}
+    public Complex sqrt() {
+        double r = Math.sqrt(this.mod());
+        double theta = this.arg() / 2.0d;
+        return new Complex(r * Math.cos(theta), r * Math.sin(theta));
+    }
 
-	private double cosh(double theta)
-	{
-		return (Math.exp(theta) + Math.exp(-theta)) / 2.0d;
-	}
+    private double cosh(double theta) {
+        return (Math.exp(theta) + Math.exp(-theta)) / 2.0d;
+    }
 
-	private double sinh(double theta)
-	{
-		return (Math.exp(theta) - Math.exp(-theta)) / 2.0d;
-	}
+    private double sinh(double theta) {
+        return (Math.exp(theta) - Math.exp(-theta)) / 2.0d;
+    }
 
-	public Complex sin()
-	{
-		return new Complex(this.cosh(this.imag) * Math.sin(this.real), this.sinh(this.imag) * Math.cos(this.real));
-	}
+    public Complex sin() {
+        return new Complex(this.cosh(this.imag) * Math.sin(this.real), this.sinh(this.imag) * Math.cos(this.real));
+    }
 
-	public Complex cos()
-	{
-		return new Complex(this.cosh(this.imag) * Math.cos(this.real), -this.sinh(this.imag) * Math.sin(this.real));
-	}
+    public Complex cos() {
+        return new Complex(this.cosh(this.imag) * Math.cos(this.real), -this.sinh(this.imag) * Math.sin(this.real));
+    }
 
-	public Complex sinh()
-	{
-		return new Complex(this.sinh(this.real) * Math.cos(this.imag), this.cosh(this.real) * Math.sin(this.imag));
-	}
+    public Complex sinh() {
+        return new Complex(this.sinh(this.real) * Math.cos(this.imag), this.cosh(this.real) * Math.sin(this.imag));
+    }
 
-	public Complex cosh()
-	{
-		return new Complex(this.cosh(this.real) * Math.cos(this.imag), this.sinh(this.real) * Math.sin(this.imag));
-	}
+    public Complex cosh() {
+        return new Complex(this.cosh(this.real) * Math.cos(this.imag), this.sinh(this.real) * Math.sin(this.imag));
+    }
 
-	public Complex tan()
-	{
-		return this.sin().div(this.cos());
-	}
+    public Complex tan() {
+        return this.sin().div(this.cos());
+    }
 
-	public Complex chs()
-	{
-		return new Complex(-this.real, -this.imag);
-	}
+    public Complex chs() {
+        return new Complex(-this.real, -this.imag);
+    }
 
-	public String toString()
-	{
-		return this.real != 0.0d && this.imag > 0.0d ? this.real + " + " + this.imag + "i" : (this.real != 0.0d && this.imag < 0.0d ? this.real + " - " + -this.imag + "i" : (this.imag == 0.0d ? String.valueOf(this.real) : (this.real == 0.0d ? this.imag + "i" : this.real + " + i*" + this.imag)));
-	}
+    public String toString() {
+        return this.real != 0.0d && this.imag > 0.0d ? this.real + " + " + this.imag + "i" : (this.real != 0.0d && this.imag < 0.0d ? this.real + " - " + -this.imag + "i" : (this.imag == 0.0d ? String.valueOf(this.real) : (this.real == 0.0d ? this.imag + "i" : this.real + " + i*" + this.imag)));
+    }
 }

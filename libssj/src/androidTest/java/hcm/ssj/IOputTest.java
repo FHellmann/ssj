@@ -59,209 +59,192 @@ import hcm.ssj.test.Logger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class IOputTest
-{
+public class IOputTest {
 
-	@Test
-	public void testBLClient() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testBLClient() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		AndroidSensor sensor = new AndroidSensor();
+        AndroidSensor sensor = new AndroidSensor();
 
-		AndroidSensorChannel acc = new AndroidSensorChannel();
-		acc.options.sensorType.set(SensorType.ACCELEROMETER);
-		acc.options.sampleRate.set(50);
-		frame.addSensor(sensor, acc);
+        AndroidSensorChannel acc = new AndroidSensorChannel();
+        acc.options.sensorType.set(SensorType.ACCELEROMETER);
+        acc.options.sampleRate.set(50);
+        frame.addSensor(sensor, acc);
 
-		AndroidSensor sensor2 = new AndroidSensor();
-		AndroidSensorChannel gyr = new AndroidSensorChannel();
-		gyr.options.sensorType.set(SensorType.GRAVITY);
-		gyr.options.sampleRate.set(50);
-		frame.addSensor(sensor2, gyr);
+        AndroidSensor sensor2 = new AndroidSensor();
+        AndroidSensorChannel gyr = new AndroidSensorChannel();
+        gyr.options.sensorType.set(SensorType.GRAVITY);
+        gyr.options.sampleRate.set(50);
+        frame.addSensor(sensor2, gyr);
 
-		Logger dummy = new Logger();
-		dummy.options.reduceNum.set(true);
-		frame.addConsumer(dummy, acc, 1.0, 0);
+        Logger dummy = new Logger();
+        dummy.options.reduceNum.set(true);
+        frame.addConsumer(dummy, acc, 1.0, 0);
 
-		Logger dummy2 = new Logger();
-		dummy2.options.reduceNum.set(true);
-		frame.addConsumer(dummy2, gyr, 1.0, 0);
+        Logger dummy2 = new Logger();
+        dummy2.options.reduceNum.set(true);
+        frame.addConsumer(dummy2, gyr, 1.0, 0);
 
-		BluetoothWriter blw = new BluetoothWriter();
-		blw.options.connectionType.set(BluetoothConnection.Type.CLIENT);
-		blw.options.serverName.set("HCM-Johnny-Phone");
-		blw.options.connectionName.set("stream");
-		frame.addConsumer(blw, new Provider[]{acc, gyr}, 1.0, 0);
+        BluetoothWriter blw = new BluetoothWriter();
+        blw.options.connectionType.set(BluetoothConnection.Type.CLIENT);
+        blw.options.serverName.set("HCM-Johnny-Phone");
+        blw.options.connectionName.set("stream");
+        frame.addConsumer(blw, new Provider[]{acc, gyr}, 1.0, 0);
 
-		FloatsEventSender fes = new FloatsEventSender();
-		frame.addConsumer(fes, acc, 1.0, 0);
-		EventChannel ch = fes.getEventChannelOut();
+        FloatsEventSender fes = new FloatsEventSender();
+        frame.addConsumer(fes, acc, 1.0, 0);
+        EventChannel ch = fes.getEventChannelOut();
 
-		BluetoothEventWriter blew = new BluetoothEventWriter();
-		blew.options.connectionType.set(BluetoothConnection.Type.CLIENT);
-		blew.options.serverName.set("HCM-Johnny-Phone");
-		blew.options.connectionName.set("event");
-		frame.registerEventListener(blew, ch);
+        BluetoothEventWriter blew = new BluetoothEventWriter();
+        blew.options.connectionType.set(BluetoothConnection.Type.CLIENT);
+        blew.options.serverName.set("HCM-Johnny-Phone");
+        blew.options.connectionName.set("event");
+        frame.registerEventListener(blew, ch);
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_LONG);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_LONG);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
+        frame.stop();
 
-		Log.i("test finished");
-	}
+        Log.i("test finished");
+    }
 
-	@Test
-	public void testBLServer() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testBLServer() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		BluetoothReader blr = new BluetoothReader();
-		blr.options.connectionType.set(BluetoothConnection.Type.SERVER);
-		blr.options.connectionName.set("stream");
+        BluetoothReader blr = new BluetoothReader();
+        blr.options.connectionType.set(BluetoothConnection.Type.SERVER);
+        blr.options.connectionName.set("stream");
 
-		BluetoothChannel acc = new BluetoothChannel();
-		acc.options.channel_id.set(0);
-		acc.options.dim.set(3);
-		acc.options.bytes.set(4);
-		acc.options.type.set(Cons.Type.FLOAT);
-		acc.options.sr.set(50.);
-		acc.options.num.set(50);
-		frame.addSensor(blr, acc);
+        BluetoothChannel acc = new BluetoothChannel();
+        acc.options.channel_id.set(0);
+        acc.options.dim.set(3);
+        acc.options.bytes.set(4);
+        acc.options.type.set(Cons.Type.FLOAT);
+        acc.options.sr.set(50.);
+        acc.options.num.set(50);
+        frame.addSensor(blr, acc);
 
-		BluetoothChannel gyr = new BluetoothChannel();
-		gyr.options.channel_id.set(1);
-		gyr.options.dim.set(3);
-		gyr.options.bytes.set(4);
-		gyr.options.type.set(Cons.Type.FLOAT);
-		gyr.options.sr.set(50.);
-		gyr.options.num.set(50);
-		frame.addSensor(blr, gyr);
+        BluetoothChannel gyr = new BluetoothChannel();
+        gyr.options.channel_id.set(1);
+        gyr.options.dim.set(3);
+        gyr.options.bytes.set(4);
+        gyr.options.type.set(Cons.Type.FLOAT);
+        gyr.options.sr.set(50.);
+        gyr.options.num.set(50);
+        frame.addSensor(blr, gyr);
 
-		Logger dummy = new Logger();
-		dummy.options.reduceNum.set(true);
-		frame.addConsumer(dummy, acc, 1.0, 0);
+        Logger dummy = new Logger();
+        dummy.options.reduceNum.set(true);
+        frame.addConsumer(dummy, acc, 1.0, 0);
 
-		Logger dummy2 = new Logger();
-		dummy2.options.reduceNum.set(true);
-		frame.addConsumer(dummy2, gyr, 1.0, 0);
+        Logger dummy2 = new Logger();
+        dummy2.options.reduceNum.set(true);
+        frame.addConsumer(dummy2, gyr, 1.0, 0);
 
-		BluetoothEventReader bler = new BluetoothEventReader();
-		bler.options.connectionType.set(BluetoothConnection.Type.SERVER);
-		bler.options.connectionName.set("event");
-		EventChannel ch = frame.registerEventProvider(bler);
+        BluetoothEventReader bler = new BluetoothEventReader();
+        bler.options.connectionType.set(BluetoothConnection.Type.SERVER);
+        bler.options.connectionName.set("event");
+        EventChannel ch = frame.registerEventProvider(bler);
 
-		EventLogger evlog = new EventLogger();
-		frame.registerEventListener(evlog, ch);
+        EventLogger evlog = new EventLogger();
+        frame.registerEventListener(evlog, ch);
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_LONG);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_LONG);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
+        frame.stop();
 
-		Log.i("test finished");
-	}
+        Log.i("test finished");
+    }
 
-	@Test
-	public void testSocketEventWriter() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testSocketEventWriter() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		Microphone mic = new Microphone();
-		AudioChannel audio = new AudioChannel();
-		audio.options.sampleRate.set(16000);
-		audio.options.scale.set(true);
-		frame.addSensor(mic, audio);
+        Microphone mic = new Microphone();
+        AudioChannel audio = new AudioChannel();
+        audio.options.sampleRate.set(16000);
+        audio.options.scale.set(true);
+        frame.addSensor(mic, audio);
 
-		Intensity energy = new Intensity();
-		frame.addTransformer(energy, audio, 1.0, 0);
+        Intensity energy = new Intensity();
+        frame.addTransformer(energy, audio, 1.0, 0);
 
-		FloatsEventSender evs = new FloatsEventSender();
-		evs.options.mean.set(true);
-		frame.addConsumer(evs, energy, 1.0, 0);
-		EventChannel channel = evs.getEventChannelOut();
+        FloatsEventSender evs = new FloatsEventSender();
+        evs.options.mean.set(true);
+        frame.addConsumer(evs, energy, 1.0, 0);
+        EventChannel channel = evs.getEventChannelOut();
 
-		EventLogger log = new EventLogger();
-		frame.registerEventListener(log, channel);
+        EventLogger log = new EventLogger();
+        frame.registerEventListener(log, channel);
 
-		SocketEventWriter sock = new SocketEventWriter();
-		sock.options.port.set(34300);
-		sock.options.ip.set("192.168.0.101");
-		frame.registerEventListener(sock, channel);
+        SocketEventWriter sock = new SocketEventWriter();
+        sock.options.port.set(34300);
+        sock.options.ip.set("192.168.0.101");
+        frame.registerEventListener(sock, channel);
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_SHORT);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_SHORT);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		frame.clear();
-	}
+        frame.stop();
+        frame.clear();
+    }
 
-	@Test
-	public void testSocketReader() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testSocketReader() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		SocketReader sock = new SocketReader();
-		sock.options.port.set(7777);
-		sock.options.ip.set("192.168.0.104");
-		sock.options.type.set(Cons.SocketType.TCP);
+        SocketReader sock = new SocketReader();
+        sock.options.port.set(7777);
+        sock.options.ip.set("192.168.0.104");
+        sock.options.type.set(Cons.SocketType.TCP);
 
-		SocketChannel data = new SocketChannel();
-		data.options.dim.set(2);
-		data.options.bytes.set(4);
-		data.options.type.set(Cons.Type.FLOAT);
-		data.options.sr.set(50.);
-		data.options.num.set(10);
-		frame.addSensor(sock, data);
+        SocketChannel data = new SocketChannel();
+        data.options.dim.set(2);
+        data.options.bytes.set(4);
+        data.options.type.set(Cons.Type.FLOAT);
+        data.options.sr.set(50.);
+        data.options.num.set(10);
+        frame.addSensor(sock, data);
 
-		Logger log = new Logger();
-		frame.addConsumer(log, data, 0.2, 0);
+        Logger log = new Logger();
+        frame.addConsumer(log, data, 0.2, 0);
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_LONG);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_LONG);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		frame.clear();
-	}
+        frame.stop();
+        frame.clear();
+    }
 }

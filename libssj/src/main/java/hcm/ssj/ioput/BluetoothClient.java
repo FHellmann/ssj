@@ -45,27 +45,22 @@ import hcm.ssj.core.Log;
 /**
  * Created by Johnny on 07.04.2015.
  */
-public class BluetoothClient extends BluetoothConnection
-{
+public class BluetoothClient extends BluetoothConnection {
+    BluetoothAdapter _adapter = null;
+    BluetoothDevice _server = null;
     private BluetoothSocket _socket = null;
     private UUID _uuid;
 
-    BluetoothAdapter _adapter = null;
-    BluetoothDevice _server = null;
-
-    public BluetoothClient(UUID connID, String serverName, String serverAddr) throws IOException
-    {
+    public BluetoothClient(UUID connID, String serverName, String serverAddr) throws IOException {
         _name = "BluetoothClient";
 
         _adapter = BluetoothAdapter.getDefaultAdapter();
-        if (_adapter == null)
-        {
+        if (_adapter == null) {
             Log.e("Device does not support Bluetooth");
             return;
         }
 
-        if (!_adapter.isEnabled())
-        {
+        if (!_adapter.isEnabled()) {
             Log.e("Bluetooth not enabled");
             return;
         }
@@ -74,21 +69,17 @@ public class BluetoothClient extends BluetoothConnection
 
         Set<BluetoothDevice> pairedDevices = _adapter.getBondedDevices();
         // If there are paired devices
-        if (pairedDevices.size() > 0)
-        {
+        if (pairedDevices.size() > 0) {
             // Loop through paired devices
-            for (BluetoothDevice d : pairedDevices)
-            {
-                if (d.getName().equalsIgnoreCase(serverName))
-                {
+            for (BluetoothDevice d : pairedDevices) {
+                if (d.getName().equalsIgnoreCase(serverName)) {
                     serverAddr = d.getAddress();
                     _server = d;
                 }
             }
         }
         //if we haven't found it
-        if(_server == null)
-        {
+        if (_server == null) {
             Log.i("not found, searching for server " + serverAddr);
 
             if (!BluetoothAdapter.checkBluetoothAddress(serverAddr)) {
@@ -103,42 +94,34 @@ public class BluetoothClient extends BluetoothConnection
         Log.i("client connection to " + _server.getName() + " initialized");
     }
 
-    public void run()
-    {
+    public void run() {
         _adapter.cancelDiscovery();
 
-        while(!_terminate)
-        {
-            try
-            {
+        while (!_terminate) {
+            try {
                 Log.i("setting up connection to " + _server.getName() + ", conn = " + _uuid.toString());
                 _socket = _server.createRfcommSocketToServiceRecord(_uuid);
 
                 Log.i("waiting for server ...");
                 _socket.connect();
 
-                if(_useObjectStreams)
-                {
+                if (_useObjectStreams) {
                     _out = new ObjectOutputStream(_socket.getOutputStream());
                     _in = new ObjectInputStream(_socket.getInputStream());
-                }
-                else
-                {
+                } else {
                     _out = new DataOutputStream(_socket.getOutputStream());
                     _in = new DataInputStream(_socket.getInputStream());
                 }
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.w("failed to connect to server", e);
             }
 
             try {
                 Thread.sleep(Cons.WAIT_BL_CONNECT); //give BL adapter some time to establish connection ...
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
 
-            if(_socket != null && _socket.isConnected())
-            {
+            if (_socket != null && _socket.isConnected()) {
                 Log.i("connected to server " + _server.getName() + ", conn = " + _uuid.toString());
                 setConnectedDevice(_socket.getRemoteDevice());
                 setConnectionStatus(true);
@@ -151,26 +134,20 @@ public class BluetoothClient extends BluetoothConnection
         }
     }
 
-    protected void close()
-    {
-        try
-        {
-            if(_socket != null)
-            {
+    protected void close() {
+        try {
+            if (_socket != null) {
                 _socket.close();
                 _socket = null;
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("failed to close socket", e);
         }
 
     }
 
-    public BluetoothDevice getRemoteDevice()
-    {
-        if(_socket != null)
+    public BluetoothDevice getRemoteDevice() {
+        if (_socket != null)
             return _socket.getRemoteDevice();
 
         return null;

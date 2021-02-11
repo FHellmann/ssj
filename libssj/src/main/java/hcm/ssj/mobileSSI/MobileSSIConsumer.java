@@ -42,48 +42,33 @@ import static java.lang.System.loadLibrary;
  * File writer for SSJ.<br>
  * Created by Frank Gaibler on 20.08.2015.
  */
-public class MobileSSIConsumer extends Consumer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     *
-     */
-    public class Options extends OptionList
-    {
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
+public class MobileSSIConsumer extends Consumer {
+    static {
+        loadLibrary("ssissjSensor");
     }
 
     public final Options options = new Options();
+    private int id = 0;
 
-    public MobileSSIConsumer()
-    {
+    public MobileSSIConsumer() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in Stream[]
-	 */
     @Override
-    public final void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        if (stream_in.length > 1 || stream_in.length < 1)
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     */
+    @Override
+    public final void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length > 1 || stream_in.length < 1) {
             Log.e("stream count not supported");
             return;
         }
-        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF)
-        {
+        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF) {
             Log.e("stream type not supported");
             return;
         }
@@ -93,20 +78,18 @@ public class MobileSSIConsumer extends Consumer
     /**
      * @param stream Stream
      */
-    private void start(Stream stream)
-    {
+    private void start(Stream stream) {
 
     }
 
     /**
      * @param stream_in Stream[]
-	 * @param trigger
+     * @param trigger
      */
     @Override
-    protected final void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
+    protected final void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
         float[] floats = stream_in[0].ptrF();
-            stream_in[0].ptrF()[0]=0.5f;
+        stream_in[0].ptrF()[0] = 0.5f;
         //ssi_ssj_sensor
         pushData(stream_in[0], getId());
     }
@@ -115,40 +98,44 @@ public class MobileSSIConsumer extends Consumer
      * @param stream_in Stream[]
      */
     @Override
-    public final void flush(Stream stream_in[]) throws SSJFatalException
-    {
+    public final void flush(Stream[] stream_in) throws SSJFatalException {
 
     }
 
     @Override
-	public final void init(Stream stream_in[]) throws SSJException
-    {
-        int t=0;
-		if (stream_in[0].type == Cons.Type.FLOAT)
-		{
-			t = 9;
-		}
+    public final void init(Stream[] stream_in) throws SSJException {
+        int t = 0;
+        if (stream_in[0].type == Cons.Type.FLOAT) {
+            t = 9;
+        }
         setStreamOptions(getId(), stream_in[0].num, stream_in[0].dim, t, stream_in[0].sr);
     }
 
-
-    public void setId(int _id)
-    {
-        id=_id;
+    public int getId() {
+        return id;
     }
-    public int getId()
-    {return id;}
 
-static
-{
-    loadLibrary("ssissjSensor");
-}
+    public void setId(int _id) {
+        id = _id;
+    }
+
     public native void setSensor(Object sensor, Stream[] stream, int id);
+
     public native void pushData(Stream stream, int id);
+
     public native void setStreamOptions(int id, int num, int dim, int type, double sr);
 
-    private int id=0;
-
+    /**
+     *
+     */
+    public class Options extends OptionList {
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 
 
 }

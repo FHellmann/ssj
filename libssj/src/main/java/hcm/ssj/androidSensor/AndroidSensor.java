@@ -43,13 +43,72 @@ import hcm.ssj.core.option.OptionList;
  * Standard connection for android sensors.<br>
  * Created by Frank Gaibler on 13.08.2015.
  */
-public class AndroidSensor extends hcm.ssj.core.Sensor
-{
+public class AndroidSensor extends hcm.ssj.core.Sensor {
+    public final Options options = new Options();
+    protected SensorManager manager;
+    protected ArrayList<SensorListener> listeners;
+    /**
+     *
+     */
+    public AndroidSensor() {
+        super();
+        _name = "AndroidSensor";
+
+        listeners = new ArrayList<>();
+    }
+
+    /**
+     * register a channel to this sensor
+     */
+    void register(SensorListener listener) {
+        listeners.add(listener);
+    }
+
+    /**
+     *
+     */
+    @Override
+    protected boolean connect() throws SSJFatalException {
+        manager = (SensorManager) SSJApplication.getAppContext().getSystemService(Context.SENSOR_SERVICE);
+
+        boolean ok = true;
+        for (SensorListener l : listeners) {
+            Sensor s = manager.getDefaultSensor(l.getType().getType());
+            if (s == null) {
+                Log.e(l.getType().getName() + " not found on device");
+                ok = false;
+            } else {
+                ok &= manager.registerListener(l, s, options.sensorDelay.get());
+            }
+        }
+
+        return ok;
+    }
+
+    /**
+     *
+     */
+    @Override
+    protected void disconnect() throws SSJFatalException {
+        for (int i = 0; i < listeners.size(); i++) {
+            manager.unregisterListener(listeners.get(i));
+        }
+    }
+
+    @Override
+    public void clear() {
+        listeners.clear();
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
     /**
      * All options for the sensor
      */
-    public class Options extends OptionList
-    {
+    public class Options extends OptionList {
         /**
          * According to documentation, the sensor will usually sample values
          * at a higher rate than the one specified.
@@ -65,82 +124,9 @@ public class AndroidSensor extends hcm.ssj.core.Sensor
         /**
          *
          */
-        private Options()
-        {
+        private Options() {
             addOptions();
         }
     }
-
-    public final Options options = new Options();
-    protected SensorManager manager;
-    protected ArrayList<SensorListener> listeners;
-    /**
-     *
-     */
-    public AndroidSensor()
-    {
-        super();
-        _name = "AndroidSensor";
-
-        listeners = new ArrayList<>();
-    }
-
-    /**
-     * register a channel to this sensor
-     */
-    void register(SensorListener listener)
-    {
-        listeners.add(listener);
-    }
-
-    /**
-	 *
-     */
-    @Override
-    protected boolean connect() throws SSJFatalException
-    {
-        manager = (SensorManager) SSJApplication.getAppContext().getSystemService(Context.SENSOR_SERVICE);
-
-        boolean ok = true;
-        for(SensorListener l : listeners)
-        {
-            Sensor s = manager.getDefaultSensor(l.getType().getType());
-            if (s == null)
-            {
-                Log.e(l.getType().getName() + " not found on device");
-                ok = false;
-            }
-            else
-            {
-                ok &= manager.registerListener(l, s, options.sensorDelay.get());
-            }
-        }
-
-        return ok;
-    }
-
-    /**
-	 *
-     */
-    @Override
-    protected void disconnect() throws SSJFatalException
-    {
-		for (int i = 0; i < listeners.size(); i++)
-		{
-			manager.unregisterListener(listeners.get(i));
-		}
-    }
-
-     @Override
-     public void clear()
-     {
-         listeners.clear();
-     }
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
 }
 

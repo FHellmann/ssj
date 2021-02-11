@@ -61,8 +61,9 @@ public class ShortEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (short[])data;
+        this.data = (short[]) data;
     }
+
     public void setData(short[] data) {
         this.data = data;
     }

@@ -61,8 +61,9 @@ public class LongEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (long[])data;
+        this.data = (long[]) data;
     }
+
     public void setData(long[] data) {
         this.data = data;
     }

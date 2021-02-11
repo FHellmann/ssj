@@ -45,8 +45,7 @@ import hcm.ssj.core.Log;
 /**
  * Created by Johnny on 07.04.2015.
  */
-public class BluetoothServer extends BluetoothConnection
-{
+public class BluetoothServer extends BluetoothConnection {
     BluetoothAdapter _adapter = null;
     private BluetoothServerSocket _server = null;
     private BluetoothSocket _socket = null;
@@ -54,19 +53,16 @@ public class BluetoothServer extends BluetoothConnection
     private UUID _uuid;
     private String _serverName;
 
-    public BluetoothServer(UUID connID, String serverName) throws IOException
-    {
+    public BluetoothServer(UUID connID, String serverName) throws IOException {
         _name = "BluetoothServer";
 
         _adapter = BluetoothAdapter.getDefaultAdapter();
-        if (_adapter == null)
-        {
+        if (_adapter == null) {
             Log.e("Device does not support Bluetooth");
             return;
         }
 
-        if (!_adapter.isEnabled())
-        {
+        if (!_adapter.isEnabled()) {
             Log.e("Bluetooth not enabled");
             return;
         }
@@ -76,42 +72,34 @@ public class BluetoothServer extends BluetoothConnection
         Log.i("server connection on " + _adapter.getName() + " @ " + _adapter.getAddress() + " initialized");
     }
 
-    public void run()
-    {
+    public void run() {
         _adapter.cancelDiscovery();
 
-        while(!_terminate)
-        {
-            try
-            {
+        while (!_terminate) {
+            try {
                 Log.i("setting up server on " + _adapter.getName() + " @ " + _adapter.getAddress() + ", conn = " + _uuid.toString());
                 _server = _adapter.listenUsingInsecureRfcommWithServiceRecord(_serverName, _uuid);
 
                 Log.i("waiting for clients...");
                 _socket = _server.accept();
 
-                if(_useObjectStreams)
-                {
+                if (_useObjectStreams) {
                     _out = new ObjectOutputStream(_socket.getOutputStream());
                     _in = new ObjectInputStream(_socket.getInputStream());
-                }
-                else
-                {
+                } else {
                     _out = new DataOutputStream(_socket.getOutputStream());
                     _in = new DataInputStream(_socket.getInputStream());
                 }
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.w("failed to connect to client", e);
             }
 
             try {
                 Thread.sleep(Cons.WAIT_BL_CONNECT); //give BL adapter some time to establish connection ...
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+            }
 
-            if(_socket != null && _socket.isConnected())
-            {
+            if (_socket != null && _socket.isConnected()) {
                 Log.i("connected to client " + _socket.getRemoteDevice().getName() + ", conn = " + _uuid.toString());
                 setConnectedDevice(_socket.getRemoteDevice());
                 setConnectionStatus(true);
@@ -124,31 +112,24 @@ public class BluetoothServer extends BluetoothConnection
         }
     }
 
-    protected void close()
-    {
-        try
-        {
-            if(_server != null)
-            {
+    protected void close() {
+        try {
+            if (_server != null) {
                 _server.close();
                 _server = null;
             }
 
-            if(_socket != null)
-            {
+            if (_socket != null) {
                 _socket.close();
                 _socket = null;
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("failed to close sockets", e);
         }
     }
 
-    public BluetoothDevice getRemoteDevice()
-    {
-        if(_socket != null)
+    public BluetoothDevice getRemoteDevice() {
+        if (_socket != null)
             return _socket.getRemoteDevice();
 
         return null;

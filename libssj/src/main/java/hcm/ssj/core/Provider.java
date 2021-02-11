@@ -35,19 +35,18 @@ import hcm.ssj.core.stream.Stream;
 public abstract class Provider extends Component {
 
     protected int _bufferID = -1;
-    protected void setBufferID(int bufferID)
-    {
-        _bufferID = bufferID;
-    }
-    protected int getBufferID()
-    {
+    protected Stream _stream_out = null;
+
+    protected int getBufferID() {
         return _bufferID;
     }
 
-    protected Stream _stream_out = null;
-    public Stream getOutputStream()
-    {
-        if(_stream_out == null)
+    protected void setBufferID(int bufferID) {
+        _bufferID = bufferID;
+    }
+
+    public Stream getOutputStream() {
+        if (_stream_out == null)
             Log.e("output stream not initialized");
 
         return _stream_out;
@@ -56,8 +55,7 @@ public abstract class Provider extends Component {
     public abstract String[] getOutputDescription();
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         _bufferID = -1;
         super.clear();
     }

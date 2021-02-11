@@ -37,6 +37,7 @@ import java.util.UUID;
 import hcm.ssj.core.Cons;
 import hcm.ssj.core.EventHandler;
 import hcm.ssj.core.Log;
+import hcm.ssj.core.Pipeline;
 import hcm.ssj.core.SSJFatalException;
 import hcm.ssj.core.Util;
 import hcm.ssj.core.event.Event;
@@ -47,49 +48,27 @@ import hcm.ssj.file.FileCons;
 /**
  * Created by Johnny on 05.03.2015.
  */
-public class BluetoothEventWriter extends EventHandler
-{
-    public class Options extends OptionList
-    {
-        public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
-        public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "we need an address if this is the first time these two devices connect");
-        public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
-        public final Option<BluetoothConnection.Type> connectionType = new Option<>("connectionType", BluetoothConnection.Type.CLIENT, BluetoothConnection.Type.class, "");
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
-
+public class BluetoothEventWriter extends EventHandler {
     public final Options options = new Options();
-
-    private BluetoothConnection _conn;
-
-    private boolean _connected = false;
     byte[] _buffer;
-    int _evID[];
+    int[] _evID;
     StringBuilder _builder = new StringBuilder();
-
+    private BluetoothConnection _conn;
+    private boolean _connected = false;
     public BluetoothEventWriter() {
         _name = "BluetoothEventWriter";
         _doWakeLock = true;
     }
 
     @Override
-	public void enter() throws SSJFatalException
-	{
+    public void enter() throws SSJFatalException {
 
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new RuntimeException("no incoming event channels defined");
-		}
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new RuntimeException("no incoming event channels defined");
+        }
 
         try {
-            switch(options.connectionType.get())
-            {
+            switch (options.connectionType.get()) {
                 case SERVER:
                     _conn = new BluetoothServer(UUID.nameUUIDFromBytes(options.connectionName.get().getBytes()), options.serverName.get());
                     _conn.connect(false);
@@ -99,13 +78,12 @@ public class BluetoothEventWriter extends EventHandler
                     _conn.connect(false);
                     break;
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new SSJFatalException("error in setting up connection", e);
         }
 
         BluetoothDevice dev = _conn.getRemoteDevice();
-        if(dev == null) {
+        if (dev == null) {
             throw new SSJFatalException("cannot retrieve remote device");
         }
 
@@ -118,25 +96,21 @@ public class BluetoothEventWriter extends EventHandler
     }
 
     @Override
-    protected void process() throws SSJFatalException
-    {
-        if (!_connected || !_conn.isConnected())
-        {
+    protected void process() throws SSJFatalException {
+        if (!_connected || !_conn.isConnected()) {
             return;
         }
 
         _builder.delete(0, _builder.length());
 
         _builder.append("<events ssi-v=\"2\" ssj-v=\"");
-        _builder.append(_frame.getVersion());
+        _builder.append(Pipeline.getVersion());
         _builder.append("\">");
 
         int count = 0;
-        for(int i = 0; i < _evchannel_in.size(); ++i)
-        {
+        for (int i = 0; i < _evchannel_in.size(); ++i) {
             Event ev = _evchannel_in.get(i).getEvent(_evID[i], false);
-            if (ev == null)
-            {
+            if (ev == null) {
                 continue;
             }
 
@@ -148,9 +122,8 @@ public class BluetoothEventWriter extends EventHandler
             _builder.append(FileCons.DELIMITER_LINE);
         }
 
-        if(count > 0)
-        {
-            _builder.append( "</events>");
+        if (count > 0) {
+            _builder.append("</events>");
 
             ByteBuffer buf = ByteBuffer.wrap(_buffer);
             buf.order(ByteOrder.BIG_ENDIAN);
@@ -158,14 +131,11 @@ public class BluetoothEventWriter extends EventHandler
             //store event
             buf.put(_builder.toString().getBytes());
 
-            try
-            {
+            try {
                 _conn.output().write(_buffer, 0, buf.position());
                 _conn.output().flush();
                 _conn.notifyDataTranferResult(true);
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.w("failed sending data", e);
                 _conn.notifyDataTranferResult(false);
             }
@@ -173,8 +143,7 @@ public class BluetoothEventWriter extends EventHandler
     }
 
     @Override
-    public void flush() throws SSJFatalException
-    {
+    public void flush() throws SSJFatalException {
         _connected = false;
 
         try {
@@ -198,16 +167,28 @@ public class BluetoothEventWriter extends EventHandler
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         _conn.clear();
         _conn = null;
         super.clear();
     }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
+        public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "we need an address if this is the first time these two devices connect");
+        public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
+        public final Option<BluetoothConnection.Type> connectionType = new Option<>("connectionType", BluetoothConnection.Type.CLIENT, BluetoothConnection.Type.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

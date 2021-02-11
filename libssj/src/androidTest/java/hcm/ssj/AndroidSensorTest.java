@@ -29,6 +29,7 @@ package hcm.ssj;
 
 import android.content.Context;
 import android.hardware.SensorManager;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -50,52 +51,43 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class AndroidSensorTest
-{
-	@Test
-	public void testSensors() throws Exception
-	{
-		// Test for every sensor type
-		for (SensorType type : SensorType.values())
-		{
-			SensorManager mSensorManager = (SensorManager) getInstrumentation().getContext().getSystemService(Context.SENSOR_SERVICE);
-			if (mSensorManager.getDefaultSensor(type.getType()) != null)
-			{
-				// Setup
-				Pipeline frame = Pipeline.getInstance();
-				frame.options.bufferSize.set(10.0f);
+public class AndroidSensorTest {
+    @Test
+    public void testSensors() throws Exception {
+        // Test for every sensor type
+        for (SensorType type : SensorType.values()) {
+            SensorManager mSensorManager = (SensorManager) getInstrumentation().getContext().getSystemService(Context.SENSOR_SERVICE);
+            if (mSensorManager.getDefaultSensor(type.getType()) != null) {
+                // Setup
+                Pipeline frame = Pipeline.getInstance();
+                frame.options.bufferSize.set(10.0f);
 
-				// Sensor
-				AndroidSensor sensor = new AndroidSensor();
-				AndroidSensorChannel channel = new AndroidSensorChannel();
-				channel.options.sensorType.set(type);
-				frame.addSensor(sensor, channel);
+                // Sensor
+                AndroidSensor sensor = new AndroidSensor();
+                AndroidSensorChannel channel = new AndroidSensorChannel();
+                channel.options.sensorType.set(type);
+                frame.addSensor(sensor, channel);
 
-				// Logger
-				Logger log = new Logger();
-				frame.addConsumer(log, channel, 1, 0);
+                // Logger
+                Logger log = new Logger();
+                frame.addConsumer(log, channel, 1, 0);
 
-				// Start framework
-				frame.start();
+                // Start framework
+                frame.start();
 
-				// Wait duration
-				try
-				{
-					Thread.sleep(TestHelper.DUR_TEST_SHORT);
-				}
-				catch (Exception e)
-				{
-					e.printStackTrace();
-				}
+                // Wait duration
+                try {
+                    Thread.sleep(TestHelper.DUR_TEST_SHORT);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-				// Stop framework
-				frame.stop();
-				frame.release();
-			}
-			else
-			{
-				Log.i(type.getName() + " not present on device");
-			}
-		}
-	}
+                // Stop framework
+                frame.stop();
+                frame.release();
+            } else {
+                Log.i(type.getName() + " not present on device");
+            }
+        }
+    }
 }

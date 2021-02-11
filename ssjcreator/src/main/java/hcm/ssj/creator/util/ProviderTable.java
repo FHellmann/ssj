@@ -46,22 +46,19 @@ import hcm.ssj.ml.IModelHandler;
  * Create a table row which includes viable providers
  * Created by Frank Gaibler on 19.05.2016.
  */
-public class ProviderTable
-{
+public class ProviderTable {
     /**
      * @param activity   Activity
      * @param mainObject Object
      * @param dividerTop boolean
      * @return TableRow
      */
-    public static TableRow createStreamTable(Activity activity, final Object mainObject, boolean dividerTop, int heading)
-    {
+    public static TableRow createStreamTable(Activity activity, final Object mainObject, boolean dividerTop, int heading) {
         TableRow tableRow = new TableRow(activity);
         tableRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));
         LinearLayout linearLayout = new LinearLayout(activity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        if (dividerTop)
-        {
+        if (dividerTop) {
             //add divider
             linearLayout.addView(Util.addDivider(activity));
         }
@@ -102,8 +99,7 @@ public class ProviderTable
                 });
                 linearLayout.addView(checkBox);
             }
-        } else
-        {
+        } else {
             return null;
         }
         tableRow.addView(linearLayout);
@@ -116,14 +112,12 @@ public class ProviderTable
      * @param dividerTop boolean
      * @return TableRow
      */
-    public static TableRow createEventTable(Activity activity, final Object mainObject, boolean dividerTop)
-    {
+    public static TableRow createEventTable(Activity activity, final Object mainObject, boolean dividerTop) {
         TableRow tableRow = new TableRow(activity);
         tableRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));
         LinearLayout linearLayout = new LinearLayout(activity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        if (dividerTop)
-        {
+        if (dividerTop) {
             //add divider
             linearLayout.addView(Util.addDivider(activity));
         }
@@ -138,7 +132,7 @@ public class ProviderTable
         if (objects.length > 0) {
             for (int i = 0; i < objects.length; i++) {
 
-                if(PipelineBuilder.getInstance().isManagedFeedback(objects[i]))
+                if (PipelineBuilder.getInstance().isManagedFeedback(objects[i]))
                     continue;
 
                 CheckBox checkBox = new CheckBox(activity);
@@ -168,8 +162,7 @@ public class ProviderTable
                 });
                 linearLayout.addView(checkBox);
             }
-        } else
-        {
+        } else {
             return null;
         }
         tableRow.addView(linearLayout);
@@ -182,14 +175,12 @@ public class ProviderTable
      * @param dividerTop boolean
      * @return TableRow
      */
-    public static TableRow createModelTable(Activity activity, final Object mainObject, boolean dividerTop, int heading)
-    {
+    public static TableRow createModelTable(Activity activity, final Object mainObject, boolean dividerTop, int heading) {
         TableRow tableRow = new TableRow(activity);
         tableRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT));
         LinearLayout linearLayout = new LinearLayout(activity);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        if (dividerTop)
-        {
+        if (dividerTop) {
             //add divider
             linearLayout.addView(Util.addDivider(activity));
         }
@@ -235,8 +226,7 @@ public class ProviderTable
                 });
                 linearLayout.addView(checkBox);
             }
-        } else
-        {
+        } else {
             return null;
         }
         tableRow.addView(linearLayout);

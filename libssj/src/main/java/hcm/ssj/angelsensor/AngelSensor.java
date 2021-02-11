@@ -39,87 +39,70 @@ import hcm.ssj.core.SSJFatalException;
 import hcm.ssj.core.Sensor;
 import hcm.ssj.core.option.OptionList;
 
-public class AngelSensor extends Sensor
-{
-	private Handler handler;
+public class AngelSensor extends Sensor {
+    protected boolean angelInitialized;
+    protected AngelSensorListener listener;
+    BluetoothDevice bluetoothDevice;
+    private Handler handler;
+    private BleScanner mBleScanner;
+    BleScanner.ScanCallback mScanCallback = new BleScanner.ScanCallback() {
+        @Override
+        public void onBluetoothDeviceFound(BluetoothDevice device) {
+            if (device.getName() != null) {
+                Log.i("Bluetooth LE device found: " + device.getName());
+                //mBleScanner.stopScan();
+                if (device.getName() != null && device.getName().startsWith("Angel")) {
 
-	protected boolean             angelInitialized;
-	protected AngelSensorListener listener;
+                    bluetoothDevice = device;
+                    //mBleScanner.stop();
+                    mBleScanner.stopScan();
 
-	BleScanner.ScanCallback mScanCallback = new BleScanner.ScanCallback()
-	{
-		@Override
-		public void onBluetoothDeviceFound(BluetoothDevice device)
-		{
-			if (device.getName() != null)
-			{
-				Log.i("Bluetooth LE device found: " + device.getName());
-				//mBleScanner.stopScan();
-				if (device.getName() != null && device.getName().startsWith("Angel"))
-				{
+                    listener.connect(device.getAddress());
+                    Log.i("connected to device " + device.getName());
+                }
+            }
+        }
+    };
+    private BluetoothAdapter bluetoothAdapter;
 
-					bluetoothDevice = device;
-					//mBleScanner.stop();
-					mBleScanner.stopScan();
+    public AngelSensor() {
+        _name = "AngelSensor";
+        angelInitialized = false;
+    }
 
-					listener.connect(device.getAddress());
-					Log.i("connected to device " + device.getName());
-				}
-			}
-		}
-	};
+    @Override
+    public boolean connect() throws SSJFatalException {
+        listener = new AngelSensorListener();
 
-	public AngelSensor()
-	{
-		_name = "AngelSensor";
-		angelInitialized = false;
-	}
+        try {
+            if (mBleScanner == null) {
+                //bluetoothAdapter = BleUtils.getBluetoothAdapter(ctx);
+                mBleScanner = new BleScanner(SSJApplication.getAppContext(), mScanCallback);
+            }
+        } catch (Exception e) {
+            Log.e("Exception:", e);
+        }
 
-	@Override
-	public boolean connect() throws SSJFatalException
-	{
-		listener = new AngelSensorListener();
+        mBleScanner.startScan();
+        //mBleScanner.setScanPeriod(1000);
 
-		try
-		{
-			if (mBleScanner == null)
-			{
-				//bluetoothAdapter = BleUtils.getBluetoothAdapter(ctx);
-				mBleScanner = new BleScanner(SSJApplication.getAppContext(), mScanCallback);
-			}
-		}
-		catch (Exception e)
-		{
-			Log.e("Exception:", e);
-		}
-
-		mBleScanner.startScan();
-		//mBleScanner.setScanPeriod(1000);
-
-		//mBleScanner.start();
+        //mBleScanner.start();
 
 
-		return true;
-	}
+        return true;
+    }
 
-	@Override
-	public void disconnect() throws SSJFatalException
-	{
+    @Override
+    public void disconnect() throws SSJFatalException {
 
-	}
+    }
 
-	public void didDiscoverDevice(BluetoothDevice bluetoothDevice, int rssi, boolean allowed)
-	{
+    public void didDiscoverDevice(BluetoothDevice bluetoothDevice, int rssi, boolean allowed) {
 
-	}
+    }
 
-	private BleScanner       mBleScanner;
-	private BluetoothAdapter bluetoothAdapter;
-	BluetoothDevice bluetoothDevice;
-
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

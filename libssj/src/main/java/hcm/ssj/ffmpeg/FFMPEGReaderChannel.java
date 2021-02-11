@@ -40,98 +40,85 @@ import hcm.ssj.core.stream.Stream;
  * Created by Michael Dietz on 04.09.2017.
  */
 
-public class FFMPEGReaderChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class FFMPEGReaderChannel extends SensorChannel {
+    public final Options options = new Options();
+    private int sampleDimension = 0;
+    private FFMPEGReader ffmpegReader = null;
 
-	/**
-	 * All options for the provider
-	 */
-	public class Options extends OptionList
-	{
-		public final Option<Double> sampleRate = new Option<>("sampleRate", 15., Double.class, "sample rate");
+    public FFMPEGReaderChannel() {
+        super();
+        _name = this.getClass().getSimpleName();
+    }
 
-		/**
-		 *
-		 */
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    protected void init() throws SSJException {
+        ffmpegReader = (FFMPEGReader) _sensor;
+        sampleDimension = ffmpegReader.getBufferSize();
+    }
 
-	private int sampleDimension = 0;
-	private FFMPEGReader ffmpegReader = null;
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        byte[] out = stream_out.ptrB();
 
-	public FFMPEGReaderChannel()
-	{
-		super();
-		_name = this.getClass().getSimpleName();
-	}
+        ffmpegReader.swapBuffer(out);
 
-	@Override
-	protected void init() throws SSJException
-	{
-		ffmpegReader =  (FFMPEGReader) _sensor;
-		sampleDimension = ffmpegReader.getBufferSize();
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		byte[] out = stream_out.ptrB();
+    /**
+     * @return double
+     */
+    @Override
+    public double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		ffmpegReader.swapBuffer(out);
+    /**
+     * @return int
+     */
+    @Override
+    final public int getSampleDimension() {
+        return sampleDimension;
+    }
 
-		return true;
-	}
+    /**
+     * @return int
+     */
+    @Override
+    public int getSampleBytes() {
+        return 1;
+    }
 
-	/**
-	 * @return double
-	 */
-	@Override
-	public double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.IMAGE;
+    }
 
-	/**
-	 * @return int
-	 */
-	@Override
-	final public int getSampleDimension()
-	{
-		return sampleDimension;
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[]{"video"};
 
-	/**
-	 * @return int
-	 */
-	@Override
-	public int getSampleBytes()
-	{
-		return 1;
-	}
+        ((ImageStream) _stream_out).width = ffmpegReader.options.width.get();
+        ((ImageStream) _stream_out).height = ffmpegReader.options.height.get();
+        ((ImageStream) _stream_out).format = Cons.ImageFormat.FLEX_RGB_888.val;
+    }
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.IMAGE;
-	}
+    /**
+     * All options for the provider
+     */
+    public class Options extends OptionList {
+        public final Option<Double> sampleRate = new Option<>("sampleRate", 15., Double.class, "sample rate");
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[]{"video"};
-
-		((ImageStream)_stream_out).width = ffmpegReader.options.width.get();
-		((ImageStream)_stream_out).height = ffmpegReader.options.height.get();
-		((ImageStream)_stream_out).format = Cons.ImageFormat.FLEX_RGB_888.val;
-	}
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

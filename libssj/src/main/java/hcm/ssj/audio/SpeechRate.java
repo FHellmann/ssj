@@ -46,77 +46,47 @@ import hcm.ssj.core.stream.Stream;
  * - uses audio processing tools from TarsosDSP
  * Created by Johnny on 05.03.2015.
  */
-public class SpeechRate extends Consumer
-{
-    public class Options extends OptionList
-    {
-        public final Option<String> sender = new Option<>("sender", "SpeechRate", String.class, "event sender name, written in every event");
-        public final Option<String> event = new Option<>("event", "SpeechRate", String.class, "event name");
-        public final Option<Float> thresholdVoicedProb = new Option<>("thresholdVoicedProb", 0.5f, Float.class, "in Hz");
-        public final Option<Float> intensityIgnoranceLevel = new Option<>("intensityIgnoranceLevel", 1.0f, Float.class, "in dB");
-        public final Option<Float> minDipBetweenPeaks = new Option<>("minDipBetweenPeaks", 3.0f, Float.class, "in dB");
-        public final Option<Integer> width = new Option<>("width", 3, Integer.class, "");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
+public class SpeechRate extends Consumer {
     public final Options options = new Options();
-
     private Stream _intensity = null;
     private Stream _voiced = null;
     private int _intensity_ind = -1;
     private int _voiced_ind = -1;
-
     private float[] _tmp = new float[512];
 
-    public SpeechRate()
-    {
+    public SpeechRate() {
         _name = "SpeechRate";
     }
 
     @Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        for(Stream s : stream_in)
-        {
-            if (_intensity_ind < 0)
-            {
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        for (Stream s : stream_in) {
+            if (_intensity_ind < 0) {
                 _intensity_ind = s.findDataClass("Intensity");
-				if (_intensity_ind >= 0)
-				{
-					_intensity = s;
-				}
+                if (_intensity_ind >= 0) {
+                    _intensity = s;
+                }
             }
-            if (_voiced_ind < 0)
-            {
+            if (_voiced_ind < 0) {
                 _voiced_ind = s.findDataClass("VoicedProb");
-				if (_voiced_ind >= 0)
-				{
-					_voiced = s;
-				}
+                if (_voiced_ind >= 0) {
+                    _voiced = s;
+                }
             }
         }
 
-        if((_intensity == null || _intensity.type != Cons.Type.FLOAT)
-        || (_voiced == null || _voiced.type != Cons.Type.FLOAT))
-        {
+        if ((_intensity == null || _intensity.type != Cons.Type.FLOAT)
+                || (_voiced == null || _voiced.type != Cons.Type.FLOAT)) {
             throw new SSJFatalException("invalid input configuration. SPL Energy (double) and VoicedProb (float) is required.");
         }
 
-		if (_evchannel_out == null)
-		{
-			Log.e("no outgoing event channel has been registered");
-		}
+        if (_evchannel_out == null) {
+            Log.e("no outgoing event channel has been registered");
+        }
     }
 
     @Override
-    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
         float[] intensity = _intensity.select(_intensity_ind).ptrF();
         float[] voiced = _voiced.ptrF();
 
@@ -129,22 +99,19 @@ public class SpeechRate extends Consumer
 
         //remove non-voiced peaks
         Iterator<Integer> peak = peaks.iterator();
-        int i,j;
+        int i, j;
         double t;
-        while (peak.hasNext())
-        {
+        while (peak.hasNext()) {
             i = peak.next();
 
             t = _intensity.time + i * _intensity.step;
-            j = (int)((t - _voiced.time) / _voiced.step);
+            j = (int) ((t - _voiced.time) / _voiced.step);
 
-            if (j >= _voiced.num)
-            {
+            if (j >= _voiced.num) {
                 j = _voiced.num - 1;
             }
 
-            if (voiced[j * _voiced.dim + _voiced_ind] < options.thresholdVoicedProb.get())
-            {
+            if (voiced[j * _voiced.dim + _voiced_ind] < options.thresholdVoicedProb.get()) {
                 peak.remove();
             }
         }
@@ -157,41 +124,40 @@ public class SpeechRate extends Consumer
         Event ev = Event.create(Cons.Type.STRING);
         ev.sender = options.sender.get();
         ev.name = options.event.get();
-        ev.time = (int)(1000 * stream_in[0].time + 0.5);
-        ev.dur = (int)(1000 * duration + 0.5);
+        ev.time = (int) (1000 * stream_in[0].time + 0.5);
+        ev.dur = (int) (1000 * duration + 0.5);
         ev.state = Event.State.COMPLETED;
-        ev.setData("<tuple string=\"Speechrate (syllables/sec)\" value=\""+ (peaks.size() / duration) +"\" />");
+        ev.setData("<tuple string=\"Speechrate (syllables/sec)\" value=\"" + (peaks.size() / duration) + "\" />");
         _evchannel_out.pushEvent(ev);
     }
 
-
     @Override
-    public void flush(Stream[] stream_in) throws SSJFatalException
-    {}
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+    }
 
     /**
      * Reimplementaiton of Jong and Wempe's PRAAT peak detector for speech rate analysis as described in
      * N.H. De Jong and T. Wempe, Praat script to detect syllable nuclei and measure speech rate automatically, 2009, doi:10.3758/BRM.41.2.385
-     * @param data audio intensity
+     *
+     * @param data      audio intensity
      * @param threshold threshold to be applied above median
      */
-    private LinkedList<Integer> findPeaks(float[] data, int length, double threshold, double minDip)
-    {
+    private LinkedList<Integer> findPeaks(float[] data, int length, double threshold, double minDip) {
         float min = Util.min(data, 0, length);
 
-        if(_tmp.length < length)
+        if (_tmp.length < length)
             _tmp = new float[length];
         System.arraycopy(data, 0, _tmp, 0, length);
         double med = Util.median(_tmp, 0, length);
 
         threshold += med;
-        if(threshold  < min)
+        if (threshold < min)
             threshold = min;
 
         int width = options.width.get();
-        if(width == 0) width = 1;
+        if (width == 0) width = 1;
         LinkedList<Integer> peaks = findPeaks_(data, length, width, threshold);
-        if(peaks.size() == 0)
+        if (peaks.size() == 0)
             return peaks;
 
         Log.ds("peaks (pre-mindip-cull) = " + peaks.size());
@@ -200,14 +166,13 @@ public class SpeechRate extends Consumer
         int prev = i.next();
         int current;
         double minLocal;
-        while(i.hasNext())
-        {
+        while (i.hasNext()) {
             current = i.next();
 
             //find min between the two peaks
             minLocal = Util.min(data, prev, current - prev);
 
-            if(Math.abs(data[current] - minLocal) <= minDip)
+            if (Math.abs(data[current] - minLocal) <= minDip)
                 i.remove();
             else
                 prev = current;
@@ -225,31 +190,31 @@ public class SpeechRate extends Consumer
         int mid = 0;
         int end = length;
 
-        for(double av = data[0]; mid < end; ++mid) {
+        for (double av = data[0]; mid < end; ++mid) {
             av = decayRate * av + (1.0D - decayRate) * data[mid];
-            if(av < data[mid]) {
+            if (av < data[mid]) {
                 av = data[mid];
             }
 
             int i = mid - width;
-            if(i < 0) {
+            if (i < 0) {
                 i = 0;
             }
 
             int stop = mid + width + 1;
-            if(stop > length) {
+            if (stop > length) {
                 stop = length;
             }
 
             int var15;
-            for(var15 = i++; i < stop; ++i) {
-                if(data[i] > data[var15]) {
+            for (var15 = i++; i < stop; ++i) {
+                if (data[i] > data[var15]) {
                     var15 = i;
                 }
             }
 
-            if(var15 == mid) {
-                if(overThreshold(data, length, var15, width, threshold, isRelative, av)) {
+            if (var15 == mid) {
+                if (overThreshold(data, length, var15, width, threshold, isRelative, av)) {
                     peaks.add(var15);
                 }
             }
@@ -258,37 +223,35 @@ public class SpeechRate extends Consumer
         return peaks;
     }
 
-    boolean overThreshold(float[] data, int length, int index, int width, double threshold, boolean isRelative, double av)
-    {
-        if(data[index] < av) {
+    boolean overThreshold(float[] data, int length, int index, int width, double threshold, boolean isRelative, double av) {
+        if (data[index] < av) {
             return false;
-        } else if(!isRelative) {
+        } else if (!isRelative) {
             return data[index] > threshold;
         } else {
             int iStart = index - 3 * width;
-            if(iStart < 0) {
+            if (iStart < 0) {
                 iStart = 0;
             }
 
             int iStop = index + 1 * width;
-            if(iStop > length) {
+            if (iStop > length) {
                 iStop = length;
             }
 
             double sum = 0.0D;
 
             int count;
-            for(count = iStop - iStart; iStart < iStop; iStart++) {
+            for (count = iStop - iStart; iStart < iStop; iStart++) {
                 sum += data[iStart];
             }
 
-            return data[index] > sum / (double)count + threshold;
+            return data[index] > sum / (double) count + threshold;
         }
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         super.clear();
 
         _intensity = null;
@@ -298,8 +261,23 @@ public class SpeechRate extends Consumer
     }
 
     @Override
-    public OptionList getOptions()
-    {
+    public OptionList getOptions() {
         return options;
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> sender = new Option<>("sender", "SpeechRate", String.class, "event sender name, written in every event");
+        public final Option<String> event = new Option<>("event", "SpeechRate", String.class, "event name");
+        public final Option<Float> thresholdVoicedProb = new Option<>("thresholdVoicedProb", 0.5f, Float.class, "in Hz");
+        public final Option<Float> intensityIgnoranceLevel = new Option<>("intensityIgnoranceLevel", 1.0f, Float.class, "in dB");
+        public final Option<Float> minDipBetweenPeaks = new Option<>("minDipBetweenPeaks", 3.0f, Float.class, "in dB");
+        public final Option<Integer> width = new Option<>("width", 3, Integer.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

@@ -39,189 +39,162 @@ import java.util.concurrent.TimeUnit;
 /**
  * Background thread for audio playback.
  */
-public class PlaybackThread
-{
-	private final static int INITIAL_PLAYBACK_DELAY = 0;
-	private final static int MARKER_UPDATE_INTERVAL = 1000 / 60;
+public class PlaybackThread {
+    private final static int INITIAL_PLAYBACK_DELAY = 0;
+    private final static int MARKER_UPDATE_INTERVAL = 1000 / 60;
 
-	private PlaybackListener playbackListener;
-	private MediaPlayer mediaPlayer;
-	private Context context;
-	private File audioFile;
-	private ScheduledExecutorService executor;
-	private Runnable markerUpdateTask;
+    private PlaybackListener playbackListener;
+    private MediaPlayer mediaPlayer;
+    private final Context context;
+    private final File audioFile;
+    private ScheduledExecutorService executor;
+    private Runnable markerUpdateTask;
 
-	private boolean finishedPlaying = false;
+    private boolean finishedPlaying = false;
 
-	public PlaybackThread(Context c, File file)
-	{
-		context = c.getApplicationContext();
-		audioFile = file;
-		loadMedia();
-	}
+    public PlaybackThread(Context c, File file) {
+        context = c.getApplicationContext();
+        audioFile = file;
+        loadMedia();
+    }
 
-	/**
-	 * Plays the loaded audio file and starts updating marker's position.
-	 */
-	public void play()
-	{
-		if (mediaPlayer != null && !mediaPlayer.isPlaying() && !finishedPlaying)
-		{
-			mediaPlayer.start();
-			startUpdatingMarkerPosition();
-		}
-	}
+    /**
+     * Plays the loaded audio file and starts updating marker's position.
+     */
+    public void play() {
+        if (mediaPlayer != null && !mediaPlayer.isPlaying() && !finishedPlaying) {
+            mediaPlayer.start();
+            startUpdatingMarkerPosition();
+        }
+    }
 
-	/**
-	 * Pauses the playback of the loaded audio file.
-	 */
-	public void pause()
-	{
-		if (mediaPlayer != null && mediaPlayer.isPlaying())
-		{
-			mediaPlayer.pause();
-		}
-	}
+    /**
+     * Pauses the playback of the loaded audio file.
+     */
+    public void pause() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+        }
+    }
 
-	/**
-	 * Stops and resets the playback of the loaded audio file and repositions the marker's
-	 * position to the origin.
-	 */
-	public void reset()
-	{
-		if (mediaPlayer != null)
-		{
-			mediaPlayer.reset();
-		}
-		loadMedia();
-		stopUpdatingMarkerPosition();
-	}
+    /**
+     * Stops and resets the playback of the loaded audio file and repositions the marker's
+     * position to the origin.
+     */
+    public void reset() {
+        if (mediaPlayer != null) {
+            mediaPlayer.reset();
+        }
+        loadMedia();
+        stopUpdatingMarkerPosition();
+    }
 
-	public void resetFinishedPlaying()
-	{
-		finishedPlaying = false;
-	}
+    public void resetFinishedPlaying() {
+        finishedPlaying = false;
+    }
 
-	/**
-	 * Sets the listener for the current thread. Only one such thread is allowed to have
-	 * a {@link hcm.ssj.audio.PlaybackListener}.
-	 * @param listener {@link hcm.ssj.audio.PlaybackListener}.
-	 */
-	public void setPlaybackListener(PlaybackListener listener)
-	{
-		playbackListener = listener;
-	}
+    /**
+     * Sets the listener for the current thread. Only one such thread is allowed to have
+     * a {@link hcm.ssj.audio.PlaybackListener}.
+     *
+     * @param listener {@link hcm.ssj.audio.PlaybackListener}.
+     */
+    public void setPlaybackListener(PlaybackListener listener) {
+        playbackListener = listener;
+    }
 
-	/**
-	 * Removes the listener of the current thread.
-	 */
-	public void removePlaybackListener()
-	{
-		playbackListener = null;
-	}
+    /**
+     * Removes the listener of the current thread.
+     */
+    public void removePlaybackListener() {
+        playbackListener = null;
+    }
 
-	/**
-	 * Returns true if the current thread is currently playing audio.
-	 * @return True if audio is being played back, false otherwise.
-	 */
-	public boolean isPlaying()
-	{
-		return mediaPlayer != null && mediaPlayer.isPlaying();
-	}
+    /**
+     * Returns true if the current thread is currently playing audio.
+     *
+     * @return True if audio is being played back, false otherwise.
+     */
+    public boolean isPlaying() {
+        return mediaPlayer != null && mediaPlayer.isPlaying();
+    }
 
-	/**
-	 * Skips the playback of the current thread to the selected time.
-	 * @param progress Time in milliseconds to skip forward or backward to.
-	 */
-	public void seekTo(int progress)
-	{
-		if (mediaPlayer != null)
-		{
-			mediaPlayer.seekTo(progress);
-			play();
-		}
-	}
+    /**
+     * Skips the playback of the current thread to the selected time.
+     *
+     * @param progress Time in milliseconds to skip forward or backward to.
+     */
+    public void seekTo(int progress) {
+        if (mediaPlayer != null) {
+            mediaPlayer.seekTo(progress);
+            play();
+        }
+    }
 
-	/**
-	 * Loads audio file and sets up OnCompletionListener.
-	 */
-	private void loadMedia()
-	{
-		if (context != null && audioFile != null)
-		{
-			mediaPlayer = MediaPlayer.create(context.getApplicationContext(), Uri.fromFile(audioFile));
-			mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener()
-			{
-				@Override
-				public void onCompletion(MediaPlayer mp)
-				{
-					finishedPlaying = true;
-					if (playbackListener != null)
-					{
-						playbackListener.onCompletion();
-					}
-				}
-			});
-		}
-	}
+    /**
+     * Loads audio file and sets up OnCompletionListener.
+     */
+    private void loadMedia() {
+        if (context != null && audioFile != null) {
+            mediaPlayer = MediaPlayer.create(context.getApplicationContext(), Uri.fromFile(audioFile));
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    finishedPlaying = true;
+                    if (playbackListener != null) {
+                        playbackListener.onCompletion();
+                    }
+                }
+            });
+        }
+    }
 
-	/**
-	 * Starts updating playback marker's progress at a specified time interval.
-	 */
-	private void startUpdatingMarkerPosition()
-	{
-		if (executor == null)
-		{
-			executor = Executors.newSingleThreadScheduledExecutor();
-		}
-		if (markerUpdateTask == null)
-		{
-			markerUpdateTask = new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					updateMarkerProgress();
-				}
-			};
-		}
-		executor.scheduleAtFixedRate(
-				markerUpdateTask,
-				INITIAL_PLAYBACK_DELAY,
-				MARKER_UPDATE_INTERVAL,
-				TimeUnit.MILLISECONDS
-		);
-	}
+    /**
+     * Starts updating playback marker's progress at a specified time interval.
+     */
+    private void startUpdatingMarkerPosition() {
+        if (executor == null) {
+            executor = Executors.newSingleThreadScheduledExecutor();
+        }
+        if (markerUpdateTask == null) {
+            markerUpdateTask = new Runnable() {
+                @Override
+                public void run() {
+                    updateMarkerProgress();
+                }
+            };
+        }
+        executor.scheduleAtFixedRate(
+                markerUpdateTask,
+                INITIAL_PLAYBACK_DELAY,
+                MARKER_UPDATE_INTERVAL,
+                TimeUnit.MILLISECONDS
+        );
+    }
 
-	/**
-	 * Stops updating playback marker's progress.
-	 */
-	private void stopUpdatingMarkerPosition()
-	{
-		if (executor != null)
-		{
-			executor.shutdown();
-			executor = null;
-			markerUpdateTask = null;
-			if (playbackListener != null)
-			{
-				playbackListener.onCompletion();
-			}
-		}
-	}
+    /**
+     * Stops updating playback marker's progress.
+     */
+    private void stopUpdatingMarkerPosition() {
+        if (executor != null) {
+            executor.shutdown();
+            executor = null;
+            markerUpdateTask = null;
+            if (playbackListener != null) {
+                playbackListener.onCompletion();
+            }
+        }
+    }
 
-	/**
-	 * Updates playback marker's progress.
-	 */
-	private void updateMarkerProgress()
-	{
-		if (mediaPlayer != null && mediaPlayer.isPlaying())
-		{
-			int currentPosition = mediaPlayer.getCurrentPosition();
-			if (playbackListener != null)
-			{
-				playbackListener.onProgress(currentPosition);
-			}
-		}
-	}
+    /**
+     * Updates playback marker's progress.
+     */
+    private void updateMarkerProgress() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            int currentPosition = mediaPlayer.getCurrentPosition();
+            if (playbackListener != null) {
+                playbackListener.onProgress(currentPosition);
+            }
+        }
+    }
 }

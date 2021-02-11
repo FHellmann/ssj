@@ -43,67 +43,49 @@ import hcm.ssj.file.FileCons;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class AudioAction extends Action
-{
-    Context _context = null;
-
+public class AudioAction extends Action {
     public AssetFileDescriptor fd = null;
-
     public float intensity = 1;
     public int soundId;
+    Context _context = null;
     private String res;
 
-    public AudioAction()
-    {
+    public AudioAction() {
         type = FeedbackClass.Type.Audio;
     }
 
-    protected void load(XmlPullParser xml, Context context)
-    {
+    protected void load(XmlPullParser xml, Context context) {
         super.load(xml, context);
         _context = context;
 
-        try
-        {
+        try {
             res = xml.getAttributeValue(null, "res");
-            if(res == null)
+            if (res == null)
                 throw new IOException("no sound defined");
 
-            if(res.startsWith("assets:"))
-            {
-                fd =  context.getAssets().openFd(res.substring(7));
-            }
-            else
-            {
+            if (res.startsWith("assets:")) {
+                fd = context.getAssets().openFd(res.substring(7));
+            } else {
                 res = FileCons.SSJ_EXTERNAL_STORAGE + File.separator + res;
             }
 
             String intensity_str = xml.getAttributeValue(null, "intensity");
-            if(intensity_str != null)
+            if (intensity_str != null)
                 intensity = Float.valueOf(intensity_str);
-        }
-        catch(IOException e)
-        {
+        } catch (IOException e) {
             Log.e("error parsing config file", e);
         }
     }
 
-    public void registerWithPlayer(SoundPool player)
-    {
-        try
-        {
-            if(fd != null)
-            {
+    public void registerWithPlayer(SoundPool player) {
+        try {
+            if (fd != null) {
                 soundId = player.load(fd, 1);
                 fd.close();
-            }
-            else
-            {
+            } else {
                 soundId = player.load(res, 1);
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("error loading audio files", e);
         }
     }

@@ -31,8 +31,8 @@ package hcm.ssj.audio;
  * Created by hiwi on 04.12.2017.
  */
 
-public interface PlaybackListener
-{
-	void onProgress(int progress);
-	void onCompletion();
+public interface PlaybackListener {
+    void onProgress(int progress);
+
+    void onCompletion();
 }

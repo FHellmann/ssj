@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!--
+  ~ pmd.xml
+  ~ Copyright (c) 2021
+  ~ Authors: Ionut Damian, Michael Dietz, Frank Gaibler, Daniel Langerenken, Simon Flutura,
+  ~ Vitalijs Krumins, Antonio Grieco
+  ~ ******************************************************
+  ~ This file is part of the Social Signal Interpretation for Java (SSJ) framework
+  ~ developed at the Lab for Human Centered Multimedia of the University of Augsburg.
+  ~
+  ~ SSJ has been inspired by the SSI (http://openssi.net) framework. SSJ is not a
+  ~ one-to-one port of SSI to Java, it is an approximation. Nor does SSJ pretend
+  ~ to offer SSI's comprehensive functionality and performance (this is java after all).
+  ~ Nevertheless, SSJ borrows a lot of programming patterns from SSI.
+  ~
+  ~ This library is free software; you can redistribute it and/or modify it under the
+  ~ terms of the GNU General Public License as published by the Free Software
+  ~ Foundation; either version 3 of the License, or any later version.
+  ~
+  ~ This library is distributed in the hope that it will be useful, but WITHOUT
+  ~ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+  ~ FOR A PARTICULAR PURPOSE.
+  ~ See the GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License along
+  ~ with this library; if not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<!--
+PMD Configuration
+Severity: HARD
+-->
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="ruleset"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+
+    <description>POM rule set file</description>
+
+    <exclude-pattern>.*/R.java</exclude-pattern>
+    <exclude-pattern>.*/gen/.*</exclude-pattern>
+
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="AccessorMethodGeneration" />
+    </rule>
+
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="TooManyStaticImports" />
+        <exclude name="IfStmtsMustUseBraces" />
+        <exclude name="AtLeastOneConstructor" />
+        <exclude name="OnlyOneReturn" />
+        <exclude name="CommentDefaultAccessModifier" />
+        <exclude name="DefaultPackage" />
+        <exclude name="ClassNamingConventions" />
+    </rule>
+    <rule ref="category/java/codestyle.xml/LongVariable" >
+        <properties>
+            <property name="minimum" value="25" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml">
+        <exclude name="ExcessiveImports" />
+        <exclude name="LoosePackageCoupling" />
+        <exclude name="LawOfDemeter" />
+        <exclude name="AbstractClassWithoutAnyMethod" />
+    </rule>
+    <rule ref="category/java/design.xml/NcssCount" >
+        <properties>
+            <property name="methodReportLevel" value="25" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/documentation.xml">
+        <exclude name="CommentRequired" />
+    </rule>
+
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="AssignmentInOperand" />
+        <exclude name="BeanMembersShouldSerialize" />
+    </rule>
+
+    <rule ref="category/java/multithreading.xml">
+        <exclude name="UseConcurrentHashMap" />
+    </rule>
+
+    <rule ref="category/java/performance.xml">
+        <exclude name="AvoidInstantiatingObjectsInLoops" />
+    </rule>
+
+    <!--
+    <rule ref="category/java/android.xml" />
+    <rule ref="category/java/clone.xml" />
+    <rule ref="category/java/finalizers.xml" />
+    <rule ref="category/java/imports.xml">
+        <exclude name="TooManyStaticImports" />
+    </rule>
+    <rule ref="category/java/basic.xml" />
+    <rule ref="category/java/braces.xml" >
+        <exclude name="IfStmtsMustUseBraces" />
+    </rule>
+    <rule ref="category/java/codesize.xml" />
+    <rule ref="category/java/codesize.xml/CyclomaticComplexity">
+        <properties>
+            <property name="reportLevel" value="20" />
+        </properties>
+    </rule>
+    <rule ref="category/java/codesize.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="25" />
+        </properties>
+    </rule>
+    <rule ref="category/java/comments.xml">
+        <exclude name="CommentRequired" />
+    </rule>
+    <rule ref="category/java/controversial.xml">
+        <exclude name="AssignmentInOperand" />
+        <exclude name="AvoidLiteralsInIfCondition" />
+        <exclude name="AvoidPrefixingMethodParameters" />
+        <exclude name="DataflowAnomalyAnalysis" />
+        <exclude name="NullAssignment" />
+        <exclude name="OnlyOneReturn" />
+    </rule>
+    <rule ref="category/java/coupling.xml">
+        <exclude name="ExcessiveImports" />
+        <exclude name="LawOfDemeter" />
+        <exclude name="LoosePackageCoupling" />
+    </rule>
+    <rule ref="category/java/design.xml">
+        <exclude name="AvoidReassigningParameters" />
+        <exclude name="ConfusingTernary" />
+        <exclude name="SwitchStmtsShouldHaveDefault" />
+        <exclude name="TooFewBranchesForASwitchStatement" />
+    </rule>
+    <rule ref="category/java/empty.xml" />
+    <rule ref="category/java/junit.xml" />
+    <rule ref="category/java/migrating.xml" />
+    <rule ref="category/java/naming.xml">
+        <exclude name="AbstractNaming" />
+        <exclude name="LongVariable" />
+        <exclude name="ShortClassName" />
+        <exclude name="ShortVariable" />
+    </rule>
+    <rule ref="category/java/optimizations.xml">
+        <exclude name="AvoidInstantiatingObjectsInLoops" />
+        <exclude name="LocalVariableCouldBeFinal" />
+        <exclude name="MethodArgumentCouldBeFinal" />
+    </rule>
+    <rule ref="category/java/strictexception.xml" />
+    <rule ref="category/java/strings.xml" >
+        <exclude name="AvoidDuplicateLiterals"/>
+    </rule>
+    <rule ref="category/java/typeresolution.xml">
+        <exclude name="LooseCoupling" />
+    </rule>
+    <rule ref="category/java/unnecessary.xml" />
+    <rule ref="category/java/unusedcode.xml" />
+    -->
+
+</ruleset>

@@ -41,66 +41,50 @@ import hcm.ssj.core.event.Event;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class KeyPress extends Condition
-{
+public class KeyPress extends Condition {
     protected String _text;
     protected boolean _isToggle;
     protected float _lastValue = 0;
 
-    public boolean checkEvent(Event event)
-    {
+    public boolean checkEvent(Event event) {
         if (event.name.equalsIgnoreCase(_event)
-        && event.sender.equalsIgnoreCase(_sender)
-        && (_text == null || event.ptrStr().equalsIgnoreCase(_text))
-        && (!_isToggle || event.state == Event.State.COMPLETED))
-        {
+                && event.sender.equalsIgnoreCase(_sender)
+                && (_text == null || event.ptrStr().equalsIgnoreCase(_text))
+                && (!_isToggle || event.state == Event.State.COMPLETED)) {
             float value = parseEvent(event);
-            if((value == thres_lower) || (value >= thres_lower && value < thres_upper))
-                return true;
+            return (value == thres_lower) || (value >= thres_lower && value < thres_upper);
         }
 
         return false;
     }
 
-    public float parseEvent(Event event)
-    {
+    public float parseEvent(Event event) {
         float value;
-        if(_isToggle)
-        {
+        if (_isToggle) {
             value = 1 - _lastValue;
             _lastValue = value;
-        }
-        else
-        {
+        } else {
             value = (event.state == Event.State.COMPLETED) ? 0 : 1;
         }
 
         return value;
     }
 
-    protected void load(XmlPullParser xml, Context context)
-    {
-        try
-        {
+    protected void load(XmlPullParser xml, Context context) {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "condition");
             _text = xml.getAttributeValue(null, "text");
 
             String toggle = xml.getAttributeValue(null, "toggle");
-            if(toggle == null || toggle.compareToIgnoreCase("false") == 0)
-                _isToggle = false;
-            else
-                _isToggle = true;
-        }
-        catch(IOException | XmlPullParserException e)
-        {
+            _isToggle = toggle != null && toggle.compareToIgnoreCase("false") != 0;
+        } catch (IOException | XmlPullParserException e) {
             Log.e("error parsing config file", e);
         }
 
         super.load(xml, context);
     }
 
-    public float getLastValue()
-    {
+    public float getLastValue() {
         return _lastValue;
     }
 }

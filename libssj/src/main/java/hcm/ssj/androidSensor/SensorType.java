@@ -33,8 +33,7 @@ import android.hardware.Sensor;
  * Android sensor configurations.<br>
  * Created by Frank Gaibler on 13.08.2015.
  */
-public enum SensorType
-{
+public enum SensorType {
     ACCELEROMETER("Accelerometer", Sensor.TYPE_ACCELEROMETER, new String[]{"AccX", "AccY", "AccZ"}),
     AMBIENT_TEMPERATURE("AmbientTemperature", Sensor.TYPE_AMBIENT_TEMPERATURE, new String[]{"ATemp °C"}),
     GAME_ROTATION_VECTOR("GameRotationVector", Sensor.TYPE_GAME_ROTATION_VECTOR, new String[]{"GameRotVX", "GameRotVY", "GameRotVZ"}),
@@ -65,8 +64,7 @@ public enum SensorType
      * @param type   int
      * @param output String[]
      */
-    SensorType(String name, int type, String[] output)
-    {
+    SensorType(String name, int type, String[] output) {
         this.name = name;
         this.type = type;
         this.dataSize = output.length;
@@ -74,56 +72,47 @@ public enum SensorType
     }
 
     /**
+     * @param name String
+     * @return SensorType
+     */
+    protected static SensorType getSensorType(String name) {
+        try {
+            return SensorType.valueOf(name);
+        } catch (IllegalArgumentException ex) {
+            for (SensorType sensorType : SensorType.values()) {
+                if (sensorType.getName().equalsIgnoreCase(name)) {
+                    return sensorType;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * @return String
      */
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     /**
      * @return int
      */
-    public int getType()
-    {
+    public int getType() {
         return type;
     }
 
     /**
      * @return int
      */
-    public int getDataSize()
-    {
+    public int getDataSize() {
         return dataSize;
     }
 
     /**
      * @return String[]
      */
-    public String[] getOutput()
-    {
+    public String[] getOutput() {
         return output;
-    }
-
-    /**
-     * @param name String
-     * @return SensorType
-     */
-    protected static SensorType getSensorType(String name)
-    {
-        try
-        {
-            return SensorType.valueOf(name);
-        } catch (IllegalArgumentException ex)
-        {
-            for (SensorType sensorType : SensorType.values())
-            {
-                if (sensorType.getName().equalsIgnoreCase(name))
-                {
-                    return sensorType;
-                }
-            }
-        }
-        return null;
     }
 }

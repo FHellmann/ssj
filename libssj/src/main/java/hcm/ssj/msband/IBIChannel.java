@@ -38,81 +38,67 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class IBIChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class IBIChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 30, Integer.class, "");
+    public IBIChannel() {
+        _name = "MSBand_IBI";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.RRInterval, true, 0);
+    }
 
-	protected BandListener _listener;
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	public IBIChannel()
-	{
-		_name = "MSBand_IBI";
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-	@Override
-	public void init() throws SSJException
-	{
-		((MSBand)_sensor).configureChannel(MSBand.Channel.RRInterval, true, 0);
-	}
+        float[] out = stream_out.ptrF();
+        out[0] = (float) _listener.getInterBeatInterval();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		float[] out = stream_out.ptrF();
-		out[0] = (float)_listener.getInterBeatInterval();
+    @Override
+    protected int getSampleDimension() {
+        return 1;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "IBI";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 1;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 30, Integer.class, "");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "IBI";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

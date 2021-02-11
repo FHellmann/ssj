@@ -54,243 +54,220 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class SignalTest
-{
-	@Test
-	public void testFFT() throws Exception
-	{
-		String[] files = null;
-		files = getInstrumentation().getContext().getResources().getAssets().list("");
+public class SignalTest {
+    @Test
+    public void testFFT() throws Exception {
+        String[] files = null;
+        files = getInstrumentation().getContext().getResources().getAssets().list("");
 
-		File dir = getContext().getFilesDir();
-		String fileName = "audio.stream";
-		File header = new File(dir, fileName);
-		TestHelper.copyAssetToFile(fileName, header);
-		File data = new File(dir, fileName + "~");
-		TestHelper.copyAssetToFile(fileName + "data", data); //android does not support "~" in asset files
+        File dir = getContext().getFilesDir();
+        String fileName = "audio.stream";
+        File header = new File(dir, fileName);
+        TestHelper.copyAssetToFile(fileName, header);
+        File data = new File(dir, fileName + "~");
+        TestHelper.copyAssetToFile(fileName + "data", data); //android does not support "~" in asset files
 
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
-		frame.options.countdown.set(0);
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
+        frame.options.countdown.set(0);
 
-		// Sensor
-		FileReader file = new FileReader();
-		file.options.file.setValue(dir.getAbsolutePath() + File.separator + fileName);
-		FileReaderChannel channel = new FileReaderChannel();
-		channel.setWatchInterval(0);
-		channel.setSyncInterval(0);
-		frame.addSensor(file, channel);
+        // Sensor
+        FileReader file = new FileReader();
+        file.options.file.setValue(dir.getAbsolutePath() + File.separator + fileName);
+        FileReaderChannel channel = new FileReaderChannel();
+        channel.setWatchInterval(0);
+        channel.setSyncInterval(0);
+        frame.addSensor(file, channel);
 
-		// Transformer
-		FFTfeat fft = new FFTfeat();
-		frame.addTransformer(fft, channel, 512.0 / channel.getSampleRate(), 0);
+        // Transformer
+        FFTfeat fft = new FFTfeat();
+        frame.addTransformer(fft, channel, 512.0 / channel.getSampleRate(), 0);
 
-		Logger log = new Logger();
-		frame.addConsumer(log, fft, 1, 0);
+        Logger log = new Logger();
+        frame.addConsumer(log, fft, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
+        // Stop framework
+        frame.stop();
+        frame.clear();
 
-		header.delete();
-		data.delete();
-	}
+        header.delete();
+        data.delete();
+    }
 
-	@Test
-	public void testDerivative() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
-		frame.options.countdown.set(0);
+    @Test
+    public void testDerivative() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
+        frame.options.countdown.set(0);
 
-		// Sensor
-		AndroidSensor sensor = new AndroidSensor();
-		AndroidSensorChannel channel = new AndroidSensorChannel();
-		channel.options.sensorType.set(SensorType.ACCELEROMETER);
-		channel.options.sampleRate.set(40);
-		frame.addSensor(sensor, channel);
+        // Sensor
+        AndroidSensor sensor = new AndroidSensor();
+        AndroidSensorChannel channel = new AndroidSensorChannel();
+        channel.options.sensorType.set(SensorType.ACCELEROMETER);
+        channel.options.sampleRate.set(40);
+        frame.addSensor(sensor, channel);
 
-		// Transformer
-		Derivative deriv = new Derivative();
-		frame.addTransformer(deriv, channel, 1, 0);
+        // Transformer
+        Derivative deriv = new Derivative();
+        frame.addTransformer(deriv, channel, 1, 0);
 
-		Logger log = new Logger();
-		frame.addConsumer(log, deriv, 1, 0);
+        Logger log = new Logger();
+        frame.addConsumer(log, deriv, 1, 0);
 
-		// start framework
-		frame.start();
+        // start framework
+        frame.start();
 
-		// Run test
-		long end = System.currentTimeMillis() + TestHelper.DUR_TEST_SHORT;
-		try
-		{
-			while (System.currentTimeMillis() < end)
-			{
-				Thread.sleep(1);
-			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Run test
+        long end = System.currentTimeMillis() + TestHelper.DUR_TEST_SHORT;
+        try {
+            while (System.currentTimeMillis() < end) {
+                Thread.sleep(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
-	}
+        // Stop framework
+        frame.stop();
+        frame.clear();
+    }
 
-	@Test
-	public void testFunctionals() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testFunctionals() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		AndroidSensor sensor = new AndroidSensor();
+        // Sensor
+        AndroidSensor sensor = new AndroidSensor();
 
-		// Channel
-		AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
-		sensorChannel.options.sensorType.set(SensorType.ACCELEROMETER);
-		frame.addSensor(sensor, sensorChannel);
+        // Channel
+        AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
+        sensorChannel.options.sensorType.set(SensorType.ACCELEROMETER);
+        frame.addSensor(sensor, sensorChannel);
 
-		// Transformer
-		Functionals transformer = new Functionals();
-		frame.addTransformer(transformer, sensorChannel, 1, 0);
+        // Transformer
+        Functionals transformer = new Functionals();
+        frame.addTransformer(transformer, sensorChannel, 1, 0);
 
-		// Logger
-		Logger log = new Logger();
-		frame.addConsumer(log, transformer, 1, 0);
+        // Logger
+        Logger log = new Logger();
+        frame.addConsumer(log, transformer, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_SHORT);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_SHORT);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.release();
-	}
+        // Stop framework
+        frame.stop();
+        frame.release();
+    }
 
-	@Test
-	public void testSpectrogram() throws Exception
-	{
-		File dir = getContext().getFilesDir();
-		String fileName = "audio.stream";
-		File header = new File(dir, fileName);
-		TestHelper.copyAssetToFile(fileName, header);
-		File data = new File(dir, fileName + "~");
-		TestHelper.copyAssetToFile(fileName + "data", data); //android does not support "~" in asset files
+    @Test
+    public void testSpectrogram() throws Exception {
+        File dir = getContext().getFilesDir();
+        String fileName = "audio.stream";
+        File header = new File(dir, fileName);
+        TestHelper.copyAssetToFile(fileName, header);
+        File data = new File(dir, fileName + "~");
+        TestHelper.copyAssetToFile(fileName + "data", data); //android does not support "~" in asset files
 
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
-		frame.options.countdown.set(0);
-		frame.options.log.set(true);
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
+        frame.options.countdown.set(0);
+        frame.options.log.set(true);
 
-		// Sensor
-		FileReader file = new FileReader();
-		file.options.file.setValue(dir.getAbsolutePath() + File.separator + fileName);
+        // Sensor
+        FileReader file = new FileReader();
+        file.options.file.setValue(dir.getAbsolutePath() + File.separator + fileName);
 
-		FileReaderChannel channel = new FileReaderChannel();
-		channel.options.chunk.set(0.032);
-		channel.setWatchInterval(0);
-		channel.setSyncInterval(0);
-		frame.addSensor(file, channel);
+        FileReaderChannel channel = new FileReaderChannel();
+        channel.options.chunk.set(0.032);
+        channel.setWatchInterval(0);
+        channel.setSyncInterval(0);
+        frame.addSensor(file, channel);
 
-		// Transformer
-		Spectrogram spectrogram = new Spectrogram();
-		spectrogram.options.banks.set("0.003 0.040, 0.040 0.150, 0.150 0.400");
-		spectrogram.options.nbanks.set(3);
-		spectrogram.options.nfft.set(1024);
-		spectrogram.options.dopower.set(true);
-		spectrogram.options.dolog.set(false);
-		frame.addTransformer(spectrogram, channel, 0.1, 0);
+        // Transformer
+        Spectrogram spectrogram = new Spectrogram();
+        spectrogram.options.banks.set("0.003 0.040, 0.040 0.150, 0.150 0.400");
+        spectrogram.options.nbanks.set(3);
+        spectrogram.options.nfft.set(1024);
+        spectrogram.options.dopower.set(true);
+        spectrogram.options.dolog.set(false);
+        frame.addTransformer(spectrogram, channel, 0.1, 0);
 
-		HRVSpectral feat = new HRVSpectral();
-		frame.addTransformer(feat, spectrogram, 0.1, 0);
+        HRVSpectral feat = new HRVSpectral();
+        frame.addTransformer(feat, spectrogram, 0.1, 0);
 
-		Logger log = new Logger();
-		frame.addConsumer(log, feat, 0.1, 0);
+        Logger log = new Logger();
+        frame.addConsumer(log, feat, 0.1, 0);
 
-		// start framework
-		frame.start();
+        // start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// stop framework
-		frame.stop();
-		frame.clear();
-	}
+        // stop framework
+        frame.stop();
+        frame.clear();
+    }
 
-	@Test
-	public void testPSD() throws Exception
-	{
-		//setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
-		//sensor
-		AndroidSensor sensor = new AndroidSensor();
+    @Test
+    public void testPSD() throws Exception {
+        //setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
+        //sensor
+        AndroidSensor sensor = new AndroidSensor();
 
-		//channel
-		AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
-		sensorChannel.options.sensorType.set(SensorType.LIGHT);
-		frame.addSensor(sensor, sensorChannel);
-		//transformer
-		PSD transformer = new PSD();
-		transformer.options.entropy.set(false);
-		transformer.options.normalize.set(false);
-		frame.addTransformer(transformer, sensorChannel, 1, 0);
-		//logger
-		Logger log = new Logger();
-		frame.addConsumer(log, transformer, 1, 0);
-		//start framework
-		frame.start();
-		//run test
-		long end = System.currentTimeMillis() + TestHelper.DUR_TEST_NORMAL;
-		try
-		{
-			while (System.currentTimeMillis() < end)
-			{
-				Thread.sleep(1);
-			}
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		frame.stop();
-		frame.release();
-	}
+        //channel
+        AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
+        sensorChannel.options.sensorType.set(SensorType.LIGHT);
+        frame.addSensor(sensor, sensorChannel);
+        //transformer
+        PSD transformer = new PSD();
+        transformer.options.entropy.set(false);
+        transformer.options.normalize.set(false);
+        frame.addTransformer(transformer, sensorChannel, 1, 0);
+        //logger
+        Logger log = new Logger();
+        frame.addConsumer(log, transformer, 1, 0);
+        //start framework
+        frame.start();
+        //run test
+        long end = System.currentTimeMillis() + TestHelper.DUR_TEST_NORMAL;
+        try {
+            while (System.currentTimeMillis() < end) {
+                Thread.sleep(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        frame.stop();
+        frame.release();
+    }
 }

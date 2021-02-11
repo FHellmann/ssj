@@ -46,56 +46,32 @@ import hcm.ssj.signal.Selector;
 /**
  * Generic classifier
  */
-public class Trainer extends Consumer implements IModelHandler
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the consumer
-     */
-    public class Options extends IModelHandler.Options
-    {
-        public final Option<Boolean> merge = new Option<>("merge", true, Boolean.class, "merge input streams");
-        public final Option<FolderPath> filePath = new Option<>("path", new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]"), FolderPath.class, "where to save the model on pipeline stop");
-        public final Option<String> fileName = new Option<>("fileName", null, String.class, "model file name");
-
-        private Options()
-        {
-            super();
-            addOptions();
-        }
-    }
-
+public class Trainer extends Consumer implements IModelHandler {
     public final Options options = new Options();
-
     private Selector selector = null;
     private Stream[] stream_merged;
     private Stream[] stream_selected;
     private Merge merge = null;
     private Model model = null;
-
-    public Trainer()
-    {
+    public Trainer() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 */
     @Override
-    public void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        if (stream_in.length > 1 && !options.merge.get())
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     */
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length > 1 && !options.merge.get()) {
             throw new SSJFatalException("sources count not supported");
         }
 
-        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF)
-        {
+        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF) {
             throw new SSJFatalException("stream type not supported");
         }
 
@@ -105,8 +81,7 @@ public class Trainer extends Consumer implements IModelHandler
 
         Stream[] input = stream_in;
 
-        if(options.merge.get())
-        {
+        if (options.merge.get()) {
             merge = new Merge();
             stream_merged = new Stream[1];
             stream_merged[0] = Stream.create(input[0].num, merge.getSampleDimension(input), input[0].sr, input[0].type);
@@ -114,17 +89,13 @@ public class Trainer extends Consumer implements IModelHandler
             input = stream_merged;
         }
 
-        try
-        {
+        try {
             model.validateInput(input);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("model validation failed", e);
         }
 
-        if(model.getInputDim() != null)
-        {
+        if (model.getInputDim() != null) {
             selector = new Selector();
             selector.options.values.set(model.getInputDim());
             stream_selected = new Stream[1];
@@ -134,24 +105,23 @@ public class Trainer extends Consumer implements IModelHandler
     }
 
     /**
-     * @param stream_in  Stream[]
-	 * @param trigger
+     * @param stream_in Stream[]
+     * @param trigger
      */
     @Override
-    public void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
-        if(trigger == null || trigger.type != Cons.Type.STRING)
+    public void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        if (trigger == null || trigger.type != Cons.Type.STRING)
             throw new SSJFatalException("Event trigger missing or invalid. Make sure Trainer is setup to receive string events.");
 
         Stream[] input = stream_in;
 
-        if(options.merge.get()) {
+        if (options.merge.get()) {
             // since this is an event consumer, input num can change
             stream_merged[0].adjust(input[0].num);
             merge.transform(input, stream_merged[0]);
             input = stream_merged;
         }
-        if(selector != null) {
+        if (selector != null) {
             // since this is an event consumer, input num can change
             stream_selected[0].adjust(input[0].num);
             selector.transform(input, stream_selected[0]);
@@ -162,30 +132,37 @@ public class Trainer extends Consumer implements IModelHandler
     }
 
     @Override
-    public void flush(Stream stream_in[]) throws SSJFatalException
-    {
-        if(options.fileName.get() != null && !options.fileName.get().isEmpty())
-        {
-            try
-            {
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+        if (options.fileName.get() != null && !options.fileName.get().isEmpty()) {
+            try {
                 model.save(options.filePath.get().value, options.fileName.get());
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("error saving trained model", e);
             }
         }
     }
 
     @Override
-    public void setModel(Model model)
-    {
-        this.model = model;
+    public Model getModel() {
+        return model;
     }
 
     @Override
-    public Model getModel()
-    {
-        return model;
+    public void setModel(Model model) {
+        this.model = model;
+    }
+
+    /**
+     * All options for the consumer
+     */
+    public class Options extends IModelHandler.Options {
+        public final Option<Boolean> merge = new Option<>("merge", true, Boolean.class, "merge input streams");
+        public final Option<FolderPath> filePath = new Option<>("path", new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]"), FolderPath.class, "where to save the model on pipeline stop");
+        public final Option<String> fileName = new Option<>("fileName", null, String.class, "model file name");
+
+        private Options() {
+            super();
+            addOptions();
+        }
     }
 }

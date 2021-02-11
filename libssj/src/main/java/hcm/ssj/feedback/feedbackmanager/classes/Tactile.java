@@ -53,58 +53,42 @@ import hcm.ssj.myo.Vibrate2Command;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class Tactile extends FeedbackClass
-{
+public class Tactile extends FeedbackClass {
 
 
-    enum Device
-    {
-        Myo,
-        MsBand,
-        Android
-    }
     boolean firstCall = true;
     boolean connected = false;
     private Myo myo = null;
-
     private hcm.ssj.myo.Myo myoConnector = null;
     private String deviceId;
     private BandComm msband = null;
     private Vibrate2Command cmd = null;
     private Vibrator vibrator = null;
-
     private long lock = 0;
-
     private Device deviceType = Device.Myo;
 
-    public Tactile(Context context, FeedbackManager.Options options)
-    {
+    public Tactile(Context context, FeedbackManager.Options options) {
         this.context = context;
         this.options = options;
         type = Type.Tactile;
     }
 
-    public void firstCall()
-    {
+    public void firstCall() {
         firstCall = false;
         connected = false;
 
-        if(deviceType == Device.Myo) {
+        if (deviceType == Device.Myo) {
             Hub hub = Hub.getInstance();
 
-            if (hub.getConnectedDevices().isEmpty())
-            {
+            if (hub.getConnectedDevices().isEmpty()) {
                 myoConnector = new hcm.ssj.myo.Myo();
                 myoConnector.options.macAddress.set(deviceId);
-				try
-				{
-					myoConnector.connect();
-				}
-				catch (hcm.ssj.core.SSJFatalException e)
-				{
-					e.printStackTrace();
-				}
-			}
+                try {
+                    myoConnector.connect();
+                } catch (hcm.ssj.core.SSJFatalException e) {
+                    e.printStackTrace();
+                }
+            }
 
             long time = SystemClock.elapsedRealtime();
             while (hub.getConnectedDevices().isEmpty() && SystemClock.elapsedRealtime() - time < Pipeline.getInstance().options.waitSensorConnect.get() * 1000) {
@@ -122,18 +106,13 @@ public class Tactile extends FeedbackClass
             connected = true;
             myo = hub.getConnectedDevices().get(0);
             cmd = new Vibrate2Command(hub);
-        }
-        else if(deviceType == Device.MsBand)
-        {
+        } else if (deviceType == Device.MsBand) {
             int id = deviceId == null ? 0 : Integer.valueOf(deviceId);
             msband = new BandComm(id);
             connected = true;
-        }
-        else if(deviceType == Device.Android)
-        {
+        } else if (deviceType == Device.Android) {
             vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-            if (!vibrator.hasVibrator())
-            {
+            if (!vibrator.hasVibrator()) {
                 throw new RuntimeException("device can't vibrate");
             }
             connected = true;
@@ -141,12 +120,11 @@ public class Tactile extends FeedbackClass
     }
 
     @Override
-    public boolean execute(Action action)
-    {
-        if(firstCall)
+    public boolean execute(Action action) {
+        if (firstCall)
             firstCall();
 
-        if(!connected)
+        if (!connected)
             return false;
 
         Log.i("execute");
@@ -154,37 +132,33 @@ public class Tactile extends FeedbackClass
 
         //check locks
         //global
-        if(System.currentTimeMillis() < lock)
-        {
+        if (System.currentTimeMillis() < lock) {
             Log.i("ignoring event, lock active for another " + (lock - System.currentTimeMillis()) + "ms");
             return false;
         }
         //local
-        if (System.currentTimeMillis() - ev.lastExecutionTime < ev.lockSelf)
-        {
+        if (System.currentTimeMillis() - ev.lastExecutionTime < ev.lockSelf) {
             Log.i("ignoring event, self lock active for another " + (ev.lockSelf - (System.currentTimeMillis() - ev.lastExecutionTime)) + "ms");
             return false;
         }
 
-        if(deviceType == Device.Myo) {
+        if (deviceType == Device.Myo) {
             Log.i("vibration " + ev.duration[0] + "/" + (int) ev.intensity[0]);
             cmd.vibrate(myo, ev.duration, ev.intensity);
-        }
-        else if(deviceType == Device.MsBand) {
+        } else if (deviceType == Device.MsBand) {
             Log.i("vibration " + ev.vibrationType);
             msband.vibrate(ev.vibrationType);
-        } else if(deviceType == Device.Android) {
+        } else if (deviceType == Device.Android) {
             Log.i("vibration on android");
             long[] longDuration = new long[ev.duration.length];
-            for(int i=0; i < longDuration.length; ++i)
-            {
+            for (int i = 0; i < longDuration.length; ++i) {
                 longDuration[i] = ev.duration[i];
             }
             vibrator.vibrate(longDuration, -1);
         }
 
         //set lock
-        if(ev.lock > 0)
+        if (ev.lock > 0)
             lock = System.currentTimeMillis() + (long) ev.lock;
         else
             lock = 0;
@@ -192,25 +166,22 @@ public class Tactile extends FeedbackClass
         return true;
     }
 
-    public byte[] multiply(byte[] src, float mult)
-    {
-        byte dst[] = new byte[src.length];
+    public byte[] multiply(byte[] src, float mult) {
+        byte[] dst = new byte[src.length];
 
         int val_int;
-        for(int i = 0; i < src.length; ++i)
-        {
-            val_int = (int)((int)src[i] * mult);
-            if(val_int > 255)
+        for (int i = 0; i < src.length; ++i) {
+            val_int = (int) ((int) src[i] * mult);
+            if (val_int > 255)
                 val_int = 255;
 
-            dst[i] = (byte)val_int;
+            dst[i] = (byte) val_int;
         }
 
         return dst;
     }
 
-    protected void load(XmlPullParser xml, final Context context)
-    {
+    protected void load(XmlPullParser xml, final Context context) {
         try {
             xml.require(XmlPullParser.START_TAG, null, "feedback");
 
@@ -220,9 +191,7 @@ public class Tactile extends FeedbackClass
             }
 
             deviceId = xml.getAttributeValue(null, "deviceId");
-        }
-        catch(IOException | XmlPullParserException | InvalidParameterException e)
-        {
+        } catch (IOException | XmlPullParserException | InvalidParameterException e) {
             Log.e("error parsing config file", e);
         }
 
@@ -230,20 +199,22 @@ public class Tactile extends FeedbackClass
     }
 
     @Override
-    public void release()
-    {
+    public void release() {
         connected = false;
         firstCall = true;
 
-        if(myoConnector != null)
-			try
-			{
-				myoConnector.disconnect();
-			}
-			catch (hcm.ssj.core.SSJFatalException e)
-			{
-				e.printStackTrace();
-			}
-		super.release();
+        if (myoConnector != null)
+            try {
+                myoConnector.disconnect();
+            } catch (hcm.ssj.core.SSJFatalException e) {
+                e.printStackTrace();
+            }
+        super.release();
+    }
+
+    enum Device {
+        Myo,
+        MsBand,
+        Android
     }
 }

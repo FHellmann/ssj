@@ -67,139 +67,37 @@ import hcm.ssj.creator.R;
 
 public class BandComm {
 
-    BandClient client;
-
     public static final int BTN_YES = 1;
     public static final int BTN_NO = 2;
     public static final int TXT_TITLE = 3;
-
     public static final UUID tileId = UUID.nameUUIDFromBytes("SSJCreator-tile".getBytes());//fromString("cc0D508F-70A3-47D4-BBA3-812BADB1F8Aa");
     public static final UUID pageId = UUID.nameUUIDFromBytes("SSJCreator-page".getBytes());//UUID.fromString("b1234567-89ab-cdef-0123-456789abcd00");
-
+    BandClient client;
     Activity activity = null;
-    private String tileTitle = "SSJ";
+    private final String tileTitle = "SSJ";
 
-    public BandComm(Activity activity)
-    {
+    public BandComm(Activity activity) {
         this.activity = activity;
     }
 
-    public void create()
-    {
+    public void create() {
         new StartTask().execute();
     }
 
-    public void destroy()
-    {
+    public void destroy() {
         new StopTask().execute();
     }
 
-    public void popup(String title, String body)
-    {
+    public void popup(String title, String body) {
         new PingTask(title, body).execute();
     }
 
-    public boolean isBandInitialized()
-    {
-        try
-        {
-            if (getConnectedBandClient() && doesTileExist())
-                return true;
-            else
-                return false;
-        }
-        catch (BandException | InterruptedException e) {
+    public boolean isBandInitialized() {
+        try {
+            return getConnectedBandClient() && doesTileExist();
+        } catch (BandException | InterruptedException e) {
             Log.e(this.getClass().getSimpleName(), "exception", e);
             return false;
-        }
-    }
-
-    private class StartTask extends AsyncTask<Void, Void, Boolean> {
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            try {
-
-                if (getConnectedBandClient())
-                {
-                    Log.i(this.getClass().getSimpleName(), "seting up Band");
-                    if (addTile()) {
-                        updatePages();
-                    }
-                    else
-                    {
-                        Log.e(this.getClass().getSimpleName(), "Cannot find Band tile, make sure the band has been set up.");
-                        return false;
-                    }
-                } else {
-                    Log.e(this.getClass().getSimpleName(), "Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
-                    return false;
-                }
-            } catch (BandException e) {
-                handleBandException(e);
-                return false;
-            } catch (Exception e) {
-                Log.e(this.getClass().getSimpleName(), e.getMessage());
-                return false;
-            }
-
-            return true;
-        }
-    }
-
-    public class StopTask extends AsyncTask<Void, Void, Boolean> {
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            try {
-                if (getConnectedBandClient())
-                {
-                    Log.i(this.getClass().getSimpleName(), "removing tile from Band.");
-                    removeTile();
-                } else {
-                    Log.e(this.getClass().getSimpleName(), "Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
-                    return false;
-                }
-            } catch (BandException e) {
-                handleBandException(e);
-                return false;
-            } catch (Exception e) {
-                Log.e(this.getClass().getSimpleName(), e.getMessage());
-                return false;
-            }
-
-            return true;
-        }
-    }
-
-    private class PingTask extends AsyncTask<Void, Void, Boolean> {
-
-        String title;
-        String body;
-        public PingTask(String title, String body)
-        {
-            this.title = title;
-            this.body = body;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            try {
-                if (getConnectedBandClient()) {
-                    sendMessage(title, body);
-                } else {
-                    Log.e(this.getClass().getSimpleName(), "Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
-                    return false;
-                }
-            } catch (BandException e) {
-                handleBandException(e);
-                return false;
-            } catch (Exception e) {
-                Log.e(this.getClass().getSimpleName(), e.getMessage());
-                return false;
-            }
-
-            return true;
         }
     }
 
@@ -237,7 +135,7 @@ public class BandComm {
         return ConnectionState.CONNECTED == client.connect().await();
     }
 
-    private boolean doesTileExist() throws BandIOException, InterruptedException, BandException {
+    private boolean doesTileExist() throws InterruptedException, BandException {
         List<BandTile> tiles = client.getTileManager().getTiles().await();
         for (BandTile tile : tiles) {
             if (tile.getTileId().equals(tileId)) {
@@ -252,7 +150,7 @@ public class BandComm {
             return true;
         }
 
-		/* Set the options */
+        /* Set the options */
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
@@ -271,7 +169,7 @@ public class BandComm {
         }
     }
 
-    private void removeTile() throws BandIOException, InterruptedException, BandException {
+    private void removeTile() throws InterruptedException, BandException {
         if (doesTileExist()) {
             client.getTileManager().removeTile(tileId).await();
         }
@@ -280,18 +178,18 @@ public class BandComm {
     private PageLayout createButtonLayout() {
         return new PageLayout(
                 new FlowPanel(15, 0, 243, 120, FlowPanelOrientation.VERTICAL)
-                    .addElements(new TextBlock(0, 0, 243, 40, TextBlockFont.SMALL).setId(TXT_TITLE))
-                    .addElements(new FlowPanel(0, 0, 243, 80, FlowPanelOrientation.HORIZONTAL)
-                         .addElements(new TextButton(0, 0, 100, 70).setMargins(5, 5, 5, 5).setId(BTN_YES).setPressedColor(Color.GREEN).setHorizontalAlignment(HorizontalAlignment.CENTER).setVerticalAlignment(VerticalAlignment.CENTER))
-                         .addElements(new TextButton(100, 0, 100, 70).setMargins(5, 5, 5, 5).setId(BTN_NO).setPressedColor(Color.RED).setHorizontalAlignment(HorizontalAlignment.CENTER).setVerticalAlignment(VerticalAlignment.CENTER))));
+                        .addElements(new TextBlock(0, 0, 243, 40, TextBlockFont.SMALL).setId(TXT_TITLE))
+                        .addElements(new FlowPanel(0, 0, 243, 80, FlowPanelOrientation.HORIZONTAL)
+                                .addElements(new TextButton(0, 0, 100, 70).setMargins(5, 5, 5, 5).setId(BTN_YES).setPressedColor(Color.GREEN).setHorizontalAlignment(HorizontalAlignment.CENTER).setVerticalAlignment(VerticalAlignment.CENTER))
+                                .addElements(new TextButton(100, 0, 100, 70).setMargins(5, 5, 5, 5).setId(BTN_NO).setPressedColor(Color.RED).setHorizontalAlignment(HorizontalAlignment.CENTER).setVerticalAlignment(VerticalAlignment.CENTER))));
     }
 
     private void updatePages() throws BandIOException {
         client.getTileManager().setPages(tileId,
-                                         new PageData(pageId, 0)
-                                                 .update(new TextButtonData(BTN_YES, "Start"))
-                                                 .update(new TextButtonData(BTN_NO, "End"))
-                                                 .update(new TextBlockData(TXT_TITLE, "Annotation")));
+                new PageData(pageId, 0)
+                        .update(new TextButtonData(BTN_YES, "Start"))
+                        .update(new TextButtonData(BTN_NO, "End"))
+                        .update(new TextBlockData(TXT_TITLE, "Annotation")));
     }
 
     private void handleBandException(BandException e) {
@@ -314,5 +212,90 @@ public class BandComm {
                 break;
         }
         Log.e(this.getClass().getSimpleName(), exceptionMessage);
+    }
+
+    private class StartTask extends AsyncTask<Void, Void, Boolean> {
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+
+                if (getConnectedBandClient()) {
+                    Log.i(this.getClass().getSimpleName(), "seting up Band");
+                    if (addTile()) {
+                        updatePages();
+                    } else {
+                        Log.e(this.getClass().getSimpleName(), "Cannot find Band tile, make sure the band has been set up.");
+                        return false;
+                    }
+                } else {
+                    Log.e(this.getClass().getSimpleName(), "Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
+                    return false;
+                }
+            } catch (BandException e) {
+                handleBandException(e);
+                return false;
+            } catch (Exception e) {
+                Log.e(this.getClass().getSimpleName(), e.getMessage());
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    public class StopTask extends AsyncTask<Void, Void, Boolean> {
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                if (getConnectedBandClient()) {
+                    Log.i(this.getClass().getSimpleName(), "removing tile from Band.");
+                    removeTile();
+                } else {
+                    Log.e(this.getClass().getSimpleName(), "Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
+                    return false;
+                }
+            } catch (BandException e) {
+                handleBandException(e);
+                return false;
+            } catch (Exception e) {
+                Log.e(this.getClass().getSimpleName(), e.getMessage());
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    private class PingTask extends AsyncTask<Void, Void, Boolean> {
+
+        String title;
+        String body;
+
+        public PingTask(String title, String body) {
+            this.title = title;
+            this.body = body;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                if (getConnectedBandClient()) {
+                    sendMessage(title, body);
+                } else {
+                    Log.e(this.getClass().getSimpleName(), "Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
+                    return false;
+                }
+            } catch (BandException e) {
+                handleBandException(e);
+                return false;
+            } catch (Exception e) {
+                Log.e(this.getClass().getSimpleName(), e.getMessage());
+                return false;
+            }
+
+            return true;
+        }
     }
 }

@@ -37,64 +37,48 @@ import hcm.ssj.core.stream.Stream;
 
 /**
  * inverts a signal by subtracting it from a predefined value
- *
+ * <p>
  * Created by Johnny on 01.04.2015.
  */
 public class Invert extends Transformer {
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<Float> max  = new Option<>("max", 1.0f, Float.class, "");
-        /**
-         *
-         */
-        private Options() {addOptions();}
-    }
     public final Options options = new Options();
 
-
-    public Invert()
-    {
+    public Invert() {
         _name = "Invert";
     }
 
     @Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
     }
 
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
+
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         float[] out = stream_out.ptrF();
 
-        for(int i = 0; i < stream_in[0].dim; i++)
-        {
-            for(int j = 0; j < stream_in[0].num; j++)
-            {
+        for (int i = 0; i < stream_in[0].dim; i++) {
+            for (int j = 0; j < stream_in[0].num; j++) {
                 int index = j * stream_in[0].dim + i;
-                switch(stream_in[0].type)
-                {
+                switch (stream_in[0].type) {
                     case CHAR:
-                        out[index] = options.max.get() - (float)stream_in[0].ptrC()[index];
+                        out[index] = options.max.get() - (float) stream_in[0].ptrC()[index];
                         break;
                     case SHORT:
-                        out[index] = options.max.get() - (float)stream_in[0].ptrS()[index];
+                        out[index] = options.max.get() - (float) stream_in[0].ptrS()[index];
                         break;
                     case INT:
-                        out[index] = options.max.get() - (float)stream_in[0].ptrI()[index];
+                        out[index] = options.max.get() - (float) stream_in[0].ptrI()[index];
                         break;
                     case FLOAT:
                         out[index] = options.max.get() - stream_in[0].ptrF()[index];
                         break;
                     case DOUBLE:
-                        out[index] = options.max.get() - (float)stream_in[0].ptrD()[index];
+                        out[index] = options.max.get() - (float) stream_in[0].ptrD()[index];
                         break;
                 }
             }
@@ -102,32 +86,27 @@ public class Invert extends Transformer {
     }
 
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {}
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
 
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         return stream_in[0].dim;
     }
 
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return sampleNumber_in;
     }
 
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return 4; //float
     }
 
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
-        switch(stream_in[0].type)
-        {
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        switch (stream_in[0].type) {
             case CHAR:
             case SHORT:
             case INT:
@@ -141,10 +120,20 @@ public class Invert extends Transformer {
     }
 
     @Override
-    public void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    public void describeOutput(Stream[] stream_in, Stream stream_out) {
         stream_out.desc = new String[stream_in[0].dim];
         System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
+    }
+
+    public class Options extends OptionList {
+        public final Option<Float> max = new Option<>("max", 1.0f, Float.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 
 }

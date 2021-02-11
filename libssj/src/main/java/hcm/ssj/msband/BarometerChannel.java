@@ -38,83 +38,69 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class BarometerChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class BarometerChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
+    public BarometerChannel() {
+        _name = "MSBand_Barometer";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.Barometer, true, 0);
+    }
 
-	protected BandListener _listener;
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	public BarometerChannel()
-	{
-		_name = "MSBand_Barometer";
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-	@Override
-	public void init() throws SSJException
-	{
-		((MSBand)_sensor).configureChannel(MSBand.Channel.Barometer, true, 0);
-	}
+        double[] out = stream_out.ptrD();
+        out[0] = _listener.getAirPressure();
+        out[1] = _listener.getTemperature();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		double[] out = stream_out.ptrD();
-		out[0] = _listener.getAirPressure();
-		out[1] = _listener.getTemperature();
+    @Override
+    protected int getSampleDimension() {
+        return 2;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.DOUBLE;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "AirPressure";
+        stream_out.desc[1] = "Temperature";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 2;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.DOUBLE;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "AirPressure";
-		stream_out.desc[1] = "Temperature";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

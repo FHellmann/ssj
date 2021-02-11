@@ -53,34 +53,7 @@ import hcm.ssj.core.stream.Stream;
  * Camera painter for SSJ.<br>
  * Created by Frank Gaibler on 21.01.2016.
  */
-public class CameraPainter extends Consumer implements EventListener
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the camera painter
-     */
-    public class Options extends OptionList
-    {
-        //values should be the same as in camera
-        public final Option<Integer> orientation = new Option<>("orientation", 90, Integer.class, "orientation of input picture (90 = back, 270 = front camera)");
-        public final Option<Boolean> scale = new Option<>("scale", false, Boolean.class, "scale picture to match surface size");
-        public final Option<Boolean> showBestMatch = new Option<>("showBestMatch", false, Boolean.class, "show object label of the best match");
-        public final Option<SurfaceView> surfaceView = new Option<>("surfaceView", null, SurfaceView.class, "the view on which the painter is drawn");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class CameraPainter extends Consumer implements EventListener {
     public final Options options = new Options();
     //buffers
     private int[] iaRgbData;
@@ -88,70 +61,61 @@ public class CameraPainter extends Consumer implements EventListener
     //
     private SurfaceView surfaceViewInner = null;
     private SurfaceHolder surfaceHolder;
-
     private String event_msg;
-    private int textSize = 35;
-
+    private final int textSize = 35;
     private Paint interiorPaint;
     private Paint exteriorPaint;
 
     /**
      *
      */
-    public CameraPainter()
-    {
+    public CameraPainter() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in Stream[]
-	 */
     @Override
-    protected void init(Stream[] stream_in) throws SSJException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     */
+    @Override
+    protected void init(Stream[] stream_in) throws SSJException {
         super.init(stream_in);
-        if (options.surfaceView.get() == null)
-        {
+        if (options.surfaceView.get() == null) {
             Log.w("surfaceView isn't set");
-        }
-        else
-        {
+        } else {
             surfaceViewInner = options.surfaceView.get();
         }
     }
 
     /**
-	 * @param stream_in Stream[]
-	 */
+     * @param stream_in Stream[]
+     */
     @Override
-    public final void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        if (stream_in.length != 1)
-        {
+    public final void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length != 1) {
             Log.e("Stream count not supported");
             return;
         }
-        if (stream_in[0].type != Cons.Type.IMAGE)
-        {
+        if (stream_in[0].type != Cons.Type.IMAGE) {
             Log.e("Stream type not supported");
             return;
         }
-        synchronized (this)
-        {
-            if (surfaceViewInner == null)
-            {
+        synchronized (this) {
+            if (surfaceViewInner == null) {
                 //wait for surfaceView creation
-                try
-                {
+                try {
                     this.wait();
-                } catch (InterruptedException ex)
-                {
+                } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
             }
         }
 
-        ImageStream in = (ImageStream)stream_in[0];
+        ImageStream in = (ImageStream) stream_in[0];
 
         surfaceHolder = surfaceViewInner.getHolder();
         iaRgbData = new int[in.width * in.height];
@@ -160,16 +124,13 @@ public class CameraPainter extends Consumer implements EventListener
         bitmap = Bitmap.createBitmap(in.width, in.height, conf);
 
         //register listener
-		if (_evchannel_in != null && _evchannel_in.size() != 0)
-		{
-			for (EventChannel ch : _evchannel_in)
-			{
-				ch.addEventListener(this);
-			}
-		}
+        if (_evchannel_in != null && _evchannel_in.size() != 0) {
+            for (EventChannel ch : _evchannel_in) {
+                ch.addEventListener(this);
+            }
+        }
 
-        if (options.showBestMatch.get())
-        {
+        if (options.showBestMatch.get()) {
             interiorPaint = new Paint();
             interiorPaint.setTextSize(textSize);
             interiorPaint.setColor(Color.WHITE);
@@ -189,27 +150,24 @@ public class CameraPainter extends Consumer implements EventListener
 
     /**
      * @param stream_in Stream[]
-	 * @param trigger
+     * @param trigger
      */
     @Override
-    protected final void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
+    protected final void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
         //only draw first frame per call, since drawing multiple frames doesn't make sense without delay
-        draw(stream_in[0].ptrB(), ((ImageStream)stream_in[0]).format);
+        draw(stream_in[0].ptrB(), ((ImageStream) stream_in[0]).format);
     }
 
     /**
      * @param stream_in Stream[]
      */
     @Override
-    public final void flush(Stream stream_in[]) throws SSJFatalException
-    {
+    public final void flush(Stream[] stream_in) throws SSJFatalException {
         surfaceViewInner = null;
         iaRgbData = null;
         surfaceHolder = null;
 
-        if (bitmap != null)
-        {
+        if (bitmap != null) {
             bitmap.recycle();
             bitmap = null;
         }
@@ -218,23 +176,18 @@ public class CameraPainter extends Consumer implements EventListener
     /**
      * @param data byte[]
      */
-    private void draw(final byte[] data, int format)
-    {
+    private void draw(final byte[] data, int format) {
         Canvas canvas = null;
 
-        if (surfaceHolder == null)
-        {
+        if (surfaceHolder == null) {
             return;
         }
 
-        try
-        {
-            synchronized (surfaceHolder)
-            {
+        try {
+            synchronized (surfaceHolder) {
                 canvas = surfaceHolder.lockCanvas();
 
-                if (canvas != null)
-                {
+                if (canvas != null) {
                     // Clear canvas.
                     canvas.drawColor(Color.BLACK);
 
@@ -244,7 +197,7 @@ public class CameraPainter extends Consumer implements EventListener
                     int bitmapWidth = bitmap.getWidth();
                     int bitmapHeight = bitmap.getHeight();
 
-					// Rotate canvas around the center of the image.
+                    // Rotate canvas around the center of the image.
                     canvas.rotate(options.orientation.get(), canvasWidth >> 1, canvasHeight >> 1);
 
                     //decode color format
@@ -253,8 +206,7 @@ public class CameraPainter extends Consumer implements EventListener
                     //fill bitmap with picture
                     bitmap.setPixels(iaRgbData, 0, bitmapWidth, 0, 0, bitmapWidth, bitmapHeight);
 
-                    if (options.scale.get())
-                    {
+                    if (options.scale.get()) {
                         float widthScale = canvasWidth / (float) bitmapWidth;
                         float heightScale = canvasHeight / (float) bitmapHeight;
 
@@ -270,18 +222,15 @@ public class CameraPainter extends Consumer implements EventListener
 
                         // scale picture to surface size
                         canvas.drawBitmap(bitmap, null, dest, null);
-                    }
-                    else
-                    {
+                    } else {
                         //center picture on canvas
                         canvas.drawBitmap(bitmap,
-                                          canvasWidth - ((bitmapWidth + canvasWidth) >> 1),
-                                          canvasHeight - ((bitmapHeight + canvasHeight) >> 1),
-                                          null);
+                                canvasWidth - ((bitmapWidth + canvasWidth) >> 1),
+                                canvasHeight - ((bitmapHeight + canvasHeight) >> 1),
+                                null);
                     }
 
-                    if (options.showBestMatch.get() && event_msg != null)
-                    {
+                    if (options.showBestMatch.get() && event_msg != null) {
                         // Draw label of the best match.
                         canvas.rotate(-1 * options.orientation.get(), canvasWidth / 2, canvasHeight / 2);
                         canvas.drawText(event_msg, 25, 50, exteriorPaint);
@@ -289,14 +238,11 @@ public class CameraPainter extends Consumer implements EventListener
                     }
                 }
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
-        } finally
-        {
+        } finally {
             //always try to unlock a locked canvas to keep the surface in a consistent state
-            if (canvas != null)
-            {
+            if (canvas != null) {
                 surfaceHolder.unlockCanvasAndPost(canvas);
             }
         }
@@ -305,13 +251,10 @@ public class CameraPainter extends Consumer implements EventListener
     /**
      * @param data byte[]
      */
-    private void decodeColor(final byte[] data, int width, int height, int format)
-    {
+    private void decodeColor(final byte[] data, int width, int height, int format) {
         //@todo implement missing conversions
-        switch (format)
-        {
-            case ImageFormat.YV12:
-            {
+        switch (format) {
+            case ImageFormat.YV12: {
                 throw new UnsupportedOperationException("Not implemented, yet");
             }
             case ImageFormat.YUV_420_888: //YV12_PACKED_SEMI
@@ -319,18 +262,15 @@ public class CameraPainter extends Consumer implements EventListener
                 CameraUtil.decodeYV12PackedSemi(iaRgbData, data, width, height);
                 break;
             }
-            case ImageFormat.NV21:
-            {
+            case ImageFormat.NV21: {
                 CameraUtil.convertNV21ToARGBInt(iaRgbData, data, width, height);
                 break;
             }
-            case ImageFormat.FLEX_RGB_888:
-            {
+            case ImageFormat.FLEX_RGB_888: {
                 CameraUtil.convertRGBToARGBInt(iaRgbData, data, width, height);
                 break;
             }
-            default:
-            {
+            default: {
                 Log.e("Wrong color format");
                 throw new RuntimeException();
             }
@@ -338,8 +278,25 @@ public class CameraPainter extends Consumer implements EventListener
     }
 
     @Override
-    public void notify(Event event)
-    {
+    public void notify(Event event) {
         event_msg = event.name + "@" + event.sender + ":" + event.ptrStr();
+    }
+
+    /**
+     * All options for the camera painter
+     */
+    public class Options extends OptionList {
+        //values should be the same as in camera
+        public final Option<Integer> orientation = new Option<>("orientation", 90, Integer.class, "orientation of input picture (90 = back, 270 = front camera)");
+        public final Option<Boolean> scale = new Option<>("scale", false, Boolean.class, "scale picture to match surface size");
+        public final Option<Boolean> showBestMatch = new Option<>("showBestMatch", false, Boolean.class, "show object label of the best match");
+        public final Option<SurfaceView> surfaceView = new Option<>("surfaceView", null, SurfaceView.class, "the view on which the painter is drawn");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

@@ -55,145 +55,98 @@ import hcm.ssj.core.option.OptionList;
  * Audio Sensor - get data from audio interface and forwards it
  * Created by Johnny on 05.03.2015.
  */
-public class SocketEventReader extends EventHandler
-{
-    final int MAX_MSG_SIZE = 4096;
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public Option<String> ip = new Option<>("ip", null, String.class, "");
-        public Option<Integer> port = new Option<>("port", 0, Integer.class, "");
-        public Option<Boolean> parseXmlToEvent = new Option<>("parseXmlToEvent", true, Boolean.class, "attempt to convert the message to an SSJ event format");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
+public class SocketEventReader extends EventHandler {
     public final Options options = new Options();
-
+    final int MAX_MSG_SIZE = 4096;
     DatagramSocket _socket;
     boolean _connected = false;
     byte[] _buffer;
     XmlPullParser _parser;
-
-    public SocketEventReader()
-    {
+    public SocketEventReader() {
         _name = "SocketEventReader";
         _doWakeLock = true;
     }
 
     @Override
-	public void enter() throws SSJFatalException
-    {
-        if (options.ip.get() == null)
-        {
-            try
-            {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter() throws SSJFatalException {
+        if (options.ip.get() == null) {
+            try {
                 options.ip.set(Util.getIPAddress(true));
-            }
-            catch (SocketException e)
-            {
+            } catch (SocketException e) {
                 throw new SSJFatalException("Unable to determine local IP address", e);
             }
         }
 
-        try
-        {
+        try {
             _socket = new DatagramSocket(null);
             _socket.setReuseAddress(true);
 
             InetAddress addr = InetAddress.getByName(options.ip.get());
             InetSocketAddress saddr = new InetSocketAddress(addr, options.port.get());
             _socket.bind(saddr);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("ERROR: cannot bind socket", e);
         }
 
         _buffer = new byte[MAX_MSG_SIZE];
 
-        if(options.parseXmlToEvent.get())
-        {
-            try
-            {
+        if (options.parseXmlToEvent.get()) {
+            try {
                 _parser = Xml.newPullParser();
                 _parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            }
-            catch (XmlPullParserException e)
-            {
+            } catch (XmlPullParserException e) {
                 throw new SSJFatalException("unable to initialize parser", e);
             }
         }
 
-        Log.i("Socket ready ("+options.ip.get() + "@" + options.port.get() +")");
+        Log.i("Socket ready (" + options.ip.get() + "@" + options.port.get() + ")");
         _connected = true;
     }
 
     @Override
-    protected void process() throws SSJFatalException
-    {
-        if (!_connected)
-        {
+    protected void process() throws SSJFatalException {
+        if (!_connected) {
             return;
         }
 
         DatagramPacket packet = new DatagramPacket(_buffer, _buffer.length);
 
-        try
-        {
+        try {
             _socket.receive(packet);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.w("Failed to receive packet", e);
             return;
         }
 
-        if(!options.parseXmlToEvent.get())
-        {
+        if (!options.parseXmlToEvent.get()) {
             Event ev = Event.create(Cons.Type.STRING);
             ev.setData(new String(_buffer, 0, packet.getLength()));
             _evchannel_out.pushEvent(ev);
-        }
-        else
-        {
-            try
-            {
+        } else {
+            try {
                 _parser.setInput(new ByteArrayInputStream(_buffer, 0, packet.getLength()), null);
 
                 //first element must be <events>
                 _parser.next();
-                if (_parser.getEventType() != XmlPullParser.START_TAG || !_parser.getName().equalsIgnoreCase("events"))
-                {
+                if (_parser.getEventType() != XmlPullParser.START_TAG || !_parser.getName().equalsIgnoreCase("events")) {
                     Log.w("unknown or malformed socket message");
                     return;
                 }
 
-                while (_parser.next() != XmlPullParser.END_DOCUMENT)
-                {
-                    if (_parser.getEventType() == XmlPullParser.START_TAG && "event".equalsIgnoreCase(_parser.getName()))
-                    {
+                while (_parser.next() != XmlPullParser.END_DOCUMENT) {
+                    if (_parser.getEventType() == XmlPullParser.START_TAG && "event".equalsIgnoreCase(_parser.getName())) {
                         String eventType = _parser.getAttributeValue(null, "type");
 
                         Event ev;
 
-                        if ("map".equalsIgnoreCase(eventType))
-                        {
+                        if ("map".equalsIgnoreCase(eventType)) {
                             ev = Event.create(Cons.Type.MAP);
-                        }
-                        else
-                        {
+                        } else {
                             ev = Event.create(Cons.Type.STRING);
                         }
 
@@ -205,22 +158,18 @@ public class SocketEventReader extends EventHandler
 
                         _parser.next();
 
-                        if ("map".equalsIgnoreCase(eventType))
-                        {
+                        if ("map".equalsIgnoreCase(eventType)) {
                             Map<String, String> map = new HashMap<>();
 
                             String key = null;
                             String value = null;
 
-                            while (!(_parser.getEventType() == XmlPullParser.END_TAG && "event".equalsIgnoreCase(_parser.getName())))
-                            {
-                                if (_parser.getEventType() == XmlPullParser.START_TAG && "tuple".equalsIgnoreCase(_parser.getName()))
-                                {
+                            while (!(_parser.getEventType() == XmlPullParser.END_TAG && "event".equalsIgnoreCase(_parser.getName()))) {
+                                if (_parser.getEventType() == XmlPullParser.START_TAG && "tuple".equalsIgnoreCase(_parser.getName())) {
                                     key = _parser.getAttributeValue(null, "string");
                                     value = _parser.getAttributeValue(null, "value");
 
-                                    if (key != null && value != null)
-                                    {
+                                    if (key != null && value != null) {
                                         map.put(key, value);
                                     }
                                 }
@@ -229,22 +178,17 @@ public class SocketEventReader extends EventHandler
                             }
 
                             ev.setData(map);
-                        }
-                        else
-                        {
+                        } else {
                             ev.setData(Util.xmlToString(_parser));
                         }
 
                         _evchannel_out.pushEvent(ev);
                     }
-                    if (_parser.getEventType() == XmlPullParser.END_TAG && _parser.getName().equalsIgnoreCase("events"))
-                    {
+                    if (_parser.getEventType() == XmlPullParser.END_TAG && _parser.getName().equalsIgnoreCase("events")) {
                         break;
                     }
                 }
-            }
-            catch (IOException | XmlPullParserException e)
-            {
+            } catch (IOException | XmlPullParserException e) {
                 Log.w("Failed to receive packet or parse xml", e);
                 return;
             }
@@ -253,8 +197,20 @@ public class SocketEventReader extends EventHandler
     }
 
     @Override
-    public void flush() throws SSJFatalException
-    {
+    public void flush() throws SSJFatalException {
         _socket.close();
+    }
+
+    public class Options extends OptionList {
+        public Option<String> ip = new Option<>("ip", null, String.class, "");
+        public Option<Integer> port = new Option<>("port", 0, Integer.class, "");
+        public Option<Boolean> parseXmlToEvent = new Option<>("parseXmlToEvent", true, Boolean.class, "attempt to convert the message to an SSJ event format");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

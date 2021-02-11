@@ -39,67 +39,39 @@ import hcm.ssj.core.stream.Stream;
  * Transformer to calculate derivative of signal data.<br>
  * Created by Ionut Damian on 01.02.2017. Based on Derivative plugin from SSI.
  */
-public class Derivative extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends OptionList
-    {
-        public final Option<Boolean> zero = new Option<>("zero", true, Boolean.class, "pass along the untransformed stream");
-        public final Option<Boolean> first = new Option<>("first", true, Boolean.class, "compute first derivative");
-        public final Option<Boolean> second = new Option<>("second", true, Boolean.class, "compute second derivative");
-        public final Option<Boolean> third = new Option<>("third", true, Boolean.class, "compute third derivative");
-        public final Option<Boolean> fourth = new Option<>("fourth", true, Boolean.class, "compute fourth derivative");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class Derivative extends Transformer {
     public final Options options = new Options();
-
     private float[] history;
     private int depth = 0;
     private boolean first_call;
-
     private boolean[] store_value = new boolean[5];
-
     /**
      *
      */
-    public Derivative()
-    {
+    public Derivative() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         if (options.fourth.get()) store_value[4] = true;
         if (options.third.get()) store_value[3] = true;
         if (options.second.get()) store_value[2] = true;
         if (options.first.get()) store_value[1] = true;
         if (options.zero.get()) store_value[0] = true;
 
-		for (int i = 0; i <= 4; i++)
-		{
-			if (store_value[i]) depth = i;
-		}
+        for (int i = 0; i <= 4; i++) {
+            if (store_value[i]) depth = i;
+        }
         depth++;
 
         history = new float[(depth - 1) * stream_in[0].dim];
@@ -111,20 +83,19 @@ public class Derivative extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         int sample_dimension = stream_in[0].dim;
         int sample_number = stream_in[0].num;
 
-        float src[] = stream_in[0].ptrF();
-        float dst[] = stream_out.ptrF();
+        float[] src = stream_in[0].ptrF();
+        float[] dst = stream_out.ptrF();
         float tmp, tmp2;
 
         // initialize history during first call
         if (first_call) {
             for (int i = 0; i < sample_dimension; ++i) {
-                for (int j = 0; j < depth-1; j++) {
-                    history[i*(depth-1) + j] = j == 0 ? src[i] : 0;
+                for (int j = 0; j < depth - 1; j++) {
+                    history[i * (depth - 1) + j] = j == 0 ? src[i] : 0;
                 }
             }
             first_call = false;
@@ -153,8 +124,7 @@ public class Derivative extends Transformer
     }
 
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         history = null;
         store_value = null;
     }
@@ -164,8 +134,7 @@ public class Derivative extends Transformer
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int dim = 0;
 
         if (options.fourth.get()) dim++;
@@ -182,8 +151,7 @@ public class Derivative extends Transformer
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -192,8 +160,7 @@ public class Derivative extends Transformer
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return Cons.Type.FLOAT;
     }
 
@@ -202,8 +169,7 @@ public class Derivative extends Transformer
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return sampleNumber_in;
     }
 
@@ -212,19 +178,35 @@ public class Derivative extends Transformer
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
 
-        for (int i = 0; i < stream_in[0].dim; i++)
-        {
+        for (int i = 0; i < stream_in[0].dim; i++) {
             int j = 0;
             if (options.zero.get()) stream_out.desc[j++] = stream_in[0].desc[i];
             if (options.first.get()) stream_out.desc[j] = stream_in[0].desc[i] + ".d" + j++;
             if (options.second.get()) stream_out.desc[j] = stream_in[0].desc[i] + ".d" + j++;
             if (options.third.get()) stream_out.desc[j] = stream_in[0].desc[i] + ".d" + j++;
             if (options.fourth.get()) stream_out.desc[j] = stream_in[0].desc[i] + ".d" + j;
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends OptionList {
+        public final Option<Boolean> zero = new Option<>("zero", true, Boolean.class, "pass along the untransformed stream");
+        public final Option<Boolean> first = new Option<>("first", true, Boolean.class, "compute first derivative");
+        public final Option<Boolean> second = new Option<>("second", true, Boolean.class, "compute second derivative");
+        public final Option<Boolean> third = new Option<>("third", true, Boolean.class, "compute third derivative");
+        public final Option<Boolean> fourth = new Option<>("fourth", true, Boolean.class, "compute fourth derivative");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

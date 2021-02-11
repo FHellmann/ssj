@@ -32,12 +32,10 @@ import hcm.ssj.core.Cons;
 /**
  * Created by Johnny on 11.06.2015.
  */
-public class FloatStream extends Stream
-{
+public class FloatStream extends Stream {
     public float[] _ptr;
 
-    public FloatStream(int num, int dim, double sr)
-    {
+    public FloatStream(int num, int dim, double sr) {
         super(num, dim, sr);
 
         this.bytes = 4;
@@ -48,33 +46,27 @@ public class FloatStream extends Stream
     }
 
     @Override
-    public float[] ptr()
-    {
-        return _ptr;
-    }
-    public float[] ptrF()
-    {
+    public float[] ptr() {
         return _ptr;
     }
 
-    public void adjust(int num)
-    {
-        if(num < this.num)
-        {
+    public float[] ptrF() {
+        return _ptr;
+    }
+
+    public void adjust(int num) {
+        if (num < this.num) {
             this.num = num;
             this.tot = num * dim * bytes;
-        }
-        else
-        {
+        } else {
             this.num = num;
             this.tot = num * dim * bytes;
             _ptr = new float[num * dim];
         }
     }
 
-    public FloatStream select(int[] new_dims)
-    {
-        if(dim == new_dims.length)
+    public FloatStream select(int[] new_dims) {
+        if (dim == new_dims.length)
             return this;
 
         FloatStream slice = new FloatStream(num, new_dims.length, sr);
@@ -83,9 +75,8 @@ public class FloatStream extends Stream
         float[] src = this.ptr();
         float[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
-            for(int i = 0; i < new_dims.length; i++)
+        while (srcPos < num * dim) {
+            for (int i = 0; i < new_dims.length; i++)
                 dst[dstPos++] = src[srcPos + new_dims[i]];
 
             srcPos += dim;
@@ -94,9 +85,8 @@ public class FloatStream extends Stream
         return slice;
     }
 
-    public FloatStream select(int new_dim)
-    {
-        if(dim == 1)
+    public FloatStream select(int new_dim) {
+        if (dim == 1)
             return this;
 
         FloatStream slice = new FloatStream(num, 1, sr);
@@ -105,8 +95,7 @@ public class FloatStream extends Stream
         float[] src = this.ptr();
         float[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
+        while (srcPos < num * dim) {
             dst[dstPos++] = src[srcPos + new_dim];
             srcPos += dim;
         }
@@ -115,8 +104,7 @@ public class FloatStream extends Stream
     }
 
     @Override
-    public Stream clone()
-    {
+    public Stream clone() {
         FloatStream copy = new FloatStream(num, dim, sr);
         System.arraycopy(_ptr, 0, copy._ptr, 0, _ptr.length);
 

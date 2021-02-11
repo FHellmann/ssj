@@ -32,13 +32,17 @@ package hcm.ssj.core;
  */
 public class SSJException extends Exception {
 
-    public SSJException() {}
+    public SSJException() {
+    }
+
     public SSJException(String detailMessage) {
         super(detailMessage);
     }
+
     public SSJException(String detailMessage, Throwable throwable) {
         super(detailMessage, throwable);
     }
+
     public SSJException(Throwable throwable) {
         super(throwable);
     }

@@ -40,43 +40,7 @@ import hcm.ssj.core.stream.Stream;
  * A variety of metrics. <br>
  * Created by Frank Gaibler on 10.01.2017.
  */
-public class Functionals extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends OptionList
-    {
-        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
-        public final Option<Boolean> mean = new Option<>("mean", true, Boolean.class, "Calculate mean of each frame");
-        public final Option<Boolean> energy = new Option<>("energy", true, Boolean.class, "Calculate energy of each frame");
-        public final Option<Boolean> std = new Option<>("std", true, Boolean.class, "Calculate standard deviation of each frame");
-        public final Option<Boolean> min = new Option<>("min", true, Boolean.class, "Calculate minimum of each frame");
-        public final Option<Boolean> max = new Option<>("max", true, Boolean.class, "Calculate maximum of each frame");
-        public final Option<Boolean> range = new Option<>("range", true, Boolean.class, "Calculate range of each frame");
-        public final Option<Boolean> minPos = new Option<>("minPos", true, Boolean.class, "Calculate sample position of the minimum of each frame");
-        public final Option<Boolean> maxPos = new Option<>("maxPos", true, Boolean.class, "Calculate sample position of the maximum of each frame");
-        public final Option<Boolean> zeros = new Option<>("zeros", true, Boolean.class, "Calculate zeros of each frame");
-        public final Option<Boolean> peaks = new Option<>("peaks", true, Boolean.class, "Calculate peaks of each frame");
-        public final Option<Boolean> len = new Option<>("len", true, Boolean.class, "Calculate sample number of each frame");
-        public final Option<Boolean> path = new Option<>("path", false, Boolean.class, "Calculate path length of each frame");
-        public final Option<Integer> delta = new Option<>("delta", 2, Integer.class, "zero/peaks search offset");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class Functionals extends Transformer {
     public final Options options = new Options();
     //helper variables
     private int _delta;
@@ -93,24 +57,25 @@ public class Functionals extends Transformer
     private float[] _mid_val;
     private float[] _path;
     private float[] _old_val;
-
     /**
      *
      */
-    public Functionals()
-    {
+    public Functionals() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        if (stream_in.length != 1 || stream_in[0].dim < 1 || stream_in[0].type != Cons.Type.FLOAT)
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        if (stream_in.length != 1 || stream_in[0].dim < 1 || stream_in[0].type != Cons.Type.FLOAT) {
             Log.e("invalid input stream");
             return;
         }
@@ -136,8 +101,7 @@ public class Functionals extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         super.flush(stream_in, stream_out);
         _mean_val = null;
         _energy_val = null;
@@ -159,14 +123,12 @@ public class Functionals extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         boolean first_call = true;
         int sample_number = stream_in[0].num, sample_dimension = stream_in[0].dim, c_in = 0, c_out = 0;
         float[] ptr_in = stream_in[0].ptrF(), ptr_out = stream_out.ptrF();
         float _val;
-        for (int i = 0; i < sample_dimension; i++)
-        {
+        for (int i = 0; i < sample_dimension; i++) {
             _val = ptr_in[c_in++];
             _mean_val[i] = _val;
             _energy_val[i] = _val * _val;
@@ -180,35 +142,26 @@ public class Functionals extends Transformer
             _path[i] = 0;
             _old_val[i] = _val;
         }
-        for (int i = 1; i < sample_number; i++)
-        {
-            for (int j = 0; j < sample_dimension; j++)
-            {
+        for (int i = 1; i < sample_number; i++) {
+            for (int j = 0; j < sample_dimension; j++) {
                 _val = ptr_in[c_in++];
                 _mean_val[j] += _val;
                 _energy_val[j] += _val * _val;
-                if (_val < _min_val[j])
-                {
+                if (_val < _min_val[j]) {
                     _min_val[j] = _val;
                     _min_pos[j] = i;
-                } else if (_val > _max_val[j])
-                {
+                } else if (_val > _max_val[j]) {
                     _max_val[j] = _val;
                     _max_pos[j] = i;
                 }
-                if ((i % _delta) == 0)
-                {
-                    if (first_call)
-                    {
+                if ((i % _delta) == 0) {
+                    if (first_call) {
                         first_call = false;
-                    } else
-                    {
-                        if ((_left_val[j] > 0 && _mid_val[j] < 0) || (_left_val[j] < 0 && _mid_val[j] > 0))
-                        {
+                    } else {
+                        if ((_left_val[j] > 0 && _mid_val[j] < 0) || (_left_val[j] < 0 && _mid_val[j] > 0)) {
                             _zeros[j]++;
                         }
-                        if (_left_val[j] < _mid_val[j] && _mid_val[j] > _val)
-                        {
+                        if (_left_val[j] < _mid_val[j] && _mid_val[j] > _val) {
                             _peaks[j]++;
                         }
                     }
@@ -219,93 +172,68 @@ public class Functionals extends Transformer
                 _old_val[j] = _val;
             }
         }
-        for (int i = 0; i < sample_dimension; i++)
-        {
+        for (int i = 0; i < sample_dimension; i++) {
             _mean_val[i] /= sample_number;
             _energy_val[i] /= sample_number;
             _std_val[i] = (float) Math.sqrt(Math.abs(_energy_val[i] - _mean_val[i] * _mean_val[i]));
         }
-        if (options.mean.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.mean.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = _mean_val[i];
             }
         }
-        if (options.energy.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
-                ptr_out[c_out++] = (float)Math.sqrt(_energy_val[i]);
+        if (options.energy.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
+                ptr_out[c_out++] = (float) Math.sqrt(_energy_val[i]);
             }
         }
-        if (options.std.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.std.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = _std_val[i];
             }
         }
-        if (options.min.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.min.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = _min_val[i];
             }
         }
-        if (options.max.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.max.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = _max_val[i];
             }
         }
-        if (options.range.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.range.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = _max_val[i] - _min_val[i];
             }
         }
-        if (options.minPos.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.minPos.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = (float) (_min_pos[i]) / sample_number;
             }
         }
-        if (options.maxPos.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.maxPos.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = (float) (_max_pos[i]) / sample_number;
             }
         }
-        if (options.zeros.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.zeros.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = (float) (_zeros[i]) / sample_number;
             }
         }
-        if (options.peaks.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.peaks.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = (float) (_peaks[i]) / sample_number;
             }
         }
-        if (options.len.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.len.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = (float) sample_number;
             }
         }
-        if (options.path.get())
-        {
-            for (int i = 0; i < sample_dimension; i++)
-            {
+        if (options.path.get()) {
+            for (int i = 0; i < sample_dimension; i++) {
                 ptr_out[c_out++] = _path[i];
             }
         }
@@ -316,55 +244,42 @@ public class Functionals extends Transformer
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int dim = 0;
-        if (options.mean.get())
-        {
+        if (options.mean.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.energy.get())
-        {
+        if (options.energy.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.std.get())
-        {
+        if (options.std.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.min.get())
-        {
+        if (options.min.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.max.get())
-        {
+        if (options.max.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.range.get())
-        {
+        if (options.range.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.minPos.get())
-        {
+        if (options.minPos.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.maxPos.get())
-        {
+        if (options.maxPos.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.zeros.get())
-        {
+        if (options.zeros.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.peaks.get())
-        {
+        if (options.peaks.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.len.get())
-        {
+        if (options.len.get()) {
             dim += stream_in[0].dim;
         }
-        if (options.path.get())
-        {
+        if (options.path.get()) {
             dim += stream_in[0].dim;
         }
         return dim;
@@ -375,8 +290,7 @@ public class Functionals extends Transformer
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -385,8 +299,7 @@ public class Functionals extends Transformer
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return Cons.Type.FLOAT;
     }
 
@@ -395,8 +308,7 @@ public class Functionals extends Transformer
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return 1;
     }
 
@@ -405,23 +317,45 @@ public class Functionals extends Transformer
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
-        if (options.outputClass.get() != null && overallDimension == options.outputClass.get().length)
-        {
+        if (options.outputClass.get() != null && overallDimension == options.outputClass.get().length) {
             System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
-        } else
-        {
-            if (options.outputClass.get() != null && overallDimension != options.outputClass.get().length)
-            {
+        } else {
+            if (options.outputClass.get() != null && overallDimension != options.outputClass.get().length) {
                 Log.w("invalid option outputClass length");
             }
-            for (int i = 0; i < overallDimension; i++)
-            {
+            for (int i = 0; i < overallDimension; i++) {
                 stream_out.desc[i] = "fnc" + i;
             }
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends OptionList {
+        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
+        public final Option<Boolean> mean = new Option<>("mean", true, Boolean.class, "Calculate mean of each frame");
+        public final Option<Boolean> energy = new Option<>("energy", true, Boolean.class, "Calculate energy of each frame");
+        public final Option<Boolean> std = new Option<>("std", true, Boolean.class, "Calculate standard deviation of each frame");
+        public final Option<Boolean> min = new Option<>("min", true, Boolean.class, "Calculate minimum of each frame");
+        public final Option<Boolean> max = new Option<>("max", true, Boolean.class, "Calculate maximum of each frame");
+        public final Option<Boolean> range = new Option<>("range", true, Boolean.class, "Calculate range of each frame");
+        public final Option<Boolean> minPos = new Option<>("minPos", true, Boolean.class, "Calculate sample position of the minimum of each frame");
+        public final Option<Boolean> maxPos = new Option<>("maxPos", true, Boolean.class, "Calculate sample position of the maximum of each frame");
+        public final Option<Boolean> zeros = new Option<>("zeros", true, Boolean.class, "Calculate zeros of each frame");
+        public final Option<Boolean> peaks = new Option<>("peaks", true, Boolean.class, "Calculate peaks of each frame");
+        public final Option<Boolean> len = new Option<>("len", true, Boolean.class, "Calculate sample number of each frame");
+        public final Option<Boolean> path = new Option<>("path", false, Boolean.class, "Calculate path length of each frame");
+        public final Option<Integer> delta = new Option<>("delta", 2, Integer.class, "zero/peaks search offset");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

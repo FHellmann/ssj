@@ -40,26 +40,12 @@ import hcm.ssj.core.option.OptionList;
  */
 public class Microphone extends Sensor {
 
-    public Microphone()
-    {
+    public Microphone() {
         _name = "Microphone";
     }
 
-    @Override
-	public boolean connect() throws SSJFatalException
-    {
-        return true;
-    }
-
-    @Override
-	public void disconnect() throws SSJFatalException
-    {
-    }
-
-    public static int audioFormatSampleBytes(int f)
-    {
-        switch (f)
-        {
+    public static int audioFormatSampleBytes(int f) {
+        switch (f) {
             case AudioFormat.ENCODING_PCM_8BIT:
                 return 1;
             case AudioFormat.ENCODING_PCM_16BIT:
@@ -73,10 +59,8 @@ public class Microphone extends Sensor {
         }
     }
 
-    public static Cons.Type audioFormatSampleType(int f)
-    {
-        switch (f)
-        {
+    public static Cons.Type audioFormatSampleType(int f) {
+        switch (f) {
             case AudioFormat.ENCODING_PCM_8BIT:
                 return Cons.Type.CHAR;
             case AudioFormat.ENCODING_PCM_16BIT:
@@ -90,9 +74,17 @@ public class Microphone extends Sensor {
         }
     }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public boolean connect() throws SSJFatalException {
+        return true;
+    }
+
+    @Override
+    public void disconnect() throws SSJFatalException {
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

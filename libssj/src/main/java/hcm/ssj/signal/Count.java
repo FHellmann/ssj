@@ -40,63 +40,37 @@ import hcm.ssj.core.stream.Stream;
  * Counts high values.
  * Created by Frank Gaibler on 31.08.2015.
  */
-public class Count extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends OptionList
-    {
-        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
-        public final Option<Boolean> frameCount = new Option<>("frameCount", true, Boolean.class, "Global or frame count");
-        public final Option<Boolean> divideByNumber = new Option<>("divideByNumber", false, Boolean.class, "Divide through number of values to be comparable");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class Count extends Transformer {
     public final Options options = new Options();
     //helper variables
     private float[] oldValues;
     private int counter = 0;
-
     /**
      *
      */
-    public Count()
-    {
+    public Count() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         //no check for a specific type to allow for different providers
-        if (stream_in.length < 1 || stream_in[0].dim < 1)
-        {
+        if (stream_in.length < 1 || stream_in[0].dim < 1) {
             Log.e("invalid input stream");
         }
         //every stream should have the same sample number
         int num = stream_in[0].num;
-        for (int i = 1; i < stream_in.length; i++)
-        {
-            if (num != stream_in[i].num)
-            {
+        for (int i = 1; i < stream_in.length; i++) {
+            if (num != stream_in[i].num) {
                 Log.e("invalid input stream num for stream " + i);
             }
         }
@@ -109,38 +83,29 @@ public class Count extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         float[] out = stream_out.ptrF();
-        if (options.frameCount.get())
-        {
+        if (options.frameCount.get()) {
             oldValues = new float[stream_out.dim];
         }
-        for (int i = 0; i < stream_in[0].num; i++)
-        {
+        for (int i = 0; i < stream_in[0].num; i++) {
             int t = 0;
-            for (Stream aStream_in : stream_in)
-            {
-                for (int k = 0; k < aStream_in.dim; k++, t++)
-                {
+            for (Stream aStream_in : stream_in) {
+                for (int k = 0; k < aStream_in.dim; k++, t++) {
                     float value = aStream_in.ptrF()[i * aStream_in.dim + k];
-                    if (value > 0)
-                    {
+                    if (value > 0) {
                         oldValues[t]++;
                     }
                 }
             }
         }
         //write to output
-        if (options.divideByNumber.get())
-        {
+        if (options.divideByNumber.get()) {
             float divider = options.frameCount.get() ? stream_in[0].num : ++counter * stream_in[0].num;
-            for (int i = 0; i < oldValues.length; i++)
-            {
+            for (int i = 0; i < oldValues.length; i++) {
                 out[i] = oldValues[i] / divider;
             }
-        } else
-        {
+        } else {
             System.arraycopy(oldValues, 0, out, 0, oldValues.length);
         }
     }
@@ -150,11 +115,9 @@ public class Count extends Transformer
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int overallDimension = 0;
-        for (Stream stream : stream_in)
-        {
+        for (Stream stream : stream_in) {
             overallDimension += stream.dim;
         }
         return overallDimension;
@@ -165,8 +128,7 @@ public class Count extends Transformer
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -175,8 +137,7 @@ public class Count extends Transformer
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return Cons.Type.FLOAT;
     }
 
@@ -185,8 +146,7 @@ public class Count extends Transformer
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return 1;
     }
 
@@ -195,27 +155,37 @@ public class Count extends Transformer
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
-        if (options.outputClass.get() != null)
-        {
-            if (overallDimension == options.outputClass.get().length)
-            {
+        if (options.outputClass.get() != null) {
+            if (overallDimension == options.outputClass.get().length) {
                 System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
                 return;
-            } else
-            {
+            } else {
                 Log.w("invalid option outputClass length");
             }
         }
-        for (int i = 0, k = 0; i < stream_in.length; i++)
-        {
-            for (int j = 0; j < stream_in[i].dim; j++, k++)
-            {
+        for (int i = 0, k = 0; i < stream_in.length; i++) {
+            for (int j = 0; j < stream_in[i].dim; j++, k++) {
                 stream_out.desc[k] = "cnt" + i + "." + j;
             }
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends OptionList {
+        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
+        public final Option<Boolean> frameCount = new Option<>("frameCount", true, Boolean.class, "Global or frame count");
+        public final Option<Boolean> divideByNumber = new Option<>("divideByNumber", false, Boolean.class, "Divide through number of values to be comparable");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

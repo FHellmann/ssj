@@ -49,79 +49,74 @@ import static androidx.test.InstrumentationRegistry.getContext;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class BodyTest
-{
-	@Test
-	public void testWriting() throws Exception
-	{
-		// Resources
-		File dir = getContext().getFilesDir();
-		String fileName = getClass().getSimpleName() + ".test";
-		File file = new File(dir, fileName);
-		String fileName2 = getClass().getSimpleName() + "2.test";
-		File file2 = new File(dir, fileName2);
+public class BodyTest {
+    @Test
+    public void testWriting() throws Exception {
+        // Resources
+        File dir = getContext().getFilesDir();
+        String fileName = getClass().getSimpleName() + ".test";
+        File file = new File(dir, fileName);
+        String fileName2 = getClass().getSimpleName() + "2.test";
+        File file2 = new File(dir, fileName2);
 
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		AndroidSensor sensor = new AndroidSensor();
+        // Sensor
+        AndroidSensor sensor = new AndroidSensor();
 
-		// Channel
-		AndroidSensorChannel channel = new AndroidSensorChannel();
-		channel.options.sensorType.set(SensorType.ACCELEROMETER);
-		channel.options.sampleRate.set(40);
-		frame.addSensor(sensor, channel);
+        // Channel
+        AndroidSensorChannel channel = new AndroidSensorChannel();
+        channel.options.sensorType.set(SensorType.ACCELEROMETER);
+        channel.options.sampleRate.set(40);
+        frame.addSensor(sensor, channel);
 
-		// Transformer
-		AccelerationFeatures features = new AccelerationFeatures();
-		frame.addTransformer(features, channel, 2, 2);
+        // Transformer
+        AccelerationFeatures features = new AccelerationFeatures();
+        frame.addTransformer(features, channel, 2, 2);
 
-		// Consumer
-		Logger log = new Logger();
-		frame.addConsumer(log, features, 2, 0);
+        // Consumer
+        Logger log = new Logger();
+        frame.addConsumer(log, features, 2, 0);
 
-		FileWriter rawWriter = new FileWriter();
-		rawWriter.options.filePath.setValue(dir.getAbsolutePath());
-		rawWriter.options.fileName.set(fileName);
-		frame.addConsumer(rawWriter, channel, 1, 0);
+        FileWriter rawWriter = new FileWriter();
+        rawWriter.options.filePath.setValue(dir.getAbsolutePath());
+        rawWriter.options.fileName.set(fileName);
+        frame.addConsumer(rawWriter, channel, 1, 0);
 
-		FileWriter featureWriter = new FileWriter();
-		featureWriter.options.filePath.setValue(dir.getAbsolutePath());
-		featureWriter.options.fileName.set(fileName2);
-		frame.addConsumer(featureWriter, features, 2, 0);
+        FileWriter featureWriter = new FileWriter();
+        featureWriter.options.filePath.setValue(dir.getAbsolutePath());
+        featureWriter.options.fileName.set(fileName2);
+        frame.addConsumer(featureWriter, features, 2, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
+        // Stop framework
+        frame.stop();
+        frame.clear();
 
-		// Get data files
-		File data = new File(dir, fileName + "~");
-		File data2 = new File(dir, fileName + "~");
+        // Get data files
+        File data = new File(dir, fileName + "~");
+        File data2 = new File(dir, fileName + "~");
 
-		// Verify
-		Assert.assertTrue(file.length() > 100);
-		Assert.assertTrue(file2.length() > 100);
-		Assert.assertTrue(data.length() > 100);
-		Assert.assertTrue(data2.length() > 100);
+        // Verify
+        Assert.assertTrue(file.length() > 100);
+        Assert.assertTrue(file2.length() > 100);
+        Assert.assertTrue(data.length() > 100);
+        Assert.assertTrue(data2.length() > 100);
 
-		if (file.exists()) file.delete();
-		if (file2.exists()) file2.delete();
-		if (data.exists()) data.delete();
-		if (data2.exists()) data2.delete();
-	}
+        if (file.exists()) file.delete();
+        if (file2.exists()) file2.delete();
+        if (data.exists()) data.delete();
+        if (data2.exists()) data2.delete();
+    }
 }

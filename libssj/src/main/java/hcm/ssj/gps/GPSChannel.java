@@ -37,72 +37,60 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 05.07.2016.
  */
-public class GPSChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class GPSChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected GPSListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 5, Integer.class, "");
+    public GPSChannel() {
+        _name = "GPS_Provider";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((GPSSensor) _sensor).listener;
+    }
 
-	protected GPSListener _listener;
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        double[] out = stream_out.ptrD();
+        out[0] = _listener.getLatitude();
+        out[1] = _listener.getLongitude();
 
-	public GPSChannel()
-	{
-		_name = "GPS_Provider";
-	}
+        return true;
+    }
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((GPSSensor) _sensor).listener;
-	}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		double[] out = stream_out.ptrD();
-		out[0] = _listener.getLatitude();
-		out[1] = _listener.getLongitude();
+    @Override
+    protected int getSampleDimension() {
+        return 2;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.DOUBLE;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "Latitude";
+        stream_out.desc[1] = "Longitude";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 2;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 5, Integer.class, "");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.DOUBLE;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "Latitude";
-		stream_out.desc[1] = "Longitude";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

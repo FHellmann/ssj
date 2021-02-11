@@ -43,93 +43,170 @@ import hcm.ssj.BuildConfig;
 /**
  * Created by Johnny on 17.03.2016.
  */
-public class Log
-{
-    private final int RECENT_HISTORY_SIZE = 10;
-
-    public enum Level
-    {
-        VERBOSE(2), DEBUG(3), INFO(4), WARNING(5), ERROR(6), NONE(99);
-
-        Level(int i) {val = i;}
-        public final int val;
-    }
-
-    /**
-     * Interface to register listeners to
-     */
-    public interface LogListener {
-        void msg(int type, String msg);
-    }
-
-    public class Entry
-    {
-        double t;
-        String msg;
-
-        public Entry(double t, String msg)
-        {
-            this.t = t;
-            this.msg = msg;
-        }
-    }
-
-    private LinkedList<Entry> buffer = new LinkedList<>();
-    private Pipeline frame = null;
+public class Log {
     private static Log instance = null;
     //
-    private static HashSet<LogListener> hsLogListener = new HashSet<>();
+    private static final HashSet<LogListener> hsLogListener = new HashSet<>();
+    private final int RECENT_HISTORY_SIZE = 10;
+    private final LinkedList<Entry> buffer = new LinkedList<>();
+    private Pipeline frame = null;
     //
-    private LinkedHashMap<String, Double> recent = new LinkedHashMap<String, Double>()
-    {
+    private final LinkedHashMap<String, Double> recent = new LinkedHashMap<String, Double>() {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<String,Double> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<String, Double> eldest) {
             return size() > RECENT_HISTORY_SIZE;
         }
     };
-
-    Log() {}
-
-    public void setFramework(Pipeline frame)
-    {
-        this.frame = frame;
+    Log() {
     }
 
-    public static Log getInstance()
-    {
-        if(instance == null)
+    public static Log getInstance() {
+        if (instance == null)
             instance = new Log();
 
         return instance;
     }
 
-    public void clear()
-    {
-        synchronized (this)
-        {
+    /**
+     * @param logListener LogListener
+     */
+    public static void addLogListener(LogListener logListener) {
+        hsLogListener.add(logListener);
+    }
+
+    /**
+     * @param logListener LogListener
+     */
+    public static void removeLogListener(LogListener logListener) {
+        hsLogListener.remove(logListener);
+    }
+
+    public static void d(String msg) {
+        getInstance().log(android.util.Log.DEBUG, msg, null);
+    }
+
+    public static void d(String msg, Throwable e) {
+        getInstance().log(android.util.Log.DEBUG, msg, e);
+    }
+
+    public static void d(String tag, String msg) {
+        getInstance().log(android.util.Log.DEBUG, tag, msg, null);
+    }
+
+    public static void d(String tag, String msg, Throwable e) {
+        getInstance().log(android.util.Log.DEBUG, tag, msg, e);
+    }
+
+    //selective log variant
+    public static void ds(String msg) {
+        if (BuildConfig.DEBUG)
+            getInstance().log(android.util.Log.DEBUG, msg, null);
+    }
+
+    public static void ds(String msg, Throwable e) {
+        if (BuildConfig.DEBUG)
+            getInstance().log(android.util.Log.DEBUG, msg, e);
+    }
+
+    public static void ds(String tag, String msg) {
+        if (BuildConfig.DEBUG)
+            getInstance().log(android.util.Log.DEBUG, tag, msg, null);
+    }
+
+    public static void ds(String tag, String msg, Throwable e) {
+        if (BuildConfig.DEBUG)
+            getInstance().log(android.util.Log.DEBUG, tag, msg, e);
+    }
+
+    public static void i(String msg) {
+        getInstance().log(android.util.Log.INFO, msg, null);
+    }
+
+    public static void i(String msg, Throwable e) {
+        getInstance().log(android.util.Log.INFO, msg, e);
+    }
+
+    public static void i(String tag, String msg) {
+        getInstance().log(android.util.Log.INFO, tag, msg, null);
+    }
+
+    public static void i(String tag, String msg, Throwable e) {
+        getInstance().log(android.util.Log.INFO, tag, msg, e);
+    }
+
+    public static void e(String msg) {
+        getInstance().log(android.util.Log.ERROR, msg, null);
+    }
+
+    public static void e(String msg, Throwable e) {
+        getInstance().log(android.util.Log.ERROR, msg, e);
+    }
+
+    public static void e(String tag, String msg) {
+        getInstance().log(android.util.Log.ERROR, tag, msg, null);
+    }
+
+    public static void e(String tag, String msg, Throwable e) {
+        getInstance().log(android.util.Log.ERROR, tag, msg, e);
+    }
+
+    public static void w(String msg) {
+        getInstance().log(android.util.Log.WARN, msg, null);
+    }
+
+    public static void w(String msg, Throwable e) {
+        getInstance().log(android.util.Log.WARN, msg, e);
+    }
+
+    public static void w(String tag, String msg) {
+        getInstance().log(android.util.Log.WARN, tag, msg, null);
+    }
+
+    public static void w(String tag, String msg, Throwable e) {
+        getInstance().log(android.util.Log.WARN, tag, msg, e);
+    }
+
+    public static void v(String msg) {
+        getInstance().log(android.util.Log.VERBOSE, msg, null);
+    }
+
+    public static void v(String msg, Throwable e) {
+        getInstance().log(android.util.Log.VERBOSE, msg, e);
+    }
+
+    public static void v(String tag, String msg) {
+        getInstance().log(android.util.Log.VERBOSE, tag, msg, null);
+    }
+
+    public static void v(String tag, String msg, Throwable e) {
+        getInstance().log(android.util.Log.VERBOSE, tag, msg, e);
+    }
+
+    public void setFramework(Pipeline frame) {
+        this.frame = frame;
+    }
+
+    public void clear() {
+        synchronized (this) {
             buffer.clear();
             recent.clear();
         }
     }
 
-    public void invalidate()
-    {
+    public void invalidate() {
         clear();
         instance = null;
     }
 
-    public void saveToFile(String path)
-    {
-        try
-        {
+    public void saveToFile(String path) {
+        try {
             File fileDirectory = Util.createDirectory(path);
-            if(fileDirectory == null)
+            if (fileDirectory == null)
                 return;
 
             File file = new File(fileDirectory, "ssj.log");
             int i = 2;
-            while(file.exists())
-            {
+            while (file.exists()) {
                 file = new File(fileDirectory, "ssj" + (i++) + ".log");
             }
 
@@ -141,11 +218,9 @@ public class Log
 
             StringBuilder builder = new StringBuilder();
 
-            synchronized (this)
-            {
+            synchronized (this) {
                 Iterator<Entry> iter = buffer.iterator();
-                while (iter.hasNext())
-                {
+                while (iter.hasNext()) {
                     Entry e = iter.next();
 
                     builder.setLength(0);
@@ -159,33 +234,28 @@ public class Log
             }
 
             fos.close();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("Exception in creating logfile", e);
         }
     }
 
-    private String getCaller()
-    {
+    private String getCaller() {
         StackTraceElement element = Thread.currentThread().getStackTrace()[5];
         return element.getClassName().replace("hcm.ssj.", "");
     }
 
-    private String buildEntry(String caller, String msg, Throwable tr)
-    {
+    private String buildEntry(String caller, String msg, Throwable tr) {
         StringBuilder builder = new StringBuilder();
         builder.append('[').append(caller).append("] ").append(msg);
 
-        if(tr != null)
+        if (tr != null)
             builder.append(":\n").append(android.util.Log.getStackTraceString(tr));
 
         return builder.toString();
     }
 
-    private void log(int type, String caller, String msg, Throwable tr)
-    {
-        if(type < ((frame == null) ? Level.VERBOSE.val : frame.options.loglevel.get().val))
+    private void log(int type, String caller, String msg, Throwable tr) {
+        if (type < ((frame == null) ? Level.VERBOSE.val : frame.options.loglevel.get().val))
             return;
 
         String str;
@@ -194,7 +264,7 @@ public class Log
 
         //check if entry is in our recent history
         Double lastTime = recent.get(str);
-        if(lastTime != null && time - lastTime < ((frame == null) ? 1.0 : frame.options.logtimeout.get()))
+        if (lastTime != null && time - lastTime < ((frame == null) ? 1.0 : frame.options.logtimeout.get()))
             return;
 
         android.util.Log.println(type, Cons.LOGTAG, str);
@@ -214,131 +284,34 @@ public class Log
         }
     }
 
-    private void log(int type, String msg, Throwable tr)
-    {
+    private void log(int type, String msg, Throwable tr) {
         log(type, getCaller(), msg, tr);
     }
 
-    /**
-     * @param logListener LogListener
-     */
-    public static void addLogListener(LogListener logListener) {
-        hsLogListener.add(logListener);
+    public enum Level {
+        VERBOSE(2), DEBUG(3), INFO(4), WARNING(5), ERROR(6), NONE(99);
+
+        public final int val;
+
+        Level(int i) {
+            val = i;
+        }
     }
 
     /**
-     * @param logListener LogListener
+     * Interface to register listeners to
      */
-    public static void removeLogListener(LogListener logListener) {
-        hsLogListener.remove(logListener);
+    public interface LogListener {
+        void msg(int type, String msg);
     }
 
-    public static void d(String msg)
-    {
-        getInstance().log(android.util.Log.DEBUG, msg, null);
-    }
-    public static void d(String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.DEBUG, msg, e);
-    }
-    public static void d(String tag, String msg)
-    {
-        getInstance().log(android.util.Log.DEBUG, tag, msg, null);
-    }
-    public static void d(String tag, String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.DEBUG, tag, msg, e);
-    }
+    public class Entry {
+        double t;
+        String msg;
 
-    //selective log variant
-    public static void ds(String msg)
-    {
-        if (BuildConfig.DEBUG)
-            getInstance().log(android.util.Log.DEBUG, msg, null);
-    }
-    public static void ds(String msg, Throwable e)
-    {
-        if (BuildConfig.DEBUG)
-            getInstance().log(android.util.Log.DEBUG, msg, e);
-    }
-    public static void ds(String tag, String msg)
-    {
-        if (BuildConfig.DEBUG)
-            getInstance().log(android.util.Log.DEBUG, tag, msg, null);
-    }
-    public static void ds(String tag, String msg, Throwable e)
-    {
-        if (BuildConfig.DEBUG)
-            getInstance().log(android.util.Log.DEBUG, tag, msg, e);
-    }
-
-    public static void i(String msg)
-    {
-        getInstance().log(android.util.Log.INFO, msg, null);
-    }
-
-    public static void i(String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.INFO, msg, e);
-    }
-    public static void i(String tag, String msg)
-    {
-        getInstance().log(android.util.Log.INFO, tag, msg, null);
-    }
-    public static void i(String tag, String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.INFO, tag, msg, e);
-    }
-
-    public static void e(String msg)
-    {
-        getInstance().log(android.util.Log.ERROR, msg, null);
-    }
-
-    public static void e(String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.ERROR, msg, e);
-    }
-    public static void e(String tag, String msg)
-    {
-        getInstance().log(android.util.Log.ERROR, tag, msg, null);
-    }
-    public static void e(String tag, String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.ERROR, tag, msg, e);
-    }
-
-    public static void w(String msg)
-    {
-        getInstance().log(android.util.Log.WARN, msg, null);
-    }
-    public static void w(String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.WARN, msg, e);
-    }
-    public static void w(String tag, String msg)
-    {
-        getInstance().log(android.util.Log.WARN, tag, msg, null);
-    }
-    public static void w(String tag, String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.WARN, tag, msg, e);
-    }
-
-    public static void v(String msg)
-    {
-        getInstance().log(android.util.Log.VERBOSE, msg, null);
-    }
-    public static void v(String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.VERBOSE, msg, e);
-    }
-    public static void v(String tag, String msg)
-    {
-        getInstance().log(android.util.Log.VERBOSE, tag, msg, null);
-    }
-    public static void v(String tag, String msg, Throwable e)
-    {
-        getInstance().log(android.util.Log.VERBOSE, tag, msg, e);
+        public Entry(double t, String msg) {
+            this.t = t;
+            this.msg = msg;
+        }
     }
 }

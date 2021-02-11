@@ -47,75 +47,64 @@ import hcm.ssj.core.option.OptionList;
  * exit                          (exit shell)
  * Created by Frank Gaibler on 13.08.2015.
  */
-public class InfraredSensor extends hcm.ssj.core.Sensor
-{
+public class InfraredSensor extends hcm.ssj.core.Sensor {
     private static final float ERROR = -1;
     private boolean report = true; //prevent message flooding
 
     /**
      *
      */
-    public InfraredSensor()
-    {
+    public InfraredSensor() {
         _name = this.getClass().getSimpleName();
     }
 
     /**
-	 *
+     *
      */
     @Override
-    protected boolean connect() throws SSJFatalException
-    {
+    protected boolean connect() throws SSJFatalException {
         report = true;
         return true;
     }
 
     /**
-	 *
+     *
      */
     @Override
-    protected void disconnect() throws SSJFatalException
-    {
+    protected void disconnect() throws SSJFatalException {
     }
 
     /**
      * @return float
      */
-    protected float getData()
-    {
-        try
-        {
+    protected float getData() {
+        try {
             Process process = Runtime.getRuntime().exec("cat /sys/bus/i2c/devices/4-0035/proxraw");
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             int read;
             char[] buffer = new char[8];
             StringBuilder output = new StringBuilder();
-            while ((read = reader.read(buffer)) > 0)
-            {
+            while ((read = reader.read(buffer)) > 0) {
                 output.append(buffer, 0, read);
             }
             reader.close();
             String result = output.toString();
-            if (result.length() > 0)
-            {
+            if (result.length() > 0) {
                 return Float.valueOf(result);
             }
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        if (report)
-        {
+        if (report) {
             report = false;
             Log.e("Check permissions on glass");
         }
         return ERROR;
     }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }
 

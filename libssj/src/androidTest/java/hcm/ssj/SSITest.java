@@ -28,6 +28,7 @@
 package hcm.ssj;
 
 import android.os.Environment;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -54,110 +55,101 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class SSITest
-{
-	@Test
-	public void testTransformer() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class SSITest {
+    @Test
+    public void testTransformer() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		AndroidSensor sensor = new AndroidSensor();
-		AndroidSensorChannel channel = new AndroidSensorChannel();
-		channel.options.sensorType.set(SensorType.ACCELEROMETER);
-		frame.addSensor(sensor, channel);
+        // Sensor
+        AndroidSensor sensor = new AndroidSensor();
+        AndroidSensorChannel channel = new AndroidSensorChannel();
+        channel.options.sensorType.set(SensorType.ACCELEROMETER);
+        frame.addSensor(sensor, channel);
 
-		SSITransformer transf = new SSITransformer();
-		transf.options.name.set(SSI.TransformerName.Butfilt);
-		transf.options.ssioptions.set(new String[]{"low->0.01"});
-		frame.addTransformer(transf, channel, 1);
+        SSITransformer transf = new SSITransformer();
+        transf.options.name.set(SSI.TransformerName.Butfilt);
+        transf.options.ssioptions.set(new String[]{"low->0.01"});
+        frame.addTransformer(transf, channel, 1);
 
-		// Logger
-		Logger log = new Logger();
-		frame.addConsumer(log, transf, 1, 0);
+        // Logger
+        Logger log = new Logger();
+        frame.addConsumer(log, transf, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.release();
-	}
+        // Stop framework
+        frame.stop();
+        frame.release();
+    }
 
-	@Test
-	public void testClassifierT() throws Exception
-	{
-		//setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testClassifierT() throws Exception {
+        //setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		//sensor
-		AndroidSensor sensor = new AndroidSensor();
-		AndroidSensorChannel acc = new AndroidSensorChannel();
-		acc.options.sensorType.set(SensorType.ACCELEROMETER);
-		frame.addSensor(sensor, acc);
+        //sensor
+        AndroidSensor sensor = new AndroidSensor();
+        AndroidSensorChannel acc = new AndroidSensorChannel();
+        acc.options.sensorType.set(SensorType.ACCELEROMETER);
+        frame.addSensor(sensor, acc);
 
-		AndroidSensorChannel gyr = new AndroidSensorChannel();
-		gyr.options.sensorType.set(SensorType.GYROSCOPE);
-		frame.addSensor(sensor, gyr);
+        AndroidSensorChannel gyr = new AndroidSensorChannel();
+        gyr.options.sensorType.set(SensorType.GYROSCOPE);
+        frame.addSensor(sensor, gyr);
 
-		AndroidSensorChannel mag = new AndroidSensorChannel();
-		mag.options.sensorType.set(SensorType.MAGNETIC_FIELD);
-		frame.addSensor(sensor, mag);
+        AndroidSensorChannel mag = new AndroidSensorChannel();
+        mag.options.sensorType.set(SensorType.MAGNETIC_FIELD);
+        frame.addSensor(sensor, mag);
 
-		Progress prog = new Progress();
-		frame.addTransformer(prog, new Provider[]{acc, gyr, mag}, 1.0, 0);
+        Progress prog = new Progress();
+        frame.addTransformer(prog, new Provider[]{acc, gyr, mag}, 1.0, 0);
 
-		AvgVar avg = new AvgVar();
-		avg.options.avg.set(true);
-		avg.options.var.set(true);
-		frame.addTransformer(avg, prog, 1.0, 0);
+        AvgVar avg = new AvgVar();
+        avg.options.avg.set(true);
+        avg.options.var.set(true);
+        frame.addTransformer(avg, prog, 1.0, 0);
 
-		MinMax minmax = new MinMax();
-		frame.addTransformer(minmax, prog, 1.0, 0);
+        MinMax minmax = new MinMax();
+        frame.addTransformer(minmax, prog, 1.0, 0);
 
-		Median med = new Median();
-		frame.addTransformer(med, prog, 1.0, 0);
+        Median med = new Median();
+        frame.addTransformer(med, prog, 1.0, 0);
 
-		Merge merge = new Merge();
-		frame.addTransformer(merge, new Provider[]{avg, med, minmax}, 1.0, 0);
+        Merge merge = new Merge();
+        frame.addTransformer(merge, new Provider[]{avg, med, minmax}, 1.0, 0);
 
-		SSITransformer transf = new SSITransformer();
-		transf.options.name.set(SSI.TransformerName.ClassifierT);
-		transf.options.ssioptions.set(new String[]{"trainer->" + Environment.getExternalStorageDirectory().getAbsolutePath() + "/SSJ/Creator/res/activity.NaiveBayes.trainer"});
-		frame.addTransformer(transf, merge, 1);
+        SSITransformer transf = new SSITransformer();
+        transf.options.name.set(SSI.TransformerName.ClassifierT);
+        transf.options.ssioptions.set(new String[]{"trainer->" + Environment.getExternalStorageDirectory().getAbsolutePath() + "/SSJ/Creator/res/activity.NaiveBayes.trainer"});
+        frame.addTransformer(transf, merge, 1);
 
-		// Logger
-		Logger log = new Logger();
-		frame.addConsumer(log, transf, 1, 0);
+        // Logger
+        Logger log = new Logger();
+        frame.addConsumer(log, transf, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.release();
-	}
+        // Stop framework
+        frame.stop();
+        frame.release();
+    }
 }

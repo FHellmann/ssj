@@ -38,25 +38,7 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Johnny on 05.03.2015.
  */
-public class Logger extends Consumer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<Boolean> reduceNum = new Option<>("reduceNum", true, Boolean.class, "");
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
+public class Logger extends Consumer {
     public final Options options = new Options();
 
     public Logger() {
@@ -64,23 +46,22 @@ public class Logger extends Consumer
     }
 
     @Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-	{
+    public OptionList getOptions() {
+        return options;
     }
 
-    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+    }
+
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
         String msg;
-        for (int k = 0; k < stream_in.length; ++k)
-        {
+        for (int k = 0; k < stream_in.length; ++k) {
             int num = (options.reduceNum.get()) ? 1 : stream_in[k].num;
-            for (int i = 0; i < num; ++i)
-            {
+            for (int i = 0; i < num; ++i) {
                 msg = "";
-                for (int j = 0; j < stream_in[k].dim; ++j)
-                {
-                    switch (stream_in[k].type)
-                    {
+                for (int j = 0; j < stream_in[k].dim; ++j) {
+                    switch (stream_in[k].type) {
                         case BYTE:
                             msg += stream_in[k].ptrB()[i * stream_in[k].dim + j] + " ";
                             break;
@@ -112,7 +93,17 @@ public class Logger extends Consumer
         }
     }
 
-    public void flush(Stream[] stream_in) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+    }
+
+    public class Options extends OptionList {
+        public final Option<Boolean> reduceNum = new Option<>("reduceNum", true, Boolean.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

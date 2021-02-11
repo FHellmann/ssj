@@ -27,8 +27,10 @@
 
 package hcm.ssj.creator;
 
-import android.app.Application;
-import android.test.ApplicationTestCase;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import hcm.ssj.androidSensor.AndroidSensor;
 import hcm.ssj.androidSensor.AndroidSensorChannel;
@@ -43,24 +45,16 @@ import hcm.ssj.test.Logger;
 /**
  * Created by Frank Gaibler on 10.03.2016.
  */
-public class testLinker extends ApplicationTestCase<Application>
-{
+@RunWith(AndroidJUnit4.class)
+public class TestLinker {
     //test length in milliseconds
     private final static int TEST_LENGTH = 2 * 5 * 1000;
 
     /**
-     *
-     */
-    public testLinker()
-    {
-        super(Application.class);
-    }
-
-    /**
      * @throws Exception
      */
-    public void testBuildAndLink() throws Exception
-    {
+    @Test
+    public void testBuildAndLink() throws Exception {
         //scan content
         SSJDescriptor descriptor = SSJDescriptor.getInstance();
 //        Builder.getInstance().scan(this.getContext());
@@ -73,44 +67,35 @@ public class testLinker extends ApplicationTestCase<Application>
         PipelineBuilder pipelineBuilder = PipelineBuilder.getInstance();
         //select classes
         Sensor sensor = null;
-        for (Class clazz : descriptor.sensors)
-        {
-            if (clazz.equals(AndroidSensor.class))
-            {
+        for (Class clazz : descriptor.sensors) {
+            if (clazz.equals(AndroidSensor.class)) {
                 sensor = (Sensor) SSJDescriptor.instantiate(clazz);
                 break;
             }
         }
         SensorChannel sensorChannel = null;
-        if (sensor != null)
-        {
-            for (Class clazz : descriptor.sensorChannels)
-            {
-                if (clazz.equals(AndroidSensorChannel.class))
-                {
+        if (sensor != null) {
+            for (Class clazz : descriptor.sensorChannels) {
+                if (clazz.equals(AndroidSensorChannel.class)) {
                     sensorChannel = (SensorChannel) SSJDescriptor.instantiate(clazz);
                     break;
                 }
             }
         }
         Consumer consumer = null;
-        if (sensorChannel != null)
-        {
+        if (sensorChannel != null) {
             pipelineBuilder.add(sensor);
             pipelineBuilder.add(sensorChannel);
-            pipelineBuilder.addStreamProvider(sensor, sensorChannel);
-            for (Class clazz : descriptor.consumers)
-            {
-                if (clazz.equals(Logger.class))
-                {
+            // TODO Method not available: pipelineBuilder.addStreamProvider(sensor, sensorChannel);
+            for (Class clazz : descriptor.consumers) {
+                if (clazz.equals(Logger.class)) {
                     consumer = (Consumer) SSJDescriptor.instantiate(clazz);
                     break;
                 }
             }
-            if (consumer != null)
-            {
+            if (consumer != null) {
                 pipelineBuilder.add(consumer);
-                pipelineBuilder.addStreamProvider(consumer, sensorChannel);
+                // TODO Method not available: pipelineBuilder.addStreamProvider(consumer, sensorChannel);
                 pipelineBuilder.setFrameSize(consumer, 1.0);
                 pipelineBuilder.setDelta(consumer, 0);
             }
@@ -120,14 +105,11 @@ public class testLinker extends ApplicationTestCase<Application>
         frame.start();
         //run for two minutes
         long end = System.currentTimeMillis() + TEST_LENGTH;
-        try
-        {
-            while (System.currentTimeMillis() < end)
-            {
+        try {
+            while (System.currentTimeMillis() < end) {
                 Thread.sleep(1);
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         frame.stop();

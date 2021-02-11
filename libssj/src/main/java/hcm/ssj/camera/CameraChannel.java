@@ -41,54 +41,29 @@ import hcm.ssj.core.stream.Stream;
  * Camera provider.<br>
  * Created by Frank Gaibler on 21.12.2015.
  */
-public class CameraChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the camera provider
-     */
-    public class Options extends OptionList
-    {
-        /**
-         * The rate in which the provider samples data from the camera.<br>
-         * <b>Attention!</b> The camera sensor will provide new data according to its frame rate and min max preview.
-         */
-        public final Option<Double> sampleRate = new Option<>("sampleRate", 20., Double.class, "sample rate for camera pictures");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class CameraChannel extends SensorChannel {
     public final Options options = new Options();
-
     private int sampleDimension = 0;
     private CameraSensor cameraSensor = null;
 
     /**
      *
      */
-    public CameraChannel()
-    {
+    public CameraChannel() {
         super();
         _name = this.getClass().getSimpleName();
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
     }
 
     /**
      *
      */
     @Override
-    protected void init() throws SSJException
-    {
+    protected void init() throws SSJException {
         cameraSensor = (CameraSensor) _sensor;
         //get sample dimension from camera
         cameraSensor.prePrepare();
@@ -98,13 +73,11 @@ public class CameraChannel extends SensorChannel
     }
 
     /**
-	 * @param stream_out Stream
-	 */
+     * @param stream_out Stream
+     */
     @Override
-    public void enter(Stream stream_out) throws SSJFatalException
-    {
-        if (stream_out.num != 1)
-        {
+    public void enter(Stream stream_out) throws SSJFatalException {
+        if (stream_out.num != 1) {
             Log.w("unsupported stream format. sample number = " + stream_out.num);
         }
     }
@@ -113,8 +86,7 @@ public class CameraChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         byte[] out = stream_out.ptrB();
         cameraSensor.swapBuffer(out, false);
 
@@ -125,8 +97,7 @@ public class CameraChannel extends SensorChannel
      * @return double
      */
     @Override
-    public double getSampleRate()
-    {
+    public double getSampleRate() {
         return options.sampleRate.get();
     }
 
@@ -134,8 +105,7 @@ public class CameraChannel extends SensorChannel
      * @return int
      */
     @Override
-    final public int getSampleDimension()
-    {
+    final public int getSampleDimension() {
         return sampleDimension;
     }
 
@@ -143,8 +113,7 @@ public class CameraChannel extends SensorChannel
      * @return int
      */
     @Override
-    public int getSampleBytes()
-    {
+    public int getSampleBytes() {
         return 1;
     }
 
@@ -152,8 +121,7 @@ public class CameraChannel extends SensorChannel
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType()
-    {
+    public Cons.Type getSampleType() {
         return Cons.Type.IMAGE;
     }
 
@@ -161,12 +129,29 @@ public class CameraChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream stream_out)
-    {
+    protected void describeOutput(Stream stream_out) {
         stream_out.desc = new String[]{"video"};
 
-        ((ImageStream)_stream_out).width = cameraSensor.getImageWidth();
-        ((ImageStream)_stream_out).height = cameraSensor.getImageHeight();
+        ((ImageStream) _stream_out).width = cameraSensor.getImageWidth();
+        ((ImageStream) _stream_out).height = cameraSensor.getImageHeight();
         //((ImageStream)_stream_out).format = cameraSensor.getImageFormat();
+    }
+
+    /**
+     * All options for the camera provider
+     */
+    public class Options extends OptionList {
+        /**
+         * The rate in which the provider samples data from the camera.<br>
+         * <b>Attention!</b> The camera sensor will provide new data according to its frame rate and min max preview.
+         */
+        public final Option<Double> sampleRate = new Option<>("sampleRate", 20., Double.class, "sample rate for camera pictures");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

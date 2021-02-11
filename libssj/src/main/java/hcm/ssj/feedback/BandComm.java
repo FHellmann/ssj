@@ -48,50 +48,18 @@ public class BandComm {
 
 
     private BandClient client;
-    private int id;
+    private final int id;
 
-    public BandComm()
-    {
+    public BandComm() {
         this.id = 0;
     }
 
-    public BandComm(int id)
-    {
+    public BandComm(int id) {
         this.id = id;
     }
 
-    public void vibrate(VibrationType type)
-    {
+    public void vibrate(VibrationType type) {
         new VibrateTask(type).execute();
-    }
-
-    private class VibrateTask extends AsyncTask<Void, Void, Boolean> {
-
-        VibrationType type;
-        public VibrateTask(VibrationType type)
-        {
-            this.type = type;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            try {
-                if (getConnectedBandClient()) {
-                    client.getNotificationManager().vibrate(type);
-                } else {
-                    Log.e("Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
-                    return false;
-                }
-            } catch (BandException e) {
-                handleBandException(e);
-                return false;
-            } catch (Exception e) {
-                Log.e(e.getMessage());
-                return false;
-            }
-
-            return true;
-        }
     }
 
     private boolean getConnectedBandClient() throws InterruptedException, BandException {
@@ -131,5 +99,34 @@ public class BandComm {
                 break;
         }
         Log.e(exceptionMessage);
+    }
+
+    private class VibrateTask extends AsyncTask<Void, Void, Boolean> {
+
+        VibrationType type;
+
+        public VibrateTask(VibrationType type) {
+            this.type = type;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                if (getConnectedBandClient()) {
+                    client.getNotificationManager().vibrate(type);
+                } else {
+                    Log.e("Band isn't connected. Please make sure bluetooth is on and the band is in range.\n");
+                    return false;
+                }
+            } catch (BandException e) {
+                handleBandException(e);
+                return false;
+            } catch (Exception e) {
+                Log.e(e.getMessage());
+                return false;
+            }
+
+            return true;
+        }
     }
 }

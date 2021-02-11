@@ -45,53 +45,32 @@ import hcm.ssj.core.stream.Stream;
  * Audio Sensor - get data from audio interface and forwards it
  * Created by Johnny on 05.03.2015.
  */
-public class CPULoadChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
-        public final Option<String> packagename = new Option<>("packagename", SSJApplication.getAppContext().getPackageName(), String.class, "name of the package to monitor");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
+public class CPULoadChannel extends SensorChannel {
     public final Options options = new Options();
-
     private String cmd;
 
-    public CPULoadChannel()
-    {
+    public CPULoadChannel() {
         _name = "Profiler_CPU";
     }
 
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
     @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-    {
+    public void enter(Stream stream_out) throws SSJFatalException {
         //set delay to be < frame window since top is blocking
         cmd = "top -n 1 -m 10 -d " + (1.0 / options.sampleRate.get()) * 0.9;
     }
 
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         stream_out.ptrF()[0] = getCPULoad(cmd, options.packagename.get());
         return true;
     }
 
-    private float getCPULoad(String cmd, String packagename)
-    {
+    private float getCPULoad(String cmd, String packagename) {
         try {
             Process proc = Runtime.getRuntime().exec(cmd);
 
@@ -103,64 +82,65 @@ public class CPULoadChannel extends SensorChannel
                     continue;
 
                 line = line.trim();
-                if(line.startsWith("PID"))
-                {
+                if (line.startsWith("PID")) {
                     //compute index of CPU load
-                    String elems[] = line.split("\\s+");
-                    for(int i = 0; i< elems.length; i++)
-                    {
-                        if(elems[i].contains("CPU")) {
+                    String[] elems = line.split("\\s+");
+                    for (int i = 0; i < elems.length; i++) {
+                        if (elems[i].contains("CPU")) {
                             cpuid = i;
                             break;
                         }
                     }
-                }
-                else if (line.contains(packagename)) {
-                    String elems[] = line.split("\\s+");
+                } else if (line.contains(packagename)) {
+                    String[] elems = line.split("\\s+");
                     return Float.parseFloat(elems[cpuid].replace("%", ""));
                 }
             }
-        }
-        catch(IOException e)
-        {
+        } catch (IOException e) {
             Log.w("error executing top cmd", e);
         }
         return 0;
     }
 
     @Override
-    public void flush(Stream stream_out) throws SSJFatalException
-    {
+    public void flush(Stream stream_out) throws SSJFatalException {
     }
 
     @Override
-    public int getSampleDimension()
-    {
+    public int getSampleDimension() {
         return 1;
     }
 
     @Override
-    public double getSampleRate()
-    {
+    public double getSampleRate() {
         return options.sampleRate.get();
     }
 
     @Override
-    public int getSampleBytes()
-    {
+    public int getSampleBytes() {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
     @Override
-    public Cons.Type getSampleType()
-    {
+    public Cons.Type getSampleType() {
         return Cons.Type.FLOAT;
     }
 
     @Override
-    public void describeOutput(Stream stream_out)
-    {
+    public void describeOutput(Stream stream_out) {
         stream_out.desc = new String[1];
         stream_out.desc[0] = "CPU";
+    }
+
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
+        public final Option<String> packagename = new Option<>("packagename", SSJApplication.getAppContext().getPackageName(), String.class, "name of the package to monitor");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

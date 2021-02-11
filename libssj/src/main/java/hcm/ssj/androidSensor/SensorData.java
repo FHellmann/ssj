@@ -33,16 +33,14 @@ import hcm.ssj.core.Log;
  * Standard wrapper for android sensor data.<br>
  * Created by Frank Gaibler on 13.08.2015.
  */
-class SensorData
-{
-    private int size;
-    private float[] data;
+class SensorData {
+    private final int size;
+    private final float[] data;
 
     /**
      * @param values float[]
      */
-    public SensorData(float[] values)
-    {
+    public SensorData(float[] values) {
         this.size = values.length;
         data = values;
     }
@@ -50,8 +48,7 @@ class SensorData
     /**
      * @return int
      */
-    public int getSize()
-    {
+    public int getSize() {
         return size;
     }
 
@@ -59,8 +56,7 @@ class SensorData
      * @param index int
      * @param data  float
      */
-    public void setData(int index, float data)
-    {
+    public void setData(int index, float data) {
         this.data[index] = data;
     }
 
@@ -68,9 +64,8 @@ class SensorData
      * @param index int
      * @return float
      */
-    public float getData(int index)
-    {
-        if(data == null) {
+    public float getData(int index) {
+        if (data == null) {
             Log.e("data == null, size = " + size);
             return 0;
         }

@@ -41,11 +41,15 @@ import hcm.ssj.core.Log;
 
 /**
  * Approach to add a ValueListener to the hub-interface
- *
+ * <p>
  * Authors: Daniel Langerenken, Ionut Damian, Michael Dietz
  */
 public class Configuration extends Command {
 
+    static final UUID EMG0_DATA_CHAR_UUID = UUID.fromString("d5060105-a904-deb9-4748-2c7f4a124842");
+    static final UUID EMG1_DATA_CHAR_UUID = UUID.fromString("d5060205-a904-deb9-4748-2c7f4a124842");
+    static final UUID EMG2_DATA_CHAR_UUID = UUID.fromString("d5060305-a904-deb9-4748-2c7f4a124842");
+    static final UUID EMG3_DATA_CHAR_UUID = UUID.fromString("d5060405-a904-deb9-4748-2c7f4a124842");
     private static final byte EMG_MODE_DISABLED = 0x00; //New
     private static final byte EMG_MODE_FILTERED = 0x02;
     private static final byte EMG_MODE_RAW = 0x03;
@@ -53,28 +57,17 @@ public class Configuration extends Command {
     private static final byte IMU_MODE_ENABLED = 1;
     private static final byte COMMAND_SET_MODE = 0x01;
     private static final byte COMMAND_SLEEP_MODE = 0x09;
-
-    static final UUID EMG0_DATA_CHAR_UUID = UUID.fromString("d5060105-a904-deb9-4748-2c7f4a124842");
-    static final UUID EMG1_DATA_CHAR_UUID = UUID.fromString("d5060205-a904-deb9-4748-2c7f4a124842");
-    static final UUID EMG2_DATA_CHAR_UUID = UUID.fromString("d5060305-a904-deb9-4748-2c7f4a124842");
-    static final UUID EMG3_DATA_CHAR_UUID = UUID.fromString("d5060405-a904-deb9-4748-2c7f4a124842");
-
     private static final byte CLASSIFIER_MODE_DISABLED = 0;
     private static final byte CLASSIFIER_MODE_ENABLED = 1;
-
-    private Hub hub;
-    private MyoListener mListener;
-
-    private EmgMode emgMode;
-    private boolean imuMode;
-    private boolean gesturesMode;
-
-    private SleepMode sleepMode = SleepMode.NEVER_SLEEP;
-
     Object myValueListener;
+    private final Hub hub;
+    private final MyoListener mListener;
+    private final EmgMode emgMode;
+    private final boolean imuMode;
+    private final boolean gesturesMode;
+    private final SleepMode sleepMode = SleepMode.NEVER_SLEEP;
 
-    public Configuration(Hub hub, final MyoListener listener, EmgMode emg, boolean imu, boolean gestures)
-    {
+    public Configuration(Hub hub, final MyoListener listener, EmgMode emg, boolean imu, boolean gestures) {
         super(hub);
         _name = "Myo_Config";
 
@@ -84,102 +77,6 @@ public class Configuration extends Command {
         this.emgMode = emg;
         this.imuMode = imu;
         this.gesturesMode = gestures;
-    }
-
-    public void apply(String macAddress)
-    {
-        configureDataAcquisition(macAddress, emgMode, imuMode, gesturesMode);
-        configureSleepMode(macAddress, sleepMode);
-
-        try
-        {
-            Method method = null;
-            for (Method mt : hub.getClass().getDeclaredMethods()) {
-                if (mt.getName().contains("addGattValueListener")) {
-                    method = mt;
-                    break;
-                }
-            }
-            if (method == null) {
-                Log.e("Method not found!!");
-                return;
-            }
-            method.setAccessible(true);
-            Class<?> valueListener = method.getParameterTypes()[0];
-            myValueListener = Proxy.newProxyInstance(valueListener.getClassLoader(), new Class<?>[]{valueListener}, new InvocationHandler() {
-                @Override
-                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    if (method.getName().equals("onCharacteristicChanged")) {
-                        Myo myo = (Myo) args[0];
-                        UUID uuid = (UUID) args[1];
-                        byte[] data = (byte[]) args[2];
-                        if (EMG0_DATA_CHAR_UUID.equals(uuid) || EMG1_DATA_CHAR_UUID.equals(uuid) || EMG2_DATA_CHAR_UUID.equals(uuid) || EMG3_DATA_CHAR_UUID.equals(uuid)) {
-                            onEMGData(myo, uuid, data);
-                            return 1;
-                        }
-                    }
-                    //because invoke replaces ALL method call ups to this instance, we need to catch ALL possible call ups
-                    //because the listeners are stored in a hashmap, the hashmap calls equals when a new listener is added
-                    else if (method.getName().equals("equals"))
-                    {
-                        return args[0].equals(this);
-                    }
-                    return -1;
-                }
-            });
-            Object o = method.invoke(hub, myValueListener);
-        } catch (Exception e) {
-            Log.w("unable to set EMG listener", e);
-        }
-    }
-
-    public void undo(String macAddress)
-    {
-        configureSleepMode(macAddress, SleepMode.NORMAL);
-
-        // Get field
-        Field field = null;
-        try
-        {
-            field = hub.getClass().getDeclaredField("mGattCallback");
-
-            // Make it accessible
-            field.setAccessible(true);
-
-            // Obtain the field value from the object instance
-            Object fieldValue = field.get(hub);
-
-            // Get remove method
-            Method myMethod = null;
-            for (Method mt : fieldValue.getClass().getDeclaredMethods()) {
-                if (mt.getName().contains("removeValueListener")) {
-                    myMethod = mt;
-                    break;
-                }
-            }
-
-            if(myMethod == null)
-                throw new NoSuchMethodException();
-
-            myMethod.setAccessible(true);
-
-            // Invoke removeValueListener on instance field mGattCallback
-            myMethod.invoke(fieldValue, myValueListener);
-        }
-        catch (NoSuchFieldException e) { Log.w("unable to undo config", e); }
-        catch (InvocationTargetException e) { Log.w("unable to undo config", e); }
-        catch (NoSuchMethodException e) { Log.w("unable to undo config", e); }
-        catch (IllegalAccessException e) { Log.w("unable to undo config", e); }
-    }
-
-    public void onEMGData(Myo myo, UUID uuid, byte[] data)
-    {
-        mListener.onEMGData(myo, uuid, data);
-    }
-
-    public void configureDataAcquisition(String address, EmgMode mode, boolean streamImu, boolean enableClassifier) {
-        byte[] enableCommand = createForSetMode(mode, streamImu, enableClassifier);
-        writeControlCommand(address, enableCommand);
     }
 
     static byte[] createForSetMode(EmgMode streamEmg, boolean streamImu, boolean enableClassifier) {
@@ -208,11 +105,6 @@ public class Configuration extends Command {
         return controlCommand;
     }
 
-    public void configureSleepMode(String address, SleepMode mode) {
-        byte[] cmd = createSleepMode(mode.id);
-        writeControlCommand(address, cmd);
-    }
-
     private static byte[] createSleepMode(byte sleepMode) {
         byte[] controlCommand = new byte[SleepModeCmd.values().length];
         controlCommand[SleepModeCmd.COMMAND_TYPE.ordinal()] = COMMAND_SLEEP_MODE;
@@ -221,31 +113,133 @@ public class Configuration extends Command {
         return controlCommand;
     }
 
+    public void apply(String macAddress) {
+        configureDataAcquisition(macAddress, emgMode, imuMode, gesturesMode);
+        configureSleepMode(macAddress, sleepMode);
+
+        try {
+            Method method = null;
+            for (Method mt : hub.getClass().getDeclaredMethods()) {
+                if (mt.getName().contains("addGattValueListener")) {
+                    method = mt;
+                    break;
+                }
+            }
+            if (method == null) {
+                Log.e("Method not found!!");
+                return;
+            }
+            method.setAccessible(true);
+            Class<?> valueListener = method.getParameterTypes()[0];
+            myValueListener = Proxy.newProxyInstance(valueListener.getClassLoader(), new Class<?>[]{valueListener}, new InvocationHandler() {
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    if (method.getName().equals("onCharacteristicChanged")) {
+                        Myo myo = (Myo) args[0];
+                        UUID uuid = (UUID) args[1];
+                        byte[] data = (byte[]) args[2];
+                        if (EMG0_DATA_CHAR_UUID.equals(uuid) || EMG1_DATA_CHAR_UUID.equals(uuid) || EMG2_DATA_CHAR_UUID.equals(uuid) || EMG3_DATA_CHAR_UUID.equals(uuid)) {
+                            onEMGData(myo, uuid, data);
+                            return 1;
+                        }
+                    }
+                    //because invoke replaces ALL method call ups to this instance, we need to catch ALL possible call ups
+                    //because the listeners are stored in a hashmap, the hashmap calls equals when a new listener is added
+                    else if (method.getName().equals("equals")) {
+                        return args[0].equals(this);
+                    }
+                    return -1;
+                }
+            });
+            Object o = method.invoke(hub, myValueListener);
+        } catch (Exception e) {
+            Log.w("unable to set EMG listener", e);
+        }
+    }
+
+    public void undo(String macAddress) {
+        configureSleepMode(macAddress, SleepMode.NORMAL);
+
+        // Get field
+        Field field = null;
+        try {
+            field = hub.getClass().getDeclaredField("mGattCallback");
+
+            // Make it accessible
+            field.setAccessible(true);
+
+            // Obtain the field value from the object instance
+            Object fieldValue = field.get(hub);
+
+            // Get remove method
+            Method myMethod = null;
+            for (Method mt : fieldValue.getClass().getDeclaredMethods()) {
+                if (mt.getName().contains("removeValueListener")) {
+                    myMethod = mt;
+                    break;
+                }
+            }
+
+            if (myMethod == null)
+                throw new NoSuchMethodException();
+
+            myMethod.setAccessible(true);
+
+            // Invoke removeValueListener on instance field mGattCallback
+            myMethod.invoke(fieldValue, myValueListener);
+        } catch (NoSuchFieldException e) {
+            Log.w("unable to undo config", e);
+        } catch (InvocationTargetException e) {
+            Log.w("unable to undo config", e);
+        } catch (NoSuchMethodException e) {
+            Log.w("unable to undo config", e);
+        } catch (IllegalAccessException e) {
+            Log.w("unable to undo config", e);
+        }
+    }
+
+    public void onEMGData(Myo myo, UUID uuid, byte[] data) {
+        mListener.onEMGData(myo, uuid, data);
+    }
+
+    public void configureDataAcquisition(String address, EmgMode mode, boolean streamImu, boolean enableClassifier) {
+        byte[] enableCommand = createForSetMode(mode, streamImu, enableClassifier);
+        writeControlCommand(address, enableCommand);
+    }
+
+    public void configureSleepMode(String address, SleepMode mode) {
+        byte[] cmd = createSleepMode(mode.id);
+        writeControlCommand(address, cmd);
+    }
+
     private enum SetModeCmd {
         COMMAND_TYPE,
         PAYLOAD_SIZE,
         EMG_MODE,
         IMU_MODE,
-        CLASSIFIER_MODE;
+        CLASSIFIER_MODE
     }
 
     public enum EmgMode {
         DISABLED,
         FILTERED,
-        RAW;
+        RAW
     }
 
     public enum SleepMode {
-        NORMAL((byte)0), ///< Normal sleep mode; Myo will sleep after a period of inactivity.
-        NEVER_SLEEP ((byte)1); ///< Never go to sleep.
+        NORMAL((byte) 0), ///< Normal sleep mode; Myo will sleep after a period of inactivity.
+        NEVER_SLEEP((byte) 1); ///< Never go to sleep.
 
         public final byte id;
-        SleepMode(byte id) { this.id = id; }
+
+        SleepMode(byte id) {
+            this.id = id;
+        }
     }
 
     public enum SleepModeCmd {
         COMMAND_TYPE,
         PAYLOAD_SIZE,
-        SLEEP_MODE;
+        SLEEP_MODE
     }
 }

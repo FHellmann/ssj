@@ -31,9 +31,6 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Environment;
-import androidx.annotation.NonNull;
-import androidx.fragment.app.DialogFragment;
-import androidx.appcompat.app.AlertDialog;
 import android.text.InputType;
 import android.util.SparseBooleanArray;
 import android.view.View;
@@ -41,6 +38,10 @@ import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.DialogFragment;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -57,16 +58,10 @@ import hcm.ssj.creator.util.Util;
  * Dialog to save and choose files.<br>
  * Created by Frank Gaibler on 04.07.2016.
  */
-public class FileDialog extends DialogFragment
-{
-    public enum Type
-    {
-        SAVE, LOAD_PIPELINE, LOAD_STRATEGY, DELETE_PIPELINE
-    }
-
+public class FileDialog extends DialogFragment {
     private Type type = Type.SAVE;
     private int titleMessage = R.string.app_name;
-    private ArrayList<Listener> alListeners = new ArrayList<>();
+    private final ArrayList<Listener> alListeners = new ArrayList<>();
     private ListView listView;
     private EditText editText;
     private File[] xmlFiles = null;
@@ -77,127 +72,95 @@ public class FileDialog extends DialogFragment
      */
     @Override
     @NonNull
-    public Dialog onCreateDialog(Bundle savedInstanceState)
-    {
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(titleMessage);
-        builder.setPositiveButton(R.string.str_ok, new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        switch (type)
-                        {
-                            case SAVE:
-                            {
+        builder.setPositiveButton(R.string.str_ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        switch (type) {
+                            case SAVE: {
                                 String fileName = editText.getText().toString().trim();
                                 File dir1 = new File(Environment.getExternalStorageDirectory(), Util.SSJ);
                                 File dir2 = new File(dir1.getPath(), Util.CREATOR);
                                 File dir3 = new File(dir2, Util.PIPELINES);
-                                if (!fileName.isEmpty() && (dir3.exists() || dir3.mkdirs()))
-                                {
-                                    if (!fileName.endsWith(Util.SUFFIX))
-                                    {
+                                if (!fileName.isEmpty() && (dir3.exists() || dir3.mkdirs())) {
+                                    if (!fileName.endsWith(Util.SUFFIX)) {
                                         fileName += Util.SUFFIX;
                                     }
                                     File file = new File(dir3, fileName);
-                                    if (isValidFileName(file) && SaveLoad.save(file))
-                                    {
-                                        for (Listener listener : alListeners)
-                                        {
+                                    if (isValidFileName(file) && SaveLoad.save(file)) {
+                                        for (Listener listener : alListeners) {
                                             listener.onPositiveEvent(new File[]{file});
                                         }
                                         return;
                                     }
                                 }
-                                for (Listener listener : alListeners)
-                                {
+                                for (Listener listener : alListeners) {
                                     listener.onNegativeEvent(new Boolean[]{false});
                                 }
                                 return;
                             }
-                            case LOAD_PIPELINE:
-                            {
-                                if (xmlFiles != null && xmlFiles.length > 0)
-                                {
+                            case LOAD_PIPELINE: {
+                                if (xmlFiles != null && xmlFiles.length > 0) {
                                     int pos = listView.getCheckedItemPosition();
-                                    if (pos > AbsListView.INVALID_POSITION)
-                                    {
-                                        if (SaveLoad.load(xmlFiles[pos]))
-                                        {
-                                            for (Listener listener : alListeners)
-                                            {
+                                    if (pos > AbsListView.INVALID_POSITION) {
+                                        if (SaveLoad.load(xmlFiles[pos])) {
+                                            for (Listener listener : alListeners) {
                                                 listener.onPositiveEvent(new File[]{xmlFiles[pos]});
                                             }
                                             return;
                                         }
-                                        for (Listener listener : alListeners)
-                                        {
+                                        for (Listener listener : alListeners) {
                                             listener.onNegativeEvent(new Boolean[]{false});
                                         }
                                         return;
                                     }
                                 }
-                                for (Listener listener : alListeners)
-                                {
+                                for (Listener listener : alListeners) {
                                     listener.onNegativeEvent(null);
                                 }
                             }
-							break;
-							case LOAD_STRATEGY:
-                            {
-                                if (xmlFiles != null && xmlFiles.length > 0)
-                                {
+                            break;
+                            case LOAD_STRATEGY: {
+                                if (xmlFiles != null && xmlFiles.length > 0) {
                                     int pos = listView.getCheckedItemPosition();
-                                    if (pos > AbsListView.INVALID_POSITION)
-                                    {
-                                        if (new StrategyLoader(xmlFiles[pos]).load())
-                                        {
-                                            for (Listener listener : alListeners)
-                                            {
+                                    if (pos > AbsListView.INVALID_POSITION) {
+                                        if (new StrategyLoader(xmlFiles[pos]).load()) {
+                                            for (Listener listener : alListeners) {
                                                 listener.onPositiveEvent(new File[]{xmlFiles[pos]});
                                             }
                                             return;
                                         }
-                                        for (Listener listener : alListeners)
-                                        {
+                                        for (Listener listener : alListeners) {
                                             listener.onNegativeEvent(new Boolean[]{false});
                                         }
                                         return;
                                     }
                                 }
-                                for (Listener listener : alListeners)
-                                {
+                                for (Listener listener : alListeners) {
                                     listener.onNegativeEvent(null);
                                 }
                             }
-							break;
-							case DELETE_PIPELINE:
-                            {
-                                if (xmlFiles != null && xmlFiles.length > 0)
-                                {
+                            break;
+                            case DELETE_PIPELINE: {
+                                if (xmlFiles != null && xmlFiles.length > 0) {
                                     SparseBooleanArray sparseBooleanArray = listView.getCheckedItemPositions();
-                                    for (int i = 0; i < listView.getCount(); i++)
-                                    {
-                                        if (sparseBooleanArray.get(i))
-                                        {
-                                            if (!xmlFiles[i].delete())
-                                            {
-                                                for (Listener listener : alListeners)
-                                                {
+                                    for (int i = 0; i < listView.getCount(); i++) {
+                                        if (sparseBooleanArray.get(i)) {
+                                            if (!xmlFiles[i].delete()) {
+                                                for (Listener listener : alListeners) {
                                                     listener.onNegativeEvent(new Boolean[]{false});
                                                 }
                                                 return;
                                             }
                                         }
                                     }
-                                    for (Listener listener : alListeners)
-                                    {
+                                    for (Listener listener : alListeners) {
                                         listener.onPositiveEvent(null);
                                     }
                                     return;
                                 }
-                                for (Listener listener : alListeners)
-                                {
+                                for (Listener listener : alListeners) {
                                     listener.onNegativeEvent(null);
                                 }
                                 break;
@@ -206,22 +169,17 @@ public class FileDialog extends DialogFragment
                     }
                 }
         );
-        builder.setNegativeButton(R.string.str_cancel, new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int id)
-                    {
-                        for (Listener listener : alListeners)
-                        {
+        builder.setNegativeButton(R.string.str_cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        for (Listener listener : alListeners) {
                             listener.onNegativeEvent(null);
                         }
                     }
                 }
         );
         //set up the input
-        switch (type)
-        {
-            case SAVE:
-            {
+        switch (type) {
+            case SAVE: {
                 editText = new EditText(getContext());
                 editText.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 editText.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -229,8 +187,7 @@ public class FileDialog extends DialogFragment
                 break;
             }
             case LOAD_PIPELINE:
-            case DELETE_PIPELINE:
-            {
+            case DELETE_PIPELINE: {
                 File ssjDir = new File(Environment.getExternalStorageDirectory(), Util.SSJ);
                 File creatorDir = new File(ssjDir.getPath(), Util.CREATOR);
                 File piplineDir = new File(creatorDir.getPath(), Util.PIPELINES);
@@ -238,8 +195,7 @@ public class FileDialog extends DialogFragment
                 builder.setView(listView);
                 break;
             }
-            case LOAD_STRATEGY:
-            {
+            case LOAD_STRATEGY: {
                 File ssjDir = new File(Environment.getExternalStorageDirectory(), Util.SSJ);
                 File creatorDir = new File(ssjDir.getPath(), Util.CREATOR);
                 File piplineDir = new File(creatorDir.getPath(), Util.STRATEGIES);
@@ -251,32 +207,26 @@ public class FileDialog extends DialogFragment
         return builder.create();
     }
 
-    private ListView getXmlFileListView(File directory)
-    {
+    private ListView getXmlFileListView(File directory) {
         listView = new ListView(getContext());
         listView.setChoiceMode(type == Type.DELETE_PIPELINE
-                                       ? ListView.CHOICE_MODE_MULTIPLE
-                                       : ListView.CHOICE_MODE_SINGLE);
-        xmlFiles = directory.listFiles(new FilenameFilter()
-        {
+                ? ListView.CHOICE_MODE_MULTIPLE
+                : ListView.CHOICE_MODE_SINGLE);
+        xmlFiles = directory.listFiles(new FilenameFilter() {
             @Override
-            public boolean accept(File folder, String name)
-            {
+            public boolean accept(File folder, String name) {
                 return name.toLowerCase().endsWith(Util.SUFFIX);
             }
         });
-        if (xmlFiles != null && xmlFiles.length > 0)
-        {
+        if (xmlFiles != null && xmlFiles.length > 0) {
             String[] ids = new String[xmlFiles.length];
-            for (int i = 0; i < ids.length; i++)
-            {
+            for (int i = 0; i < ids.length; i++) {
                 ids[i] = xmlFiles[i].getName();
             }
             listView.setAdapter(new ArrayAdapter<>(getContext(), type == Type.DELETE_PIPELINE
                     ? android.R.layout.simple_list_item_multiple_choice
                     : android.R.layout.simple_list_item_single_choice, ids));
-        } else
-        {
+        } else {
             listView.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_single_choice));
         }
         return listView;
@@ -285,32 +235,28 @@ public class FileDialog extends DialogFragment
     /**
      * @param title int
      */
-    public void setTitleMessage(int title)
-    {
+    public void setTitleMessage(int title) {
         this.titleMessage = title;
     }
 
     /**
      * @param type Type
      */
-    public void setType(Type type)
-    {
+    public void setType(Type type) {
         this.type = type;
     }
 
     /**
      * @param listener Listener
      */
-    public void addListener(Listener listener)
-    {
+    public void addListener(Listener listener) {
         alListeners.add(listener);
     }
 
     /**
      * @param listener Listener
      */
-    public void removeListener(Listener listener)
-    {
+    public void removeListener(Listener listener) {
         alListeners.remove(listener);
     }
 
@@ -318,16 +264,17 @@ public class FileDialog extends DialogFragment
      * @param file File
      * @return boolean
      */
-    private boolean isValidFileName(File file)
-    {
-        try
-        {
+    private boolean isValidFileName(File file) {
+        try {
             file.createNewFile();
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             Log.e("could not create file");
             return false;
         }
         return true;
+    }
+
+    public enum Type {
+        SAVE, LOAD_PIPELINE, LOAD_STRATEGY, DELETE_PIPELINE
     }
 }

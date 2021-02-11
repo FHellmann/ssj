@@ -40,47 +40,45 @@ import java.util.ArrayList;
  * Created by Ionut Damian on 02.11.2017.
  */
 
-public class ArrayAdapterWithNull extends ArrayAdapter<Object>
-{
-	private Context context;
-	private String defaultLabel;
-	private int resource;
+public class ArrayAdapterWithNull extends ArrayAdapter<Object> {
+    private final Context context;
+    private final String defaultLabel;
+    private final int resource;
 
-	public ArrayAdapterWithNull(Context context, int resource, ArrayList<Object> objects, String defaultLabel)
-	{
-		super(context, resource, objects);
-		this.context = context;
-		this.defaultLabel = defaultLabel;
-		this.resource = resource;
-	}
+    public ArrayAdapterWithNull(Context context, int resource, ArrayList<Object> objects, String defaultLabel) {
+        super(context, resource, objects);
+        this.context = context;
+        this.defaultLabel = defaultLabel;
+        this.resource = resource;
+    }
 
-	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
 
-		TextView label;
-		if (convertView == null) {
-			label = (TextView)LayoutInflater.from(context).inflate(resource, parent, false);
-		} else {
-			label = (TextView)convertView;
-		}
+        TextView label;
+        if (convertView == null) {
+            label = (TextView) LayoutInflater.from(context).inflate(resource, parent, false);
+        } else {
+            label = (TextView) convertView;
+        }
 
-		String text = (getItem(position) == null) ? defaultLabel : getItem(position).getClass().getSimpleName();
-		label.setText(text);
-		return label;
-	}
+        String text = (getItem(position) == null) ? defaultLabel : getItem(position).getClass().getSimpleName();
+        label.setText(text);
+        return label;
+    }
 
-	@Override
-	public View getDropDownView(int position, View convertView, ViewGroup parent) {
+    @Override
+    public View getDropDownView(int position, View convertView, ViewGroup parent) {
 
-		TextView label;
-		if (convertView == null) {
-			label = (TextView)LayoutInflater.from(context).inflate(resource, parent, false);
-		} else {
-			label = (TextView)convertView;
-		}
+        TextView label;
+        if (convertView == null) {
+            label = (TextView) LayoutInflater.from(context).inflate(resource, parent, false);
+        } else {
+            label = (TextView) convertView;
+        }
 
-		String text = (getItem(position) == null) ? defaultLabel : getItem(position).getClass().getSimpleName();
-		label.setText(text);
-		return label;
-	}
+        String text = (getItem(position) == null) ? defaultLabel : getItem(position).getClass().getSimpleName();
+        label.setText(text);
+        return label;
+    }
 }

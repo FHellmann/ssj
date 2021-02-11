@@ -41,57 +41,29 @@ import hcm.ssj.core.stream.Stream;
  * Standard provider for android sensors.<br>
  * Created by Frank Gaibler on 13.08.2015.
  */
-public class AndroidSensorChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the sensor provider
-     */
-    public class Options extends OptionList
-    {
-        public final Option<SensorType> sensorType = new Option<>("sensorType", SensorType.ACCELEROMETER, SensorType.class, "android sensor type");
-
-        /**
-         * The rate in which the provider samples data from the sensor.<br>
-         * <b>Attention!</b> The sensor will provide new data according to its sensor delay.
-         */
-        public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "sample rate of sensor to provider");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class AndroidSensorChannel extends SensorChannel {
     public final Options options = new Options();
     protected SensorListener listener;
     private SensorType sensorType;
-
     /**
      *
      */
-    public AndroidSensorChannel()
-    {
+    public AndroidSensorChannel() {
         super();
         _name = "AndroidSensorChannel";
     }
 
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
     /**
-	 *
+     *
      */
     @Override
-    public void init() throws SSJException
-    {
-        if (options.sensorType.get() == null)
-        {
+    public void init() throws SSJException {
+        if (options.sensorType.get() == null) {
             Log.e("sensor type not set");
             return;
         }
@@ -104,13 +76,11 @@ public class AndroidSensorChannel extends SensorChannel
     }
 
     /**
-	 * @param stream_out Stream
-	 */
+     * @param stream_out Stream
+     */
     @Override
-    public void enter(Stream stream_out) throws SSJFatalException
-    {
-        if (stream_out.num != 1)
-        {
+    public void enter(Stream stream_out) throws SSJFatalException {
+        if (stream_out.num != 1) {
             Log.w("[" + sensorType.getName() + "] unsupported stream format. sample number = " + stream_out.num);
         }
     }
@@ -119,12 +89,10 @@ public class AndroidSensorChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         int dimension = getSampleDimension();
         float[] out = stream_out.ptrF();
-        for (int k = 0; k < dimension; k++)
-        {
+        for (int k = 0; k < dimension; k++) {
             out[k] = listener.getData().getData(k);
         }
 
@@ -135,8 +103,7 @@ public class AndroidSensorChannel extends SensorChannel
      * @return double
      */
     @Override
-    public double getSampleRate()
-    {
+    public double getSampleRate() {
         return options.sampleRate.get();
     }
 
@@ -144,8 +111,7 @@ public class AndroidSensorChannel extends SensorChannel
      * @return int
      */
     @Override
-    final public int getSampleDimension()
-    {
+    final public int getSampleDimension() {
         return sensorType.getDataSize();
     }
 
@@ -153,8 +119,7 @@ public class AndroidSensorChannel extends SensorChannel
      * @return int
      */
     @Override
-    public int getSampleBytes()
-    {
+    public int getSampleBytes() {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -162,8 +127,7 @@ public class AndroidSensorChannel extends SensorChannel
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType()
-    {
+    public Cons.Type getSampleType() {
         return Cons.Type.FLOAT;
     }
 
@@ -171,8 +135,27 @@ public class AndroidSensorChannel extends SensorChannel
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream stream_out)
-    {
+    protected void describeOutput(Stream stream_out) {
         stream_out.desc = sensorType.getOutput();
+    }
+
+    /**
+     * All options for the sensor provider
+     */
+    public class Options extends OptionList {
+        public final Option<SensorType> sensorType = new Option<>("sensorType", SensorType.ACCELEROMETER, SensorType.class, "android sensor type");
+
+        /**
+         * The rate in which the provider samples data from the sensor.<br>
+         * <b>Attention!</b> The sensor will provide new data according to its sensor delay.
+         */
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "sample rate of sensor to provider");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

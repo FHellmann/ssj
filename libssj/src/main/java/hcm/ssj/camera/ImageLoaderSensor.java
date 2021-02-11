@@ -42,87 +42,70 @@ import hcm.ssj.file.FileCons;
 /**
  * Created by Michael Dietz on 13.11.2019.
  */
-public class ImageLoaderSensor extends Sensor
-{
-	public class Options extends OptionList
-	{
-		public final Option<FolderPath> filePath = new Option<>("path", new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]"), FolderPath.class, "folder containing image file");
-		public final Option<String> fileName = new Option<>("fileName", "image.jpg", String.class, "image name");
+public class ImageLoaderSensor extends Sensor {
+    public final Options options = new Options();
+    protected Bitmap image;
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    public ImageLoaderSensor() {
+        _name = this.getClass().getSimpleName();
+    }
 
-	public final Options options = new Options();
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+    @Override
+    protected boolean connect() throws SSJFatalException {
+        loadImage();
 
-	protected Bitmap image;
+        return true;
+    }
 
-	public ImageLoaderSensor()
-	{
-		_name = this.getClass().getSimpleName();
-	}
+    protected void loadImage() throws SSJFatalException {
+        File imagePath = new File(options.filePath.parseWildcards(), options.fileName.get());
 
-	@Override
-	protected boolean connect() throws SSJFatalException
-	{
-		loadImage();
+        if (imagePath.exists()) {
+            image = BitmapFactory.decodeFile(imagePath.getAbsolutePath());
+        } else {
+            throw new SSJFatalException("Image " + imagePath.getAbsolutePath() + " does not exist!");
+        }
+    }
 
-		return true;
-	}
+    protected int getImageWidth() {
+        int result = -1;
 
-	protected void loadImage() throws SSJFatalException
-	{
-		File imagePath = new File(options.filePath.parseWildcards(), options.fileName.get());
+        if (image != null) {
+            result = image.getWidth();
+        }
 
-		if (imagePath.exists())
-		{
-			image = BitmapFactory.decodeFile(imagePath.getAbsolutePath());
-		}
-		else
-		{
-			throw new SSJFatalException("Image " + imagePath.getAbsolutePath() + " does not exist!");
-		}
-	}
+        return result;
+    }
 
-	protected int getImageWidth()
-	{
-		int result = -1;
+    protected int getImageHeight() {
+        int result = -1;
 
-		if (image != null)
-		{
-			result = image.getWidth();
-		}
+        if (image != null) {
+            result = image.getHeight();
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	protected int getImageHeight()
-	{
-		int result = -1;
+    @Override
+    protected void disconnect() throws SSJFatalException {
+        if (image != null) {
+            image.recycle();
+            image = null;
+        }
+    }
 
-		if (image != null)
-		{
-			result = image.getHeight();
-		}
+    public class Options extends OptionList {
+        public final Option<FolderPath> filePath = new Option<>("path", new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]"), FolderPath.class, "folder containing image file");
+        public final Option<String> fileName = new Option<>("fileName", "image.jpg", String.class, "image name");
 
-		return result;
-	}
-
-	@Override
-	protected void disconnect() throws SSJFatalException
-	{
-		if (image != null)
-		{
-			image.recycle();
-			image = null;
-		}
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

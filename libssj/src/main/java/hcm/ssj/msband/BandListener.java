@@ -60,351 +60,302 @@ import hcm.ssj.core.Log;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class BandListener implements BandGsrEventListener, BandSkinTemperatureEventListener, BandHeartRateEventListener, BandAccelerometerEventListener, BandGyroscopeEventListener, BandAmbientLightEventListener, BandBarometerEventListener, BandCaloriesEventListener, BandDistanceEventListener, BandPedometerEventListener, BandRRIntervalEventListener, BandAltimeterEventListener, BandConnectionCallback
-{
-	private final int TIMEOUT = 10000; //in ms
+public class BandListener implements BandGsrEventListener, BandSkinTemperatureEventListener, BandHeartRateEventListener, BandAccelerometerEventListener, BandGyroscopeEventListener, BandAmbientLightEventListener, BandBarometerEventListener, BandCaloriesEventListener, BandDistanceEventListener, BandPedometerEventListener, BandRRIntervalEventListener, BandAltimeterEventListener, BandConnectionCallback {
+    private final int TIMEOUT = 10000; //in ms
 
-	private int   gsr; // Resistance in ohm
-	private float skinTemperature;
-	private int   heartRate;
-	private float accelerationX;
-	private float accelerationY;
-	private float accelerationZ;
-	private float gyrVelocityX;
-	private float gyrVelocityY;
-	private float gyrVelocityZ;
-	private float gyrAccelerationX;
-	private float gyrAccelerationY;
-	private float gyrAccelerationZ;
-	private int brightness;
-	private double airPressure;
-	private double temperature;
-	private long calories;
-	private long distance;
-	private float speed;
-	private float pace;
-	private long steps;
-	private int motionType;
-	private double interBeatInterval; // time between two heart beats
-	private long flightsAscended;
-	private long flightsDescended;
-	private long steppingGain;
-	private long steppingLoss;
-	private long stepsAscended;
-	private long stepsDescended;
-	private long altimeterGain;
-	private long altimeterLoss;
+    private int gsr; // Resistance in ohm
+    private float skinTemperature;
+    private int heartRate;
+    private float accelerationX;
+    private float accelerationY;
+    private float accelerationZ;
+    private float gyrVelocityX;
+    private float gyrVelocityY;
+    private float gyrVelocityZ;
+    private float gyrAccelerationX;
+    private float gyrAccelerationY;
+    private float gyrAccelerationZ;
+    private int brightness;
+    private double airPressure;
+    private double temperature;
+    private long calories;
+    private long distance;
+    private float speed;
+    private float pace;
+    private long steps;
+    private int motionType;
+    private double interBeatInterval; // time between two heart beats
+    private long flightsAscended;
+    private long flightsDescended;
+    private long steppingGain;
+    private long steppingLoss;
+    private long stepsAscended;
+    private long stepsDescended;
+    private long altimeterGain;
+    private long altimeterLoss;
 
-	private long lastDataTimestamp = 0;
-	private boolean connected;
+    private long lastDataTimestamp = 0;
+    private boolean connected;
 
-	public BandListener()
-	{
-		reset();
-	}
+    public BandListener() {
+        reset();
+    }
 
-	public void reset()
-	{
-		gsr = 0;
-		skinTemperature = 0;
-		heartRate = 0;
-		accelerationX = 0;
-		accelerationY = 0;
-		accelerationZ = 0;
-		gyrVelocityX = 0;
-		gyrVelocityY = 0;
-		gyrVelocityZ = 0;
-		gyrAccelerationX = 0;
-		gyrAccelerationY = 0;
-		gyrAccelerationZ = 0;
-		brightness = 0;
-		airPressure = 0;
-		temperature = 0;
-		calories = 0;
-		distance = 0;
-		speed = 0;
-		pace = 0;
-		steps = 0;
-		interBeatInterval = 0;
-		flightsAscended = 0;
-		flightsDescended = 0;
-		motionType = MotionType.UNKNOWN.ordinal();
+    public void reset() {
+        gsr = 0;
+        skinTemperature = 0;
+        heartRate = 0;
+        accelerationX = 0;
+        accelerationY = 0;
+        accelerationZ = 0;
+        gyrVelocityX = 0;
+        gyrVelocityY = 0;
+        gyrVelocityZ = 0;
+        gyrAccelerationX = 0;
+        gyrAccelerationY = 0;
+        gyrAccelerationZ = 0;
+        brightness = 0;
+        airPressure = 0;
+        temperature = 0;
+        calories = 0;
+        distance = 0;
+        speed = 0;
+        pace = 0;
+        steps = 0;
+        interBeatInterval = 0;
+        flightsAscended = 0;
+        flightsDescended = 0;
+        motionType = MotionType.UNKNOWN.ordinal();
 
-		lastDataTimestamp = 0;
-		connected = false;
-	}
+        lastDataTimestamp = 0;
+        connected = false;
+    }
 
-	@Override
-	public void onStateChanged(ConnectionState connectionState)
-	{
-		connected = (connectionState == ConnectionState.CONNECTED);
-		Log.i("MSBand connection status: " + connectionState.toString());
-	}
+    @Override
+    public void onStateChanged(ConnectionState connectionState) {
+        connected = (connectionState == ConnectionState.CONNECTED);
+        Log.i("MSBand connection status: " + connectionState.toString());
+    }
 
-	@Override
-	public void onBandGsrChanged(BandGsrEvent bandGsrEvent)
-	{
-		dataReceived();
-		gsr = bandGsrEvent.getResistance();
-	}
+    @Override
+    public void onBandGsrChanged(BandGsrEvent bandGsrEvent) {
+        dataReceived();
+        gsr = bandGsrEvent.getResistance();
+    }
 
-	@Override
-	public void onBandSkinTemperatureChanged(BandSkinTemperatureEvent bandSkinTemperatureEvent)
-	{
-		dataReceived();
-		skinTemperature = bandSkinTemperatureEvent.getTemperature();
-	}
+    @Override
+    public void onBandSkinTemperatureChanged(BandSkinTemperatureEvent bandSkinTemperatureEvent) {
+        dataReceived();
+        skinTemperature = bandSkinTemperatureEvent.getTemperature();
+    }
 
-	@Override
-	public void onBandHeartRateChanged(BandHeartRateEvent bandHeartRateEvent)
-	{
-		dataReceived();
-		heartRate = bandHeartRateEvent.getHeartRate();
-	}
+    @Override
+    public void onBandHeartRateChanged(BandHeartRateEvent bandHeartRateEvent) {
+        dataReceived();
+        heartRate = bandHeartRateEvent.getHeartRate();
+    }
 
-	@Override
-	public void onBandAccelerometerChanged(BandAccelerometerEvent bandAccelerometerEvent)
-	{
-		dataReceived();
-		accelerationX = bandAccelerometerEvent.getAccelerationX();
-		accelerationY = bandAccelerometerEvent.getAccelerationY();
-		accelerationZ = bandAccelerometerEvent.getAccelerationZ();
-	}
+    @Override
+    public void onBandAccelerometerChanged(BandAccelerometerEvent bandAccelerometerEvent) {
+        dataReceived();
+        accelerationX = bandAccelerometerEvent.getAccelerationX();
+        accelerationY = bandAccelerometerEvent.getAccelerationY();
+        accelerationZ = bandAccelerometerEvent.getAccelerationZ();
+    }
 
-	@Override
-	public void onBandGyroscopeChanged(BandGyroscopeEvent bandGyroscopeEvent)
-	{
-		dataReceived();
-		gyrVelocityX = bandGyroscopeEvent.getAngularVelocityX();
-		gyrVelocityY = bandGyroscopeEvent.getAngularVelocityY();
-		gyrVelocityZ = bandGyroscopeEvent.getAngularVelocityZ();
-		gyrAccelerationX = bandGyroscopeEvent.getAccelerationX();
-		gyrAccelerationY = bandGyroscopeEvent.getAccelerationY();
-		gyrAccelerationZ = bandGyroscopeEvent.getAccelerationZ();
-	}
+    @Override
+    public void onBandGyroscopeChanged(BandGyroscopeEvent bandGyroscopeEvent) {
+        dataReceived();
+        gyrVelocityX = bandGyroscopeEvent.getAngularVelocityX();
+        gyrVelocityY = bandGyroscopeEvent.getAngularVelocityY();
+        gyrVelocityZ = bandGyroscopeEvent.getAngularVelocityZ();
+        gyrAccelerationX = bandGyroscopeEvent.getAccelerationX();
+        gyrAccelerationY = bandGyroscopeEvent.getAccelerationY();
+        gyrAccelerationZ = bandGyroscopeEvent.getAccelerationZ();
+    }
 
-	@Override
-	public void onBandAmbientLightChanged(BandAmbientLightEvent bandAmbientLightEvent)
-	{
-		dataReceived();
-		brightness = bandAmbientLightEvent.getBrightness();
-	}
+    @Override
+    public void onBandAmbientLightChanged(BandAmbientLightEvent bandAmbientLightEvent) {
+        dataReceived();
+        brightness = bandAmbientLightEvent.getBrightness();
+    }
 
-	@Override
-	public void onBandBarometerChanged(BandBarometerEvent bandBarometerEvent)
-	{
-		dataReceived();
-		airPressure = bandBarometerEvent.getAirPressure();
-		temperature = bandBarometerEvent.getTemperature();
-	}
+    @Override
+    public void onBandBarometerChanged(BandBarometerEvent bandBarometerEvent) {
+        dataReceived();
+        airPressure = bandBarometerEvent.getAirPressure();
+        temperature = bandBarometerEvent.getTemperature();
+    }
 
-	@Override
-	public void onBandCaloriesChanged(BandCaloriesEvent bandCaloriesEvent)
-	{
-		dataReceived();
-		calories = bandCaloriesEvent.getCalories();
-	}
+    @Override
+    public void onBandCaloriesChanged(BandCaloriesEvent bandCaloriesEvent) {
+        dataReceived();
+        calories = bandCaloriesEvent.getCalories();
+    }
 
-	@Override
-	public void onBandDistanceChanged(BandDistanceEvent bandDistanceEvent)
-	{
-		dataReceived();
-		distance = bandDistanceEvent.getTotalDistance();
-		speed = bandDistanceEvent.getSpeed();
-		pace = bandDistanceEvent.getPace();
-		motionType = bandDistanceEvent.getMotionType().ordinal();
-	}
+    @Override
+    public void onBandDistanceChanged(BandDistanceEvent bandDistanceEvent) {
+        dataReceived();
+        distance = bandDistanceEvent.getTotalDistance();
+        speed = bandDistanceEvent.getSpeed();
+        pace = bandDistanceEvent.getPace();
+        motionType = bandDistanceEvent.getMotionType().ordinal();
+    }
 
-	@Override
-	public void onBandPedometerChanged(BandPedometerEvent bandPedometerEvent)
-	{
-		dataReceived();
-		steps = bandPedometerEvent.getTotalSteps();
-	}
+    @Override
+    public void onBandPedometerChanged(BandPedometerEvent bandPedometerEvent) {
+        dataReceived();
+        steps = bandPedometerEvent.getTotalSteps();
+    }
 
-	@Override
-	public void onBandRRIntervalChanged(BandRRIntervalEvent bandRRIntervalEvent)
-	{
-		dataReceived();
-		interBeatInterval = bandRRIntervalEvent.getInterval();
-	}
+    @Override
+    public void onBandRRIntervalChanged(BandRRIntervalEvent bandRRIntervalEvent) {
+        dataReceived();
+        interBeatInterval = bandRRIntervalEvent.getInterval();
+    }
 
-	@Override
-	public void onBandAltimeterChanged(BandAltimeterEvent bandAltimeterEvent)
-	{
-		dataReceived();
-		flightsAscended = bandAltimeterEvent.getFlightsAscended();
-		flightsDescended = bandAltimeterEvent.getFlightsDescended();
-		steppingGain = bandAltimeterEvent.getSteppingGain();
-		steppingLoss = bandAltimeterEvent.getSteppingLoss();
-		stepsAscended = bandAltimeterEvent.getStepsAscended();
-		stepsDescended = bandAltimeterEvent.getStepsDescended();
-		altimeterGain = bandAltimeterEvent.getTotalGain();
-		altimeterLoss = bandAltimeterEvent.getTotalLoss();
-	}
+    @Override
+    public void onBandAltimeterChanged(BandAltimeterEvent bandAltimeterEvent) {
+        dataReceived();
+        flightsAscended = bandAltimeterEvent.getFlightsAscended();
+        flightsDescended = bandAltimeterEvent.getFlightsDescended();
+        steppingGain = bandAltimeterEvent.getSteppingGain();
+        steppingLoss = bandAltimeterEvent.getSteppingLoss();
+        stepsAscended = bandAltimeterEvent.getStepsAscended();
+        stepsDescended = bandAltimeterEvent.getStepsDescended();
+        altimeterGain = bandAltimeterEvent.getTotalGain();
+        altimeterLoss = bandAltimeterEvent.getTotalLoss();
+    }
 
-	public int getGsr()
-	{
-		return gsr;
-	}
+    public int getGsr() {
+        return gsr;
+    }
 
-	public float getSkinTemperature()
-	{
-		return skinTemperature;
-	}
+    public float getSkinTemperature() {
+        return skinTemperature;
+    }
 
-	public int getHeartRate()
-	{
-		return heartRate;
-	}
+    public int getHeartRate() {
+        return heartRate;
+    }
 
-	public float getAccelerationX()
-	{
-		return accelerationX;
-	}
+    public float getAccelerationX() {
+        return accelerationX;
+    }
 
-	public float getAccelerationY()
-	{
-		return accelerationY;
-	}
+    public float getAccelerationY() {
+        return accelerationY;
+    }
 
-	public float getAccelerationZ()
-	{
-		return accelerationZ;
-	}
+    public float getAccelerationZ() {
+        return accelerationZ;
+    }
 
-	public float getAngularVelocityX()
-	{
-		return gyrVelocityX;
-	}
+    public float getAngularVelocityX() {
+        return gyrVelocityX;
+    }
 
-	public float getAngularVelocityY()
-	{
-		return gyrVelocityY;
-	}
+    public float getAngularVelocityY() {
+        return gyrVelocityY;
+    }
 
-	public float getAngularVelocityZ()
-	{
-		return gyrVelocityZ;
-	}
+    public float getAngularVelocityZ() {
+        return gyrVelocityZ;
+    }
 
-	public float getAngularAccelerationX()
-	{
-		return gyrAccelerationX;
-	}
+    public float getAngularAccelerationX() {
+        return gyrAccelerationX;
+    }
 
-	public float getAngularAccelerationY()
-	{
-		return gyrAccelerationY;
-	}
+    public float getAngularAccelerationY() {
+        return gyrAccelerationY;
+    }
 
-	public float getAngularAccelerationZ()
-	{
-		return gyrAccelerationZ;
-	}
+    public float getAngularAccelerationZ() {
+        return gyrAccelerationZ;
+    }
 
-	public int getBrightness()
-	{
-		return brightness;
-	}
+    public int getBrightness() {
+        return brightness;
+    }
 
-	public double getAirPressure()
-	{
-		return airPressure;
-	}
+    public double getAirPressure() {
+        return airPressure;
+    }
 
-	public double getTemperature()
-	{
-		return temperature;
-	}
+    public double getTemperature() {
+        return temperature;
+    }
 
-	public long getCalories()
-	{
-		return calories;
-	}
+    public long getCalories() {
+        return calories;
+    }
 
-	public long getDistance()
-	{
-		return distance;
-	}
+    public long getDistance() {
+        return distance;
+    }
 
-	public float getSpeed()
-	{
-		return speed;
-	}
+    public float getSpeed() {
+        return speed;
+    }
 
-	public float getPace()
-	{
-		return pace;
-	}
+    public float getPace() {
+        return pace;
+    }
 
-	public int getMotionType()
-	{
-		return motionType;
-	}
+    public int getMotionType() {
+        return motionType;
+    }
 
-	public long getSteps()
-	{
-		return steps;
-	}
+    public long getSteps() {
+        return steps;
+    }
 
-	public double getInterBeatInterval()
-	{
-		return interBeatInterval;
-	}
+    public double getInterBeatInterval() {
+        return interBeatInterval;
+    }
 
-	public long getFlightsAscended()
-	{
-		return flightsAscended;
-	}
+    public long getFlightsAscended() {
+        return flightsAscended;
+    }
 
-	public long getFlightsDescended()
-	{
-		return flightsDescended;
-	}
+    public long getFlightsDescended() {
+        return flightsDescended;
+    }
 
-	public long getSteppingGain()
-	{
-		return steppingGain;
-	}
+    public long getSteppingGain() {
+        return steppingGain;
+    }
 
-	public long getSteppingLoss()
-	{
-		return steppingLoss;
-	}
+    public long getSteppingLoss() {
+        return steppingLoss;
+    }
 
-	public long getStepsAscended()
-	{
-		return stepsAscended;
-	}
+    public long getStepsAscended() {
+        return stepsAscended;
+    }
 
-	public long getStepsDescended()
-	{
-		return stepsDescended;
-	}
+    public long getStepsDescended() {
+        return stepsDescended;
+    }
 
-	public long getAltimeterGain()
-	{
-		return altimeterGain;
-	}
+    public long getAltimeterGain() {
+        return altimeterGain;
+    }
 
-	public long getAltimeterLoss()
-	{
-		return altimeterLoss;
-	}
+    public long getAltimeterLoss() {
+        return altimeterLoss;
+    }
 
-	private synchronized void dataReceived()
-	{
-		lastDataTimestamp = System.currentTimeMillis();
-	}
+    private synchronized void dataReceived() {
+        lastDataTimestamp = System.currentTimeMillis();
+    }
 
-	public boolean isConnected()
-	{
-		return (connected && System.currentTimeMillis() - lastDataTimestamp < TIMEOUT);
-	}
+    public boolean isConnected() {
+        return (connected && System.currentTimeMillis() - lastDataTimestamp < TIMEOUT);
+    }
 
-	public boolean hasReceivedData()
-	{
-		return lastDataTimestamp != 0;
-	}
+    public boolean hasReceivedData() {
+        return lastDataTimestamp != 0;
+    }
 }

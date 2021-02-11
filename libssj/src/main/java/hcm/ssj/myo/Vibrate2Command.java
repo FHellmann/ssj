@@ -39,43 +39,8 @@ import java.util.Arrays;
 public class Vibrate2Command extends Command {
     private static final byte COMMAND_VIBRATION2 = 0x07; //NEW
 
-    private static enum Vibration2 {
-        COMMAND_TYPE,
-        PAYLOAD_SIZE,
-        DURATION,
-        STRENGTH;
-
-
-        private Vibration2() {
-        }
-    }
-
     public Vibrate2Command(Hub hub) {
         super(hub);
-    }
-
-    public void vibrate(Myo myo, int duration, byte strength) {
-        byte[] vibrate2Command = createForVibrate2(duration, strength);
-        this.writeControlCommand(myo.getMacAddress(), vibrate2Command);
-    }
-
-    /**
-     * Vibrate pattern, up to 6 times duration/strength
-     */
-    public void vibrate(Myo myo, int[] duration, byte[] strength) {
-        byte[] vibrate2Command = createForVibrate2(duration, strength);
-        this.writeControlCommand(myo.getMacAddress(), vibrate2Command);
-    }
-
-    public void vibrate(Myo myo,
-                        int duration1, byte strength1,
-                        int duration2, byte strength2,
-                        int duration3, byte strength3,
-                        int duration4, byte strength4,
-                        int duration5, byte strength5,
-                        int duration6, byte strength6) {
-        byte[] vibrate2Command = createForVibrate2(duration1, strength1, duration2, strength2, duration3, strength3, duration4, strength4, duration5, strength5, duration6, strength6);
-        this.writeControlCommand(myo.getMacAddress(), vibrate2Command);
     }
 
     // #see https://github.com/thalmiclabs/myo-bluetooth/blob/master/myohw.h
@@ -116,5 +81,40 @@ public class Vibrate2Command extends Command {
                                            int duration5, byte strength5,
                                            int duration6, byte strength6) {
         return createForVibrate2(new int[]{duration1, duration2, duration3, duration4, duration5, duration6}, new byte[]{strength1, strength2, strength3, strength4, strength5, strength6});
+    }
+
+    public void vibrate(Myo myo, int duration, byte strength) {
+        byte[] vibrate2Command = createForVibrate2(duration, strength);
+        this.writeControlCommand(myo.getMacAddress(), vibrate2Command);
+    }
+
+    /**
+     * Vibrate pattern, up to 6 times duration/strength
+     */
+    public void vibrate(Myo myo, int[] duration, byte[] strength) {
+        byte[] vibrate2Command = createForVibrate2(duration, strength);
+        this.writeControlCommand(myo.getMacAddress(), vibrate2Command);
+    }
+
+    public void vibrate(Myo myo,
+                        int duration1, byte strength1,
+                        int duration2, byte strength2,
+                        int duration3, byte strength3,
+                        int duration4, byte strength4,
+                        int duration5, byte strength5,
+                        int duration6, byte strength6) {
+        byte[] vibrate2Command = createForVibrate2(duration1, strength1, duration2, strength2, duration3, strength3, duration4, strength4, duration5, strength5, duration6, strength6);
+        this.writeControlCommand(myo.getMacAddress(), vibrate2Command);
+    }
+
+    private enum Vibration2 {
+        COMMAND_TYPE,
+        PAYLOAD_SIZE,
+        DURATION,
+        STRENGTH;
+
+
+        Vibration2() {
+        }
     }
 }

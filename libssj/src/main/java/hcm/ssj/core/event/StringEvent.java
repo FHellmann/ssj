@@ -59,7 +59,7 @@ public class StringEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (String)data;
+        this.data = (String) data;
     }
 
     public void setData(String data) {

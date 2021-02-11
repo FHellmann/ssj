@@ -41,161 +41,140 @@ import hcm.ssj.core.Log;
  * Created by Ionut Damian on 08.09.2017.
  */
 
-public class FileDownloader extends Thread
-{
-	private static final int BUFFER_SIZE = 4096;
-	private static final int BYTES_IN_MEGABYTE = 1000000;
-	private static final int EOF = -1;
-	private static final int LOG_STEP = 200;
+public class FileDownloader extends Thread {
+    private static final int BUFFER_SIZE = 4096;
+    private static final int BYTES_IN_MEGABYTE = 1000000;
+    private static final int EOF = -1;
+    private static final int LOG_STEP = 200;
 
-	private boolean terminate = false;
-	private LinkedList<Task> queue = new LinkedList<>();
+    private boolean terminate = false;
+    private final LinkedList<Task> queue = new LinkedList<>();
 
-	public class Task
-	{
-		String filename;
-		String from;
-		String to;
-		Boolean result = false;
-		final Object token = new Object();
+    @Override
+    public void run() {
+        while (!terminate) {
+            if (!queue.isEmpty()) {
+                Task t = queue.removeFirst();
 
-		public Task(String filename, String from, String to)
-		{
-			this.filename = filename;
-			this.from = from;
-			this.to = to;
-		}
-	}
+                try {
+                    t.result = downloadFile(t.filename, t.from, t.to);
+                } catch (IOException | NullPointerException e) {
+                    Log.e("Error while downloading file", e);
+                }
 
-	@Override
-	public void run()
-	{
-		while(!terminate)
-		{
-			if(!queue.isEmpty())
-			{
-				Task t = queue.removeFirst();
+                synchronized (t.token) {
+                    t.token.notify();
+                }
+            } else {
+                //wait to see if something new comes
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                }
 
-				try
-				{
-					t.result = downloadFile(t.filename, t.from, t.to);
-				}
-				catch (IOException | NullPointerException e)
-				{
-					Log.e("Error while downloading file", e);
-				}
+                //if not, terminate
+                if (queue.isEmpty())
+                    terminate();
+            }
+        }
+    }
 
-				synchronized (t.token)
-				{
-					t.token.notify();
-				}
-			}
-			else
-			{
-				//wait to see if something new comes
-				try { Thread.sleep(3000); }
-				catch (InterruptedException e){}
+    public Task addToQueue(String fileName, String from, String to) {
+        if (isTerminating())
+            return null;
 
-				//if not, terminate
-				if(queue.isEmpty())
-					terminate();
-			}
-		}
-	}
+        Task t = new Task(fileName, from, to);
+        queue.addLast(t);
+        return t;
+    }
 
-	public Task addToQueue(String fileName, String from, String to)
-	{
-		if(isTerminating())
-			return null;
+    public boolean wait(Task t) {
+        try {
+            synchronized (t.token) {
+                t.token.wait();
+            }
+        } catch (InterruptedException e) {
+        }
 
-		Task t = new Task(fileName, from, to);
-		queue.addLast(t);
-		return t;
-	}
+        return t.result;
+    }
 
-	public boolean wait(Task t)
-	{
-		try
-		{
-			synchronized (t.token)
-			{
-				t.token.wait();
-			}
-		}
-		catch (InterruptedException e) {}
+    /**
+     * Downloads file from a given URL and saves it on the SD card with a given file name.
+     *
+     * @param fileName Name of the file.
+     * @param from     Folder URL where file is located.
+     * @param to       Folder to where to download the file
+     * @return Instance of the downloaded file.
+     */
+    private boolean downloadFile(String fileName, String from, String to) throws IOException, NullPointerException {
+        File destinationDir = new File(to);
 
-		return t.result;
-	}
+        // Create folders on the SD card if not already created.
+        destinationDir.mkdirs();
 
-	/**
-	 * Downloads file from a given URL and saves it on the SD card with a given file name.
-	 *
-	 * @param fileName Name of the file.
-	 * @param from Folder URL where file is located.
-	 * @param to Folder to where to download the file
-	 * @return Instance of the downloaded file.
-	 */
-	private boolean downloadFile(String fileName, String from, String to) throws IOException, NullPointerException
-	{
-		File destinationDir = new File(to);
+        File downloadedFile = new File(destinationDir.getAbsolutePath(), fileName);
 
-		// Create folders on the SD card if not already created.
-		destinationDir.mkdirs();
+        if (!downloadedFile.exists() || downloadedFile.length() == 0) {
+            Log.i("Starting to download '" + fileName + "'...");
+            URL fileURL = new URL(from + File.separator + fileName);
 
-		File downloadedFile = new File(destinationDir.getAbsolutePath(), fileName);
+            InputStream input = fileURL.openStream();
+            FileOutputStream output = new FileOutputStream(downloadedFile);
 
-		if (!downloadedFile.exists() || downloadedFile.length() == 0)
-		{
-			Log.i("Starting to download '" + fileName + "'...");
-			URL fileURL = new URL(from + File.separator + fileName);
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int numberOfBytesRead;
+            int totalBytesDownloaded = 0;
+            int counter = 0;
 
-			InputStream input = fileURL.openStream();
-			FileOutputStream output = new FileOutputStream(downloadedFile);
+            while ((numberOfBytesRead = input.read(buffer)) != EOF) {
+                if (terminate) {
+                    Log.i("Download interrupted.");
+                    downloadedFile.delete();
+                    return false;
+                }
 
-			byte[] buffer = new byte[BUFFER_SIZE];
-			int numberOfBytesRead;
-			int totalBytesDownloaded = 0;
-			int counter = 0;
+                output.write(buffer, 0, numberOfBytesRead);
 
-			while ((numberOfBytesRead = input.read(buffer)) != EOF)
-			{
-				if (terminate)
-				{
-					Log.i("Download interrupted.");
-					downloadedFile.delete();
-					return false;
-				}
+                totalBytesDownloaded += numberOfBytesRead;
 
-				output.write(buffer, 0, numberOfBytesRead);
+                if (counter % LOG_STEP == 0) {
+                    String progress = String.format(Locale.US, "%.2f", (float) totalBytesDownloaded / (float) BYTES_IN_MEGABYTE);
+                    Log.i("File '" + fileName + "' " + progress + " Mb downloaded.");
+                }
 
-				totalBytesDownloaded += numberOfBytesRead;
+                counter++;
+            }
 
-				if (counter % LOG_STEP == 0)
-				{
-					String progress = String.format(Locale.US, "%.2f", (float)totalBytesDownloaded / (float)BYTES_IN_MEGABYTE);
-					Log.i("File '" + fileName + "' " + progress + " Mb downloaded.");
-				}
+            input.close();
+            output.close();
 
-				counter++;
-			}
+            String progress = String.format(Locale.US, "%.2f", (float) totalBytesDownloaded / BYTES_IN_MEGABYTE);
+            Log.i("File '" + fileName + "' " + progress + " Mb downloaded.");
+            Log.i("File '" + fileName + "' downloaded successfully.");
+        }
+        return true;
+    }
 
-			input.close();
-			output.close();
+    public void terminate() {
+        terminate = true;
+    }
 
-			String progress = String.format(Locale.US, "%.2f", (float)totalBytesDownloaded / BYTES_IN_MEGABYTE);
-			Log.i("File '" + fileName + "' " + progress + " Mb downloaded.");
-			Log.i("File '" + fileName + "' downloaded successfully.");
-		}
-		return true;
-	}
+    public boolean isTerminating() {
+        return terminate;
+    }
 
-	public void terminate()
-	{
-		terminate = true;
-	}
+    public class Task {
+        final Object token = new Object();
+        String filename;
+        String from;
+        String to;
+        Boolean result = false;
 
-	public boolean isTerminating()
-	{
-		return terminate;
-	}
+        public Task(String filename, String from, String to) {
+            this.filename = filename;
+            this.from = from;
+            this.to = to;
+        }
+    }
 }

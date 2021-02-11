@@ -46,65 +46,35 @@ import hcm.ssj.core.option.OptionList;
 /**
  * Created by Johnny on 26.05.2015.
  */
-public class EventPainter extends EventHandler
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<String> title = new Option<>("title", "events", String.class, "");
-        public final Option<String> color = new Option<>("color", "blue", String.class, "Chart color either as HEX or color name (e.g. blue, red ...)");
-        public final Option<Integer> numBars = new Option<>("numBars", 2, Integer.class, "");
-        public final Option<Integer> spacing = new Option<>("spacing", 50, Integer.class, "space between bars");
-        public final Option<GraphView> graphView = new Option<>("graphView", null, GraphView.class, "");        public final Option<Boolean> manualBounds = new Option<>("manualBounds", false, Boolean.class, "");
-        public final Option<Double> min = new Option<>("min", 0., Double.class, "");
-        public final Option<Double> max = new Option<>("max", 1., Double.class, "");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
+public class EventPainter extends EventHandler {
     public Options options = new Options();
-
-    private BarGraphSeries<DataPoint> _series;
     GraphView _view = null;
+    private BarGraphSeries<DataPoint> _series;
 
-    public EventPainter()
-    {
+    public EventPainter() {
         _name = "EventPainter";
         _doWakeLock = false; //since this is a GUI element, disable wakelock to save energy
     }
 
     @Override
-	public void enter() throws SSJFatalException
-    {
-        if (options.graphView.get() == null)
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter() throws SSJFatalException {
+        if (options.graphView.get() == null) {
             Log.w("graphView isn't set");
-        }
-        else
-        {
+        } else {
             _view = options.graphView.get();
         }
 
-        synchronized (this)
-        {
-            if (_view == null)
-            {
+        synchronized (this) {
+            if (_view == null) {
                 //wait for graphView creation
-                try
-                {
+                try {
                     this.wait();
-                } catch (InterruptedException ex)
-                {
+                } catch (InterruptedException ex) {
                     Log.e("graph view not registered");
                 }
             }
@@ -112,7 +82,7 @@ public class EventPainter extends EventHandler
 
         _view.getViewport().setXAxisBoundsManual(true);
         _view.getViewport().setMinX(0);
-        _view.getViewport().setMaxX(options.numBars.get()+1);
+        _view.getViewport().setMaxX(options.numBars.get() + 1);
 
         _view.getViewport().setYAxisBoundsManual(options.manualBounds.get());
         _view.getViewport().setMaxY(options.max.get());
@@ -136,22 +106,22 @@ public class EventPainter extends EventHandler
         for (int i = 0; i < options.numBars.get(); i++) {
             switch (event.type) {
                 case BYTE:
-                    points[i] = new DataPoint(i+1, event.ptrB()[i]);
+                    points[i] = new DataPoint(i + 1, event.ptrB()[i]);
                     break;
                 case SHORT:
-                    points[i] = new DataPoint(i+1, event.ptrShort()[i]);
+                    points[i] = new DataPoint(i + 1, event.ptrShort()[i]);
                     break;
                 case INT:
-                    points[i] = new DataPoint(i+1, event.ptrI()[i]);
+                    points[i] = new DataPoint(i + 1, event.ptrI()[i]);
                     break;
                 case LONG:
-                    points[i] = new DataPoint(i+1, event.ptrL()[i]);
+                    points[i] = new DataPoint(i + 1, event.ptrL()[i]);
                     break;
                 case FLOAT:
-                    points[i] = new DataPoint(i+1, event.ptrF()[i]);
+                    points[i] = new DataPoint(i + 1, event.ptrF()[i]);
                     break;
                 case DOUBLE:
-                    points[i] = new DataPoint(i+1, event.ptrD()[i]);
+                    points[i] = new DataPoint(i + 1, event.ptrD()[i]);
                     break;
                 default:
                     Log.w("unsupported even type");
@@ -163,8 +133,7 @@ public class EventPainter extends EventHandler
     }
 
     @Override
-    public void flush() throws SSJFatalException
-    {
+    public void flush() throws SSJFatalException {
 
         Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(new Runnable() {
@@ -176,29 +145,23 @@ public class EventPainter extends EventHandler
         }, 1);
     }
 
-    private void pushData(final DataPoint[] points)
-    {
-        for(DataPoint p : points)
-            if(Double.isNaN(p.getY()) || Double.isInfinite(p.getY()) || p.getY() == -1 * Double.MAX_VALUE || p.getY() == Double.MAX_VALUE)
+    private void pushData(final DataPoint[] points) {
+        for (DataPoint p : points)
+            if (Double.isNaN(p.getY()) || Double.isInfinite(p.getY()) || p.getY() == -1 * Double.MAX_VALUE || p.getY() == Double.MAX_VALUE)
                 return; //apparently GraphView can't render infinity
 
         Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(new Runnable()
-        {
-            public void run()
-            {
+        handler.postDelayed(new Runnable() {
+            public void run() {
                 _series.resetData(points);
             }
         }, 1);
     }
 
-    private void createSeries(final GraphView view, final int spacing)
-    {
+    private void createSeries(final GraphView view, final int spacing) {
         Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(new Runnable()
-        {
-            public void run()
-            {
+        handler.postDelayed(new Runnable() {
+            public void run() {
                 _series = new BarGraphSeries<>();
                 _series.setColor(Color.parseColor(options.color.get()));
                 _series.setDrawValuesOnTop(true);
@@ -208,5 +171,23 @@ public class EventPainter extends EventHandler
                 view.addSeries(_series);
             }
         }, 1);
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> title = new Option<>("title", "events", String.class, "");
+        public final Option<String> color = new Option<>("color", "blue", String.class, "Chart color either as HEX or color name (e.g. blue, red ...)");
+        public final Option<Integer> numBars = new Option<>("numBars", 2, Integer.class, "");
+        public final Option<Integer> spacing = new Option<>("spacing", 50, Integer.class, "space between bars");
+        public final Option<GraphView> graphView = new Option<>("graphView", null, GraphView.class, "");
+        public final Option<Boolean> manualBounds = new Option<>("manualBounds", false, Boolean.class, "");
+        public final Option<Double> min = new Option<>("min", 0., Double.class, "");
+        public final Option<Double> max = new Option<>("max", 1., Double.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

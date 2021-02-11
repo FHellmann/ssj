@@ -37,84 +37,68 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 13.08.2015.
  */
-public class GSRArousalCombination extends Transformer
-{
-	public GSRArousalCombination()
-	{
-		_name = "GSRArousalCombination";
-	}
+public class GSRArousalCombination extends Transformer {
+    public GSRArousalCombination() {
+        _name = "GSRArousalCombination";
+    }
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		int n = stream_in[0].num;
-		double sr = stream_in[0].sr;
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        int n = stream_in[0].num;
+        double sr = stream_in[0].sr;
 
-		float[] ptrLongTerm = stream_in[0].ptrF();
-		float[] ptrShortTerm = stream_in[1].ptrF();
-		float[] ptrOut = stream_out.ptrF();
+        float[] ptrLongTerm = stream_in[0].ptrF();
+        float[] ptrShortTerm = stream_in[1].ptrF();
+        float[] ptrOut = stream_out.ptrF();
 
-		for (int nSamp = 0; nSamp < stream_in[0].num; nSamp++)
-		{
-			if (ptrLongTerm[nSamp] >= 0.0f && ptrShortTerm[nSamp] > 0.0f)
-			{
-				ptrOut[nSamp] = (float) (Math.sqrt(ptrShortTerm[nSamp]) * Math.sqrt(ptrLongTerm[nSamp])) * 1.5f;
+        for (int nSamp = 0; nSamp < stream_in[0].num; nSamp++) {
+            if (ptrLongTerm[nSamp] >= 0.0f && ptrShortTerm[nSamp] > 0.0f) {
+                ptrOut[nSamp] = (float) (Math.sqrt(ptrShortTerm[nSamp]) * Math.sqrt(ptrLongTerm[nSamp])) * 1.5f;
 
-				if (ptrOut[nSamp] >= 1.0f)
-				{
-					ptrOut[nSamp] = 1.0f;
-				}
-				if (ptrOut[nSamp] <= 0.0f)
-				{
-					ptrOut[nSamp] = 0.0f;
-				}
-			}
-			else
-			{
-				ptrOut[nSamp] = 0.0f;
-			}
-		}
-	}
+                if (ptrOut[nSamp] >= 1.0f) {
+                    ptrOut[nSamp] = 1.0f;
+                }
+                if (ptrOut[nSamp] <= 0.0f) {
+                    ptrOut[nSamp] = 0.0f;
+                }
+            } else {
+                ptrOut[nSamp] = 0.0f;
+            }
+        }
+    }
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		return 1;
-	}
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        return 1;
+    }
 
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return stream_in[0].bytes;
-	}
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return stream_in[0].bytes;
+    }
 
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		if (stream_in[0].type != Cons.Type.FLOAT)
-		{
-			Log.e("unsupported input type");
-		}
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.FLOAT) {
+            Log.e("unsupported input type");
+        }
 
-		return Cons.Type.FLOAT;
-	}
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return sampleNumber_in;
-	}
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
 
-	@Override
-	protected void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[stream_in[0].dim];
-		System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
-	}
+    @Override
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[stream_in[0].dim];
+        System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
+    }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

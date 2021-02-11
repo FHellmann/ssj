@@ -47,37 +47,7 @@ import hcm.ssj.core.option.OptionList;
  * Created by Frank Gaibler on 21.12.2015.
  */
 @SuppressWarnings("deprecation")
-public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewCallback
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the camera
-     */
-    public class Options extends OptionList
-    {
-        public final Option<Cons.CameraType> cameraType = new Option<>("cameraType", Cons.CameraType.BACK_CAMERA, Cons.CameraType.class, "which camera to use (front or back)");
-        //arbitrary but popular values
-        public final Option<Integer> width = new Option<>("width", 640, Integer.class, "width in pixel");
-        public final Option<Integer> height = new Option<>("height", 480, Integer.class, "height in pixel");
-        public final Option<Integer> previewFpsRangeMin = new Option<>("previewFpsRangeMin", 30 * 1000, Integer.class, "min preview rate for camera");
-        public final Option<Integer> previewFpsRangeMax = new Option<>("previewFpsRangeMax", 30 * 1000, Integer.class, "max preview rate for camera");
-        public final Option<Cons.ImageFormat> imageFormat = new Option<>("imageFormat", Cons.ImageFormat.NV21, Cons.ImageFormat.class, "image format for camera");
-        public final Option<Boolean> showSupportedValues = new Option<>("showSupportedValues", false, Boolean.class, "show supported values in log");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewCallback {
     //options
     public final Options options = new Options();
     //camera
@@ -89,20 +59,22 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
     private int iRealHeight = 0;
     //buffer to exchange data
     private byte[] byaSwapBuffer = null;
-
     /**
      *
      */
-    public CameraSensor()
-    {
+    public CameraSensor() {
         _name = this.getClass().getSimpleName();
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
     }
 
     /**
      * @return int
      */
-    protected final int getBufferSize()
-    {
+    protected final int getBufferSize() {
         int reqBuffSize = iRealWidth * iRealHeight;
         reqBuffSize += reqBuffSize >> 1;
         return reqBuffSize;
@@ -114,22 +86,17 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      * @param bytes byte[]
      * @param write boolean
      */
-    public final synchronized void swapBuffer(byte[] bytes, boolean write)
-    {
-        if (write)
-        {
+    public final synchronized void swapBuffer(byte[] bytes, boolean write) {
+        if (write) {
             //write into buffer
-            if (byaSwapBuffer.length < bytes.length)
-            {
+            if (byaSwapBuffer.length < bytes.length) {
                 Log.e("Buffer write changed from " + byaSwapBuffer.length + " to " + bytes.length);
                 byaSwapBuffer = new byte[bytes.length];
             }
             System.arraycopy(bytes, 0, byaSwapBuffer, 0, bytes.length);
-        } else
-        {
+        } else {
             //get data from buffer
-            if (bytes.length < byaSwapBuffer.length)
-            {
+            if (bytes.length < byaSwapBuffer.length) {
                 Log.e("Buffer read changed from " + bytes.length + " to " + byaSwapBuffer.length);
                 bytes = new byte[byaSwapBuffer.length];
             }
@@ -141,24 +108,20 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      * Configures camera for video capture. <br>
      * Opens a camera and sets parameters. Does not start preview.
      */
-    private void prepareCamera() throws SSJException
-    {
+    private void prepareCamera() throws SSJException {
         //set camera and frame size
         Camera.Parameters parameters = prePrepare();
-        if (options.showSupportedValues.get())
-        {
+        if (options.showSupportedValues.get()) {
             //list sizes
             List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
             Log.i("Preview size: (n=" + sizes.size() + ")");
-            for (Camera.Size size : sizes)
-            {
+            for (Camera.Size size : sizes) {
                 Log.i("Preview size: " + size.width + "x" + size.height);
             }
             //list preview formats
             List<Integer> formats = parameters.getSupportedPreviewFormats();
             Log.i("Preview format (n=" + formats.size() + ")");
-            for (Integer i : formats)
-            {
+            for (Integer i : formats) {
                 Log.i("Preview format: " + i);
             }
         }
@@ -167,13 +130,11 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
         //set preview fps range
         choosePreviewFpsRange(parameters, options.previewFpsRangeMin.get(), options.previewFpsRangeMax.get());
         //optimizations for more fps
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
             parameters.setRecordingHint(true);
         }
         List<String> FocusModes = parameters.getSupportedFocusModes();
-        if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
-        {
+        if (FocusModes != null && FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
             parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
         }
         //set camera parameters
@@ -192,10 +153,8 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      *
      * @return Camera.Parameters
      */
-    protected final Camera.Parameters prePrepare() throws SSJException
-    {
-        if (camera != null)
-        {
+    protected final Camera.Parameters prePrepare() throws SSJException {
+        if (camera != null) {
             throw new SSJException("Camera already initialized");
         }
         //set camera
@@ -211,27 +170,22 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      * Tries to access the requested camera.<br>
      * Will select a different one if the requested one is not supported.
      */
-    private void chooseCamera() throws SSJException
-    {
+    private void chooseCamera() throws SSJException {
         Camera.CameraInfo info = new Camera.CameraInfo();
         //search for specified camera
         int numCameras = Camera.getNumberOfCameras();
-        for (int i = 0; i < numCameras; i++)
-        {
+        for (int i = 0; i < numCameras; i++) {
             Camera.getCameraInfo(i, info);
-            if (info.facing == options.cameraType.get().val)
-            {
+            if (info.facing == options.cameraType.get().val) {
                 camera = Camera.open(i);
                 break;
             }
         }
-        if (camera == null)
-        {
+        if (camera == null) {
             Log.d("No front-facing camera found; opening default");
             camera = Camera.open(); //opens first back-facing camera
         }
-        if (camera == null)
-        {
+        if (camera == null) {
             throw new SSJException("Unable to open camera");
         }
     }
@@ -241,13 +195,10 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      * specify the dimensions of the encoded video). If it fails to find a match it just
      * uses the default preview size.
      */
-    private void choosePreviewSize(Camera.Parameters parameters, int width, int height)
-    {
+    private void choosePreviewSize(Camera.Parameters parameters, int width, int height) {
         //search for requested size
-        for (Camera.Size size : parameters.getSupportedPreviewSizes())
-        {
-            if (size.width == width && size.height == height)
-            {
+        for (Camera.Size size : parameters.getSupportedPreviewSizes()) {
+            if (size.width == width && size.height == height) {
                 parameters.setPreviewSize(width, height);
                 iRealWidth = width;
                 iRealHeight = height;
@@ -257,8 +208,7 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
         Log.w("Unable to set preview size to " + width + "x" + height);
         //set to preferred size
         Camera.Size ppsfv = parameters.getPreferredPreviewSizeForVideo();
-        if (ppsfv != null)
-        {
+        if (ppsfv != null) {
             parameters.setPreviewSize(ppsfv.width, ppsfv.height);
             iRealWidth = ppsfv.width;
             iRealHeight = ppsfv.height;
@@ -269,47 +219,37 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      * Attempts to find a preview range that matches the provided min and max.
      * If it fails to find a match it uses the closest match or the default preview range.
      */
-    private void choosePreviewFpsRange(Camera.Parameters parameters, int min, int max)
-    {
+    private void choosePreviewFpsRange(Camera.Parameters parameters, int min, int max) {
         //adjust wrong preview range
-        if (min > max)
-        {
+        if (min > max) {
             Log.w("Preview range max is too small");
             max = min;
         }
         //preview ranges have to be a multiple of 1000
-        if (min / 1000 <= 0)
-        {
+        if (min / 1000 <= 0) {
             min *= 1000;
         }
-        if (max / 1000 <= 0)
-        {
+        if (max / 1000 <= 0) {
             max *= 1000;
         }
         //search for requested size
         List<int[]> ranges = parameters.getSupportedPreviewFpsRange();
-        if (options.showSupportedValues.get())
-        {
+        if (options.showSupportedValues.get()) {
             Log.i("Preview fps range: (n=" + ranges.size() + ")");
-            for (int[] range : ranges)
-            {
+            for (int[] range : ranges) {
                 Log.i("Preview fps range: " + range[0] + "-" + range[1]);
             }
         }
-        for (int[] range : ranges)
-        {
-            if (range[0] == min && range[1] == max)
-            {
+        for (int[] range : ranges) {
+            if (range[0] == min && range[1] == max) {
                 parameters.setPreviewFpsRange(range[0], range[1]);
                 return;
             }
         }
         Log.w("Unable to set preview fps range from " + (min / 1000) + " to " + (max / 1000));
         //try to set to minimum
-        for (int[] range : ranges)
-        {
-            if (range[0] == min)
-            {
+        for (int[] range : ranges) {
+            if (range[0] == min) {
                 parameters.setPreviewFpsRange(range[0], range[1]);
                 return;
             }
@@ -320,10 +260,8 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
     /**
      * Stops camera preview, and releases the camera to the system.
      */
-    protected final void releaseCamera()
-    {
-        if (camera != null)
-        {
+    protected final void releaseCamera() {
+        if (camera != null) {
             camera.stopPreview();
             camera.release();
             camera = null;
@@ -333,14 +271,11 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
     /**
      * Configures surface texture for camera preview
      */
-    private void prepareSurfaceTexture()
-    {
+    private void prepareSurfaceTexture() {
         surfaceTexture = new SurfaceTexture(10);
-        try
-        {
+        try {
             camera.setPreviewTexture(surfaceTexture);
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             Log.e("Couldn't prepare surface texture: " + ex.getMessage());
         }
     }
@@ -348,16 +283,13 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
     /**
      * Set buffer size according to real width and height
      */
-    private void initBuffer()
-    {
-        try
-        {
+    private void initBuffer() {
+        try {
             int reqBuffSize = getBufferSize();
             camera.addCallbackBuffer(new byte[reqBuffSize]);
             camera.setPreviewCallbackWithBuffer(this);
             byaSwapBuffer = new byte[reqBuffSize];
-        } catch (Exception ex)
-        {
+        } catch (Exception ex) {
             Log.e("Couldn't init buffer: " + ex.getMessage());
         }
     }
@@ -369,11 +301,9 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
      * @param cam  Camera
      */
     @Override
-    public void onPreviewFrame(byte[] data, Camera cam)
-    {
+    public void onPreviewFrame(byte[] data, Camera cam) {
         swapBuffer(data, true);
-        if (camera != null)
-        {
+        if (camera != null) {
             camera.addCallbackBuffer(data);
         }
     }
@@ -381,27 +311,21 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
     /**
      * Release the surface texture
      */
-    private void releaseSurfaceTexture()
-    {
-        if (surfaceTexture != null)
-        {
+    private void releaseSurfaceTexture() {
+        if (surfaceTexture != null) {
             surfaceTexture.release();
             surfaceTexture = null;
         }
     }
 
     /**
-	 *
+     *
      */
     @Override
-    protected boolean connect() throws SSJFatalException
-    {
-        try
-        {
+    protected boolean connect() throws SSJFatalException {
+        try {
             prepareCamera();
-        }
-        catch (SSJException e)
-        {
+        } catch (SSJException e) {
             throw new SSJFatalException("error preparing camera", e);
         }
 
@@ -412,28 +336,45 @@ public class CameraSensor extends hcm.ssj.core.Sensor implements Camera.PreviewC
     }
 
     /**
-	 *
+     *
      */
     @Override
-    protected void disconnect() throws SSJFatalException
-    {
+    protected void disconnect() throws SSJFatalException {
         releaseCamera();
         releaseSurfaceTexture();
     }
 
-    public int getImageWidth()
-    {
+    public int getImageWidth() {
         return iRealWidth;
     }
 
-    public int getImageHeight()
-    {
+    public int getImageHeight() {
         return iRealHeight;
     }
 
-    public int getImageFormat()
-    {
+    public int getImageFormat() {
         return camera.getParameters().getPreviewFormat();
+    }
+
+    /**
+     * All options for the camera
+     */
+    public class Options extends OptionList {
+        public final Option<Cons.CameraType> cameraType = new Option<>("cameraType", Cons.CameraType.BACK_CAMERA, Cons.CameraType.class, "which camera to use (front or back)");
+        //arbitrary but popular values
+        public final Option<Integer> width = new Option<>("width", 640, Integer.class, "width in pixel");
+        public final Option<Integer> height = new Option<>("height", 480, Integer.class, "height in pixel");
+        public final Option<Integer> previewFpsRangeMin = new Option<>("previewFpsRangeMin", 30 * 1000, Integer.class, "min preview rate for camera");
+        public final Option<Integer> previewFpsRangeMax = new Option<>("previewFpsRangeMax", 30 * 1000, Integer.class, "max preview rate for camera");
+        public final Option<Cons.ImageFormat> imageFormat = new Option<>("imageFormat", Cons.ImageFormat.NV21, Cons.ImageFormat.class, "image format for camera");
+        public final Option<Boolean> showSupportedValues = new Option<>("showSupportedValues", false, Boolean.class, "show supported values in log");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }
 

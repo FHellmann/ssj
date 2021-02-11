@@ -34,43 +34,36 @@ import hcm.ssj.core.option.OptionList;
 /**
  * Created by Johnny on 05.03.2015.
  */
-public abstract class Component implements Runnable
-{
+public abstract class Component implements Runnable {
+    public int threadPriority = Cons.THREAD_PRIORIIY_HIGH;
     protected String _name = "Component";
-
     protected boolean _terminate = false;
     protected boolean _safeToKill = false;
     protected boolean _isSetup = false;
-
     protected ArrayList<EventChannel> _evchannel_in = null;
     protected EventChannel _evchannel_out = null;
 
-    public int threadPriority = Cons.THREAD_PRIORIIY_HIGH;
-
-    public void close()
-    {
+    public void close() {
         Pipeline frame = Pipeline.getInstance();
         Log.i(_name + " shutting down");
 
         _terminate = true;
 
-        if(_evchannel_in != null)
-            for(EventChannel ch : _evchannel_in)
+        if (_evchannel_in != null)
+            for (EventChannel ch : _evchannel_in)
                 ch.close();
 
-        if(_evchannel_out != null) _evchannel_out.close();
+        if (_evchannel_out != null) _evchannel_out.close();
 
         double time = frame.getTime();
-        while(!_safeToKill)
-        {
+        while (!_safeToKill) {
             try {
                 Thread.sleep(Cons.SLEEP_IN_LOOP);
             } catch (InterruptedException e) {
                 Log.w("thread interrupt");
             }
 
-            if(frame.getTime() > time + frame.options.waitThreadKill.get())
-            {
+            if (frame.getTime() > time + frame.options.waitThreadKill.get()) {
                 Log.w(_name + " force-killed thread");
                 forcekill();
                 break;
@@ -79,60 +72,53 @@ public abstract class Component implements Runnable
         Log.i(_name + " shut down completed");
     }
 
-    public void forcekill()
-    {
+    public void forcekill() {
         Thread.currentThread().interrupt();
     }
 
-    public String getComponentName()
-    {
+    public String getComponentName() {
         return _name;
     }
 
-    void addEventChannelIn(EventChannel channel)
-    {
-        if(_evchannel_in == null)
+    void addEventChannelIn(EventChannel channel) {
+        if (_evchannel_in == null)
             _evchannel_in = new ArrayList<>();
 
         _evchannel_in.add(channel);
     }
-    void setEventChannelOut(EventChannel channel)
-    {
-        _evchannel_out = channel;
-    }
 
-    public EventChannel getEventChannelOut()
-    {
-        if(_evchannel_out == null)
+    public EventChannel getEventChannelOut() {
+        if (_evchannel_out == null)
             _evchannel_out = new EventChannel();
 
         return _evchannel_out;
+    }
+
+    void setEventChannelOut(EventChannel channel) {
+        _evchannel_out = channel;
     }
 
     /**
      * Resets internal state of components, does not alter references with framework or other components
      * Called by the framework on start-up
      */
-    public void reset()
-    {
+    public void reset() {
         _terminate = false;
         _safeToKill = false;
-        
-        if(_evchannel_in != null)
-            for(EventChannel ch : _evchannel_in)
+
+        if (_evchannel_in != null)
+            for (EventChannel ch : _evchannel_in)
                 ch.reset();
 
-        if(_evchannel_out != null) _evchannel_out.reset();
+        if (_evchannel_out != null) _evchannel_out.reset();
     }
 
     /**
      * Clears component, may alter references with framework or other components
      * Called on framework clear()
      */
-    public void clear()
-    {
-        if(_evchannel_in != null)
-        {
+    public void clear() {
+        if (_evchannel_in != null) {
             for (EventChannel ch : _evchannel_in)
                 ch.clear();
 
@@ -142,8 +128,7 @@ public abstract class Component implements Runnable
 
     public abstract OptionList getOptions();
 
-    public boolean isSetup()
-    {
+    public boolean isSetup() {
         return _isSetup;
     }
 }

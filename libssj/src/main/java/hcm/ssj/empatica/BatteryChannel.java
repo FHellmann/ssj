@@ -37,80 +37,68 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 15.04.2015.
  */
-public class BatteryChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class BatteryChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected EmpaticaListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
+    public BatteryChannel() {
 
-		/**
-		 *
-		 */
-		private Options()
-		{
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+        _name = "Empatica_Battery";
+    }
 
-	protected EmpaticaListener _listener;
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public BatteryChannel()
-	{
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((Empatica) _sensor).listener;
+    }
 
-		_name = "Empatica_Battery";
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        float[] out = stream_out.ptrF();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((Empatica)_sensor).listener;
-	}
+        out[0] = _listener.getBattery();
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		float[] out = stream_out.ptrF();
+        return true;
+    }
 
-		out[0] = _listener.getBattery();
+    @Override
+    public double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		return true;
-	}
+    @Override
+    public int getSampleDimension() {
+        return 1;
+    }
 
-	@Override
-	public double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    public int getSampleBytes() {
+        return 4;
+    }
 
-	@Override
-	public int getSampleDimension()
-	{
-		return 1;
-	}
+    @Override
+    public Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	public int getSampleBytes()
-	{
-		return 4;
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "Battery";
+    }
 
-	@Override
-	public Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 1, Integer.class, "");
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "Battery";
-	}
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

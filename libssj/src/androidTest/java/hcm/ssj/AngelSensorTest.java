@@ -40,41 +40,36 @@ import hcm.ssj.test.Logger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class AngelSensorTest
-{
-	@Test
-	public void testSensors() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class AngelSensorTest {
+    @Test
+    public void testSensors() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		AngelSensor sensor = new AngelSensor();
-		BVPAngelChannel sensorChannel = new BVPAngelChannel();
-		frame.addSensor(sensor, sensorChannel);
+        // Sensor
+        AngelSensor sensor = new AngelSensor();
+        BVPAngelChannel sensorChannel = new BVPAngelChannel();
+        frame.addSensor(sensor, sensorChannel);
 
-		// Logger
-		Logger log = new Logger();
-		frame.addConsumer(log, sensorChannel, 1, 0);
+        // Logger
+        Logger log = new Logger();
+        frame.addConsumer(log, sensorChannel, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
-	}
+        // Stop framework
+        frame.stop();
+        frame.clear();
+    }
 
 
 }

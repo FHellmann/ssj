@@ -48,98 +48,58 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Johnny on 26.05.2015.
  */
-public class SignalPainter extends Consumer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<Double> size = new Option<>("size", 20., Double.class, "size of X-axis in seconds");
-        public final Option<Boolean> legend = new Option<>("legend", true, Boolean.class, "show legend");
-        public final Option<Boolean> manualBounds = new Option<>("manualBounds", false, Boolean.class, "set true to use manual min/max Y-axis boundaries");
-        public final Option<Double> min = new Option<>("min", 0., Double.class, "minimum Y-axis value");
-        public final Option<Double> max = new Option<>("max", 1., Double.class, "maximum Y-axis value");
-        public final Option<Integer> secondScaleStream = new Option<>("secondScaleStream", 1, Integer.class, "stream id to put on the secondary scale (use -1 to disable)");
-        public final Option<Integer> secondScaleDim = new Option<>("secondScaleDim", 0, Integer.class, "dimension id to put on the secondary scale (use -1 to disable)");
-        public final Option<Double> secondScaleMin = new Option<>("secondScaleMin", 0., Double.class, "minimum Y-axis value of secondary scale");
-        public final Option<Double> secondScaleMax = new Option<>("secondScaleMax", 1., Double.class, "maximum Y-axis value of secondary scale");
-        public final Option<Integer> numVLabels = new Option<>("numVLabels", 5, Integer.class, "number of vertical labels");
-        public final Option<Integer> numHLabels = new Option<>("numHLabels", 2, Integer.class, "number of horizontal labels");
-        public final Option<Boolean> renderMax = new Option<>("renderMax", true, Boolean.class, "render only the max value of a frame");
-        public final Option<GraphView> graphView = new Option<>("graphView", null, GraphView.class, "");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-    public Options options = new Options();
-
+public class SignalPainter extends Consumer {
     private static int color_id = 0;
     final private int[] colors = new int[]{0xffffd54f, 0xffed1c24, 0xff0F9D58, 0xff29b6f6, 0xff0077cc, 0xffff9900, 0xff009999, 0xff990000, 0xffff00ff, 0xff000000, 0xff339900};
-
-    private ArrayList<LineGraphSeries<DataPoint>> _series = new ArrayList<>();
-
+    public Options options = new Options();
     GraphView _view = null;
     int[] _maxPoints;
+    private final ArrayList<LineGraphSeries<DataPoint>> _series = new ArrayList<>();
 
-    public SignalPainter()
-    {
+    public SignalPainter() {
         _name = "SignalPainter";
         _doWakeLock = false; //since this is a GUI element, disable wakelock to save energy
     }
 
-    /**
-	 * @param stream_in Stream[]
-	 */
     @Override
-    protected void init(Stream[] stream_in) throws SSJException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in Stream[]
+     */
+    @Override
+    protected void init(Stream[] stream_in) throws SSJException {
         super.init(stream_in);
-        if (options.graphView.get() == null)
-        {
+        if (options.graphView.get() == null) {
             Log.w("graphView isn't set");
-        }
-        else
-        {
+        } else {
             _view = options.graphView.get();
         }
     }
+
     @Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        synchronized (this)
-        {
-            if (_view == null)
-            {
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        synchronized (this) {
+            if (_view == null) {
                 //wait for graphView creation
-                try
-                {
+                try {
                     this.wait();
-                } catch (InterruptedException ex)
-                {
+                } catch (InterruptedException ex) {
                     Log.e("graph view not registered");
                 }
             }
         }
 
-        if(stream_in.length > 2)
-        {
+        if (stream_in.length > 2) {
             Log.w("plotting more than 2 streams per graph will not work if streams are not similar");
         }
 
         int dimTotal = 0;
-		for (Stream s : stream_in)
-		{
-			dimTotal += s.dim;
-		}
+        for (Stream s : stream_in) {
+            dimTotal += s.dim;
+        }
 
         _maxPoints = new int[dimTotal];
 
@@ -161,166 +121,132 @@ public class SignalPainter extends Consumer
     }
 
     @Override
-    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
         int seriesID = 0;
-        for (int k = 0; k < stream_in.length; k++)
-        {
-            for (int i = 0; i < stream_in[k].dim; i++)
-            {
-                switch (stream_in[k].type)
-                {
-                    case CHAR:
-                    {
+        for (int k = 0; k < stream_in.length; k++) {
+            for (int i = 0; i < stream_in[k].dim; i++) {
+                switch (stream_in[k].type) {
+                    case CHAR: {
                         char[] in = stream_in[k].ptrC();
                         char max = Character.MIN_VALUE;
                         char value;
                         double time = stream_in[k].time;
-                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step)
-                        {
+                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step) {
                             value = in[j * stream_in[k].dim + i];
 
-                            if (!options.renderMax.get())
-                            {
+                            if (!options.renderMax.get()) {
                                 pushData(seriesID, value, time);
-                            } else if (value > max)
-                            {
+                            } else if (value > max) {
                                 max = value;
                             }
                         }
 
-                        if (options.renderMax.get())
-                        {
+                        if (options.renderMax.get()) {
                             pushData(seriesID, max, stream_in[k].time);
                         }
                         break;
                     }
 
-                    case SHORT:
-                    {
+                    case SHORT: {
                         short[] in = stream_in[k].ptrS();
                         short max = Short.MIN_VALUE;
                         short value;
                         double time = stream_in[k].time;
-                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step)
-                        {
+                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step) {
                             value = in[j * stream_in[k].dim + i];
 
-                            if (!options.renderMax.get())
-                            {
+                            if (!options.renderMax.get()) {
                                 pushData(seriesID, value, time);
-                            } else if (value > max)
-                            {
+                            } else if (value > max) {
                                 max = value;
                             }
                         }
 
-                        if (options.renderMax.get())
-                        {
+                        if (options.renderMax.get()) {
                             pushData(seriesID, max, stream_in[k].time);
                         }
                         break;
                     }
 
-                    case INT:
-                    {
+                    case INT: {
                         int[] in = stream_in[k].ptrI();
                         int max = Integer.MIN_VALUE;
                         int value;
                         double time = stream_in[k].time;
-                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step)
-                        {
+                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step) {
                             value = in[j * stream_in[k].dim + i];
 
-                            if (!options.renderMax.get())
-                            {
+                            if (!options.renderMax.get()) {
                                 pushData(seriesID, value, time);
-                            } else if (value > max)
-                            {
+                            } else if (value > max) {
                                 max = value;
                             }
                         }
 
-                        if (options.renderMax.get())
-                        {
+                        if (options.renderMax.get()) {
                             pushData(seriesID, max, stream_in[k].time);
                         }
                         break;
                     }
 
-                    case LONG:
-                    {
+                    case LONG: {
                         long[] in = stream_in[k].ptrL();
                         long max = Long.MIN_VALUE;
                         long value;
                         double time = stream_in[k].time;
-                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step)
-                        {
+                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step) {
                             value = in[j * stream_in[k].dim + i];
 
-                            if (!options.renderMax.get())
-                            {
+                            if (!options.renderMax.get()) {
                                 pushData(seriesID, value, time);
-                            } else if (value > max)
-                            {
+                            } else if (value > max) {
                                 max = value;
                             }
                         }
 
-                        if (options.renderMax.get())
-                        {
+                        if (options.renderMax.get()) {
                             pushData(seriesID, max, stream_in[k].time);
                         }
                         break;
                     }
 
-                    case FLOAT:
-                    {
+                    case FLOAT: {
                         float[] in = stream_in[k].ptrF();
                         float max = -1 * Float.MAX_VALUE;
                         float value;
                         double time = stream_in[k].time;
-                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step)
-                        {
+                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step) {
                             value = in[j * stream_in[k].dim + i];
 
-                            if (!options.renderMax.get())
-                            {
+                            if (!options.renderMax.get()) {
                                 pushData(seriesID, value, time);
-                            } else if (value > max)
-                            {
+                            } else if (value > max) {
                                 max = value;
                             }
                         }
 
-                        if (options.renderMax.get())
-                        {
+                        if (options.renderMax.get()) {
                             pushData(seriesID, max, stream_in[k].time);
                         }
                         break;
                     }
 
-                    case DOUBLE:
-                    {
+                    case DOUBLE: {
                         double[] in = stream_in[k].ptrD();
                         double max = -1 * Double.MAX_VALUE;
                         double value;
                         double time = stream_in[k].time;
-                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step)
-                        {
+                        for (int j = 0; j < stream_in[k].num; j++, time += stream_in[k].step) {
                             value = in[j * stream_in[k].dim + i];
 
-                            if (!options.renderMax.get())
-                            {
+                            if (!options.renderMax.get()) {
                                 pushData(seriesID, value, time);
-                            } else if (value > max)
-                            {
+                            } else if (value > max) {
                                 max = value;
                             }
                         }
 
-                        if (options.renderMax.get())
-                        {
+                        if (options.renderMax.get()) {
                             pushData(seriesID, max, stream_in[k].time);
                         }
                         break;
@@ -336,8 +262,7 @@ public class SignalPainter extends Consumer
     }
 
     @Override
-    public void flush(Stream[] stream_in) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in) throws SSJFatalException {
 
         _series.clear();
 
@@ -351,60 +276,73 @@ public class SignalPainter extends Consumer
         }, 1);
     }
 
-    private void pushData(final int seriesID, double value, double time)
-    {
+    private void pushData(final int seriesID, double value, double time) {
         //apparently GraphView can't render infinity
-        if(Double.isNaN(value) || Double.isInfinite(value) || value == -1 * Double.MAX_VALUE  || value == Double.MAX_VALUE)
+        if (Double.isNaN(value) || Double.isInfinite(value) || value == -1 * Double.MAX_VALUE || value == Double.MAX_VALUE)
             return;
 
         final DataPoint p = new DataPoint(time, value);
 
         Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(new Runnable()
-        {
-            public void run()
-            {
-                if(seriesID < _series.size())
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                if (seriesID < _series.size())
                     _series.get(seriesID).appendData(p, true, _maxPoints[seriesID]);
             }
         }, 1);
     }
 
-    private void createSeries(final GraphView view, final Stream[] stream_in)
-    {
+    private void createSeries(final GraphView view, final Stream[] stream_in) {
         Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(new Runnable()
-        {
-            public void run()
-            {
-                for (int i = 0; i < stream_in.length; i++)
-                {
-                    for (int j = 0; j < stream_in[i].dim; j++)
-                    {
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                for (int i = 0; i < stream_in.length; i++) {
+                    for (int j = 0; j < stream_in[i].dim; j++) {
                         LineGraphSeries<DataPoint> s = new LineGraphSeries<>();
                         s.setTitle(stream_in[i].desc[j]);
                         s.setColor(colors[color_id++ % colors.length]);
 
                         //define scale length
-                        if(!options.renderMax.get())
-                            _maxPoints[_series.size()] = (int)(options.size.get() * stream_in[i].sr) +1;
+                        if (!options.renderMax.get())
+                            _maxPoints[_series.size()] = (int) (options.size.get() * stream_in[i].sr) + 1;
                         else
-                            _maxPoints[_series.size()] = (int)(options.size.get() * (stream_in[i].sr / (double)stream_in[i].num)) +1;
+                            _maxPoints[_series.size()] = (int) (options.size.get() * (stream_in[i].sr / (double) stream_in[i].num)) + 1;
 
                         _series.add(s);
 
-                        if (options.secondScaleStream.get() == i && options.secondScaleDim.get() == j)
-                        {
+                        if (options.secondScaleStream.get() == i && options.secondScaleDim.get() == j) {
                             view.getSecondScale().setMinY(options.secondScaleMin.get());
                             view.getSecondScale().setMaxY(options.secondScaleMax.get());
                             view.getSecondScale().addSeries(s);
-                        } else
-                        {
+                        } else {
                             _view.addSeries(s);
                         }
                     }
                 }
             }
         }, 1);
+    }
+
+    public class Options extends OptionList {
+        public final Option<Double> size = new Option<>("size", 20., Double.class, "size of X-axis in seconds");
+        public final Option<Boolean> legend = new Option<>("legend", true, Boolean.class, "show legend");
+        public final Option<Boolean> manualBounds = new Option<>("manualBounds", false, Boolean.class, "set true to use manual min/max Y-axis boundaries");
+        public final Option<Double> min = new Option<>("min", 0., Double.class, "minimum Y-axis value");
+        public final Option<Double> max = new Option<>("max", 1., Double.class, "maximum Y-axis value");
+        public final Option<Integer> secondScaleStream = new Option<>("secondScaleStream", 1, Integer.class, "stream id to put on the secondary scale (use -1 to disable)");
+        public final Option<Integer> secondScaleDim = new Option<>("secondScaleDim", 0, Integer.class, "dimension id to put on the secondary scale (use -1 to disable)");
+        public final Option<Double> secondScaleMin = new Option<>("secondScaleMin", 0., Double.class, "minimum Y-axis value of secondary scale");
+        public final Option<Double> secondScaleMax = new Option<>("secondScaleMax", 1., Double.class, "maximum Y-axis value of secondary scale");
+        public final Option<Integer> numVLabels = new Option<>("numVLabels", 5, Integer.class, "number of vertical labels");
+        public final Option<Integer> numHLabels = new Option<>("numHLabels", 2, Integer.class, "number of horizontal labels");
+        public final Option<Boolean> renderMax = new Option<>("renderMax", true, Boolean.class, "render only the max value of a frame");
+        public final Option<GraphView> graphView = new Option<>("graphView", null, GraphView.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

@@ -51,302 +51,248 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 30.01.2019.
  */
-public class LandmarkPainter extends Consumer
-{
-	/**
-	 * All options for the camera painter
-	 */
-	public class Options extends OptionList
-	{
-		//values should be the same as in camera
-		public final Option<Cons.ImageRotation> imageRotation = new Option<>("imageRotation", Cons.ImageRotation.MINUS_90, Cons.ImageRotation.class, "rotation of input picture");
-		public final Option<Boolean> scale = new Option<>("scale", false, Boolean.class, "scale image to match surface size");
-		public final Option<Boolean> useVisibility = new Option<>("useVisibility", false, Boolean.class, "use third dimension as landmark visibility");
-		public final Option<Float> visibilityThreshold = new Option<>("visibilityThreshold", 0.5f, Float.class, "threshold if a landmark should be shown based on visibility value");
-		public final Option<SurfaceView> surfaceView = new Option<>("surfaceView", null, SurfaceView.class, "the view on which the painter is drawn");
-		public final Option<Float> landmarkRadius = new Option<>("landmarkRadius", 3.0f, Float.class, "radius of landmark circle");
+public class LandmarkPainter extends Consumer {
+    public final Options options = new Options();
+    private int imageStreamIndex = -1;
+    // Buffers
+    private int[] argbData;
+    private Bitmap inputBitmap;
+    private SurfaceView surfaceViewInner;
+    private SurfaceHolder surfaceHolder;
+    private Paint landmarkPaint;
+    public LandmarkPainter() {
+        _name = this.getClass().getSimpleName();
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public LandmarkPainter()
-	{
-		_name = this.getClass().getSimpleName();
-	}
+    @Override
+    protected void init(Stream[] stream_in) throws SSJException {
+        if (options.surfaceView.get() == null) {
+            Log.w("surfaceView isn't set");
+        } else {
+            surfaceViewInner = options.surfaceView.get();
+        }
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length != 2) {
+            Log.e("Stream count not supported! Requires 1 image and 1 landmark stream");
+            return;
+        }
 
-	private int imageStreamIndex = -1;
+        if (stream_in[0].type == Cons.Type.IMAGE && stream_in[1].type == Cons.Type.FLOAT) {
+            imageStreamIndex = 0;
+        } else if (stream_in[0].type == Cons.Type.FLOAT && stream_in[1].type == Cons.Type.IMAGE) {
+            imageStreamIndex = 1;
+        } else {
+            Log.e("Stream types not supported, must be IMAGE and FLOAT");
+            return;
+        }
 
-	// Buffers
-	private int[] argbData;
-	private Bitmap inputBitmap;
+        synchronized (this) {
+            if (surfaceViewInner == null) {
+                // Wait for surfaceView creation
+                try {
+                    this.wait();
+                } catch (InterruptedException e) {
+                    Log.e("Error while waiting for surfaceView creation", e);
+                }
+            }
+        }
 
-	private SurfaceView surfaceViewInner;
-	private SurfaceHolder surfaceHolder;
+        ImageStream in = (ImageStream) stream_in[imageStreamIndex];
 
-	private Paint landmarkPaint;
+        surfaceHolder = surfaceViewInner.getHolder();
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+        // Create buffers
+        argbData = new int[in.width * in.height];
+        inputBitmap = Bitmap.createBitmap(in.width, in.height, Bitmap.Config.ARGB_8888);
 
-	@Override
-	protected void init(Stream[] stream_in) throws SSJException
-	{
-		if (options.surfaceView.get() == null)
-		{
-			Log.w("surfaceView isn't set");
-		}
-		else
-		{
-			surfaceViewInner = options.surfaceView.get();
-		}
-	}
+        landmarkPaint = new Paint();
+        landmarkPaint.setColor(Color.WHITE);
+        landmarkPaint.setStyle(Paint.Style.FILL);
 
-	@Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-	{
-		if (stream_in.length != 2)
-		{
-			Log.e("Stream count not supported! Requires 1 image and 1 landmark stream");
-			return;
-		}
+        // Fix visibility usage if configured wrong
+        if (options.useVisibility.get() && stream_in[1 - imageStreamIndex].dim % 3 != 0 && stream_in[1 - imageStreamIndex].dim % 2 == 0) {
+            options.useVisibility.set(false);
+        }
 
-		if (stream_in[0].type == Cons.Type.IMAGE && stream_in[1].type == Cons.Type.FLOAT)
-		{
-			imageStreamIndex = 0;
-		}
-		else if (stream_in[0].type == Cons.Type.FLOAT && stream_in[1].type == Cons.Type.IMAGE)
-		{
-			imageStreamIndex = 1;
-		}
-		else
-		{
-			Log.e("Stream types not supported, must be IMAGE and FLOAT");
-			return;
-		}
+        if (!options.useVisibility.get() && stream_in[1 - imageStreamIndex].dim % 2 != 0 && stream_in[1 - imageStreamIndex].dim % 3 == 0) {
+            options.useVisibility.set(true);
+        }
+    }
 
-		synchronized (this)
-		{
-			if (surfaceViewInner == null)
-			{
-				// Wait for surfaceView creation
-				try
-				{
-					this.wait();
-				}
-				catch (InterruptedException e)
-				{
-					Log.e("Error while waiting for surfaceView creation", e);
-				}
-			}
-		}
+    @Override
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        draw(stream_in[imageStreamIndex].ptrB(), stream_in[1 - imageStreamIndex].ptrF(), ((ImageStream) stream_in[imageStreamIndex]).format);
+    }
 
-		ImageStream in = (ImageStream) stream_in[imageStreamIndex];
+    @Override
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+        surfaceViewInner = null;
+        argbData = null;
+        surfaceHolder = null;
+        inputBitmap.recycle();
+        inputBitmap = null;
+    }
 
-		surfaceHolder = surfaceViewInner.getHolder();
+    private void draw(final byte[] imageData, final float[] landmarkData, int imageFormat) {
+        Canvas canvas = null;
 
-		// Create buffers
-		argbData = new int[in.width * in.height];
-		inputBitmap = Bitmap.createBitmap(in.width, in.height, Bitmap.Config.ARGB_8888);
+        if (surfaceHolder == null) {
+            return;
+        }
 
-		landmarkPaint = new Paint();
-		landmarkPaint.setColor(Color.WHITE);
-		landmarkPaint.setStyle(Paint.Style.FILL);
+        try {
+            synchronized (surfaceHolder) {
+                canvas = surfaceHolder.lockCanvas();
 
-		// Fix visibility usage if configured wrong
-		if (options.useVisibility.get() && stream_in[1 - imageStreamIndex].dim % 3 != 0 && stream_in[1 - imageStreamIndex].dim % 2 == 0)
-		{
-			options.useVisibility.set(false);
-		}
+                if (canvas != null) {
+                    // Clear canvas.
+                    canvas.drawColor(Color.BLACK);
 
-		if (!options.useVisibility.get() && stream_in[1 - imageStreamIndex].dim % 2 != 0 && stream_in[1 - imageStreamIndex].dim % 3 == 0)
-		{
-			options.useVisibility.set(true);
-		}
-	}
+                    int canvasWidth = canvas.getWidth();
+                    int canvasHeight = canvas.getHeight();
 
-	@Override
-	protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-	{
-		draw(stream_in[imageStreamIndex].ptrB(), stream_in[1 - imageStreamIndex].ptrF(), ((ImageStream) stream_in[imageStreamIndex]).format);
-	}
+                    int bitmapWidth = inputBitmap.getWidth();
+                    int bitmapHeight = inputBitmap.getHeight();
 
-	@Override
-	public void flush(Stream[] stream_in) throws SSJFatalException
-	{
-		surfaceViewInner = null;
-		argbData = null;
-		surfaceHolder = null;
-		inputBitmap.recycle();
-		inputBitmap = null;
-	}
+                    int finalWidth = bitmapWidth;
+                    int finalHeight = bitmapHeight;
 
-	private void draw(final byte[] imageData, final float[] landmarkData, int imageFormat)
-	{
-		Canvas canvas = null;
+                    //decode color format
+                    decodeColor(imageData, bitmapWidth, bitmapHeight, imageFormat);
 
-		if (surfaceHolder == null)
-		{
-			return;
-		}
+                    // Fill bitmap with picture
+                    inputBitmap.setPixels(argbData, 0, bitmapWidth, 0, 0, bitmapWidth, bitmapHeight);
 
-		try
-		{
-			synchronized (surfaceHolder)
-			{
-				canvas = surfaceHolder.lockCanvas();
+                    // Adjust width/height for rotation
+                    switch (options.imageRotation.get()) {
+                        case PLUS_90:
+                        case MINUS_90:
+                            int tmpWidth = bitmapWidth;
+                            bitmapWidth = bitmapHeight;
+                            bitmapHeight = tmpWidth;
+                            break;
+                    }
 
-				if (canvas != null)
-				{
-					// Clear canvas.
-					canvas.drawColor(Color.BLACK);
+                    // Scale bitmap
+                    if (options.scale.get()) {
+                        float horizontalScale = canvasWidth / (float) bitmapWidth;
+                        float verticalScale = canvasHeight / (float) bitmapHeight;
 
-					int canvasWidth = canvas.getWidth();
-					int canvasHeight = canvas.getHeight();
+                        float scale = Math.min(horizontalScale, verticalScale);
 
-					int bitmapWidth = inputBitmap.getWidth();
-					int bitmapHeight = inputBitmap.getHeight();
+                        bitmapWidth = (int) (bitmapWidth * scale);
+                        bitmapHeight = (int) (bitmapHeight * scale);
+                    }
 
-					int finalWidth = bitmapWidth;
-					int finalHeight = bitmapHeight;
+                    finalWidth = bitmapWidth;
+                    finalHeight = bitmapHeight;
 
-					//decode color format
-					decodeColor(imageData, bitmapWidth, bitmapHeight, imageFormat);
+                    // Restore width/height after scaling for rect placement
+                    switch (options.imageRotation.get()) {
+                        case PLUS_90:
+                        case MINUS_90:
+                            int tmpWidth = bitmapWidth;
+                            bitmapWidth = bitmapHeight;
+                            bitmapHeight = tmpWidth;
+                            break;
+                    }
 
-					// Fill bitmap with picture
-					inputBitmap.setPixels(argbData, 0, bitmapWidth, 0, 0, bitmapWidth, bitmapHeight);
+                    int bitmapLeft = (canvasWidth - bitmapWidth) / 2; // could also do >> 1
+                    int bitmapTop = (canvasHeight - bitmapHeight) / 2;
 
-					// Adjust width/height for rotation
-					switch (options.imageRotation.get())
-					{
-						case PLUS_90:
-						case MINUS_90:
-							int tmpWidth = bitmapWidth;
-							bitmapWidth = bitmapHeight;
-							bitmapHeight = tmpWidth;
-							break;
-					}
+                    Rect dest = new Rect(bitmapLeft, bitmapTop, bitmapLeft + bitmapWidth, bitmapTop + bitmapHeight);
 
-					// Scale bitmap
-					if (options.scale.get())
-					{
-						float horizontalScale = canvasWidth / (float) bitmapWidth;
-						float verticalScale = canvasHeight / (float) bitmapHeight;
+                    // Rotate canvas coordinate system around the center of the image.
+                    canvas.save(); // canvas.save(Canvas.MATRIX_SAVE_FLAG);
+                    canvas.rotate(options.imageRotation.get().rotation, canvasWidth >> 1, canvasHeight >> 1);
 
-						float scale = Math.min(horizontalScale, verticalScale);
+                    // Draw bitmap into rect
+                    canvas.drawBitmap(inputBitmap, null, dest, null);
+                    canvas.restore();
 
-						bitmapWidth = (int) (bitmapWidth * scale);
-						bitmapHeight = (int) (bitmapHeight * scale);
-					}
+                    // Draw landmarks
+                    if (landmarkData.length > 0) {
+                        float landmarkLeft = (canvas.getWidth() - finalWidth) / 2.0f;
+                        float landmarkTop = (canvas.getHeight() - finalHeight) / 2.0f;
 
-					finalWidth = bitmapWidth;
-					finalHeight = bitmapHeight;
+                        int landmarkDim = 2;
 
-					// Restore width/height after scaling for rect placement
-					switch (options.imageRotation.get())
-					{
-						case PLUS_90:
-						case MINUS_90:
-							int tmpWidth = bitmapWidth;
-							bitmapWidth = bitmapHeight;
-							bitmapHeight = tmpWidth;
-							break;
-					}
+                        if (options.useVisibility.get()) {
+                            landmarkDim = 3;
+                        }
 
-					int bitmapLeft = (canvasWidth - bitmapWidth) / 2; // could also do >> 1
-					int bitmapTop = (canvasHeight - bitmapHeight) / 2;
+                        for (int i = 0; i < landmarkData.length; i += landmarkDim) {
+                            boolean drawLandmark = true;
 
-					Rect dest = new Rect(bitmapLeft, bitmapTop, bitmapLeft + bitmapWidth, bitmapTop + bitmapHeight);
+                            if (options.useVisibility.get()) {
+                                drawLandmark = landmarkData[i + 2] >= options.visibilityThreshold.get();
+                            }
 
-					// Rotate canvas coordinate system around the center of the image.
-					canvas.save(); // canvas.save(Canvas.MATRIX_SAVE_FLAG);
-					canvas.rotate(options.imageRotation.get().rotation, canvasWidth >> 1, canvasHeight >> 1);
+                            if (drawLandmark) {
+                                canvas.drawCircle(landmarkLeft + landmarkData[i] * finalWidth, landmarkTop + landmarkData[i + 1] * finalHeight, options.landmarkRadius.get(), landmarkPaint);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e("Error while drawing on canvas", e);
+        } finally {
+            // Always try to unlock a locked canvas to keep the surface in a consistent state
+            if (canvas != null) {
+                surfaceHolder.unlockCanvasAndPost(canvas);
+            }
+        }
+    }
 
-					// Draw bitmap into rect
-					canvas.drawBitmap(inputBitmap, null, dest, null);
-					canvas.restore();
+    private void decodeColor(final byte[] data, int width, int height, int format) {
+        // TODO: implement missing conversions
+        switch (format) {
+            case ImageFormat.YV12: {
+                throw new UnsupportedOperationException("Not implemented, yet");
+            }
+            case ImageFormat.YUV_420_888: //YV12_PACKED_SEMI
+            {
+                CameraUtil.decodeYV12PackedSemi(argbData, data, width, height);
+                break;
+            }
+            case ImageFormat.NV21: {
+                CameraUtil.convertNV21ToARGBInt(argbData, data, width, height);
+                break;
+            }
+            case ImageFormat.FLEX_RGB_888: {
+                CameraUtil.convertRGBToARGBInt(argbData, data, width, height);
+                break;
+            }
+            default: {
+                Log.e("Wrong color format");
+                throw new RuntimeException();
+            }
+        }
+    }
 
-					// Draw landmarks
-					if (landmarkData.length > 0)
-					{
-						float landmarkLeft = (canvas.getWidth() - finalWidth) / 2.0f;
-						float landmarkTop = (canvas.getHeight() - finalHeight) / 2.0f;
+    /**
+     * All options for the camera painter
+     */
+    public class Options extends OptionList {
+        //values should be the same as in camera
+        public final Option<Cons.ImageRotation> imageRotation = new Option<>("imageRotation", Cons.ImageRotation.MINUS_90, Cons.ImageRotation.class, "rotation of input picture");
+        public final Option<Boolean> scale = new Option<>("scale", false, Boolean.class, "scale image to match surface size");
+        public final Option<Boolean> useVisibility = new Option<>("useVisibility", false, Boolean.class, "use third dimension as landmark visibility");
+        public final Option<Float> visibilityThreshold = new Option<>("visibilityThreshold", 0.5f, Float.class, "threshold if a landmark should be shown based on visibility value");
+        public final Option<SurfaceView> surfaceView = new Option<>("surfaceView", null, SurfaceView.class, "the view on which the painter is drawn");
+        public final Option<Float> landmarkRadius = new Option<>("landmarkRadius", 3.0f, Float.class, "radius of landmark circle");
 
-						int landmarkDim = 2;
-
-						if (options.useVisibility.get())
-						{
-							landmarkDim = 3;
-						}
-
-						for (int i = 0; i < landmarkData.length; i += landmarkDim)
-						{
-							boolean drawLandmark = true;
-
-							if (options.useVisibility.get())
-							{
-								drawLandmark = landmarkData[i + 2] >= options.visibilityThreshold.get();
-							}
-
-							if (drawLandmark)
-							{
-								canvas.drawCircle(landmarkLeft + landmarkData[i] * finalWidth, landmarkTop + landmarkData[i + 1] * finalHeight, options.landmarkRadius.get(), landmarkPaint);
-							}
-						}
-					}
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			Log.e("Error while drawing on canvas", e);
-		}
-		finally
-		{
-			// Always try to unlock a locked canvas to keep the surface in a consistent state
-			if (canvas != null)
-			{
-				surfaceHolder.unlockCanvasAndPost(canvas);
-			}
-		}
-	}
-
-	private void decodeColor(final byte[] data, int width, int height, int format)
-	{
-		// TODO: implement missing conversions
-		switch (format)
-		{
-			case ImageFormat.YV12:
-			{
-				throw new UnsupportedOperationException("Not implemented, yet");
-			}
-			case ImageFormat.YUV_420_888: //YV12_PACKED_SEMI
-			{
-				CameraUtil.decodeYV12PackedSemi(argbData, data, width, height);
-				break;
-			}
-			case ImageFormat.NV21:
-			{
-				CameraUtil.convertNV21ToARGBInt(argbData, data, width, height);
-				break;
-			}
-			case ImageFormat.FLEX_RGB_888:
-			{
-				CameraUtil.convertRGBToARGBInt(argbData, data, width, height);
-				break;
-			}
-			default:
-			{
-				Log.e("Wrong color format");
-				throw new RuntimeException();
-			}
-		}
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

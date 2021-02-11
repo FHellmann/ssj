@@ -42,36 +42,30 @@ import hcm.ssj.feedback.feedbackmanager.classes.FeedbackClass;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class TactileAction extends Action
-{
+public class TactileAction extends Action {
     public int[] duration = {500};
-    public byte[] intensity = {(byte)150};
+    public byte[] intensity = {(byte) 150};
     public VibrationType vibrationType = VibrationType.NOTIFICATION_ONE_TONE;
 
-    public TactileAction()
-    {
+    public TactileAction() {
         type = FeedbackClass.Type.Tactile;
     }
 
-    protected void load(XmlPullParser xml, Context context)
-    {
+    protected void load(XmlPullParser xml, Context context) {
         super.load(xml, context);
 
-        try
-        {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "action");
 
             String str = xml.getAttributeValue(null, "intensity");
-            if(str != null) intensity = parseByteArray(str, ",");
+            if (str != null) intensity = parseByteArray(str, ",");
 
             str = xml.getAttributeValue(null, "duration");
-            if(str != null) duration = parseIntArray(str, ",");
+            if (str != null) duration = parseIntArray(str, ",");
 
             str = xml.getAttributeValue(null, "type");
-            if(str != null) vibrationType = VibrationType.valueOf(str);
-        }
-        catch(IOException | XmlPullParserException e)
-        {
+            if (str != null) vibrationType = VibrationType.valueOf(str);
+        } catch (IOException | XmlPullParserException e) {
             Log.e("error parsing config file", e);
         }
     }

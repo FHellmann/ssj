@@ -56,89 +56,84 @@ import hcm.ssj.test.EventLogger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class InceptionTest
-{
-	@Test
-	public void loadInceptionModel() throws Exception
-	{
-		String trainerName = "inception.trainer";
-		String trainerURL = "https://hcm-lab.de/downloads/ssj/model";
+public class InceptionTest {
+    @Test
+    public void loadInceptionModel() throws Exception {
+        String trainerName = "inception.trainer";
+        String trainerURL = "https://hcm-lab.de/downloads/ssj/model";
 
-		// Option parameters for camera sensor
-		double sampleRate = 1;
-		int width = 640;
-		int height = 480;
+        // Option parameters for camera sensor
+        double sampleRate = 1;
+        int width = 640;
+        int height = 480;
 
-		final float IMAGE_MEAN = 127.5f;
-		final float IMAGE_STD = 1;
-		final int CROP_SIZE = 224;
-		final boolean MAINTAIN_ASPECT = true;
+        final float IMAGE_MEAN = 127.5f;
+        final float IMAGE_STD = 1;
+        final int CROP_SIZE = 224;
+        final boolean MAINTAIN_ASPECT = true;
 
-		// Get pipeline instance
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+        // Get pipeline instance
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Instantiate camera sensor and set options
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
-		cameraSensor.options.width.set(width);
-		cameraSensor.options.height.set(height);
-		cameraSensor.options.previewFpsRangeMin.set(15);
-		cameraSensor.options.previewFpsRangeMax.set(15);
+        // Instantiate camera sensor and set options
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
+        cameraSensor.options.width.set(width);
+        cameraSensor.options.height.set(height);
+        cameraSensor.options.previewFpsRangeMin.set(15);
+        cameraSensor.options.previewFpsRangeMax.set(15);
 
-		// Add sensor to the pipeline
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set(sampleRate);
-		frame.addSensor(cameraSensor, cameraChannel);
+        // Add sensor to the pipeline
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set(sampleRate);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		// Set up a NV21 decoder
-		NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
-		frame.addTransformer(decoder, cameraChannel, 1, 0);
+        // Set up a NV21 decoder
+        NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
+        frame.addTransformer(decoder, cameraChannel, 1, 0);
 
-		// Add image resizer to the pipeline
-		ImageResizer resizer = new ImageResizer();
-		resizer.options.maintainAspect.set(MAINTAIN_ASPECT);
-		resizer.options.size.set(CROP_SIZE);
-		resizer.options.rotation.set(90);
-		frame.addTransformer(resizer, decoder, 1, 0);
+        // Add image resizer to the pipeline
+        ImageResizer resizer = new ImageResizer();
+        resizer.options.maintainAspect.set(MAINTAIN_ASPECT);
+        resizer.options.size.set(CROP_SIZE);
+        resizer.options.rotation.set(90);
+        frame.addTransformer(resizer, decoder, 1, 0);
 
-		// Add image pixel value normalizer to the pipeline
-		ImageNormalizer imageNormalizer = new ImageNormalizer();
-		imageNormalizer.options.imageMean.set(IMAGE_MEAN);
-		imageNormalizer.options.imageStd.set(IMAGE_STD);
-		frame.addTransformer(imageNormalizer, resizer, 1, 0);
+        // Add image pixel value normalizer to the pipeline
+        ImageNormalizer imageNormalizer = new ImageNormalizer();
+        imageNormalizer.options.imageMean.set(IMAGE_MEAN);
+        imageNormalizer.options.imageStd.set(IMAGE_STD);
+        frame.addTransformer(imageNormalizer, resizer, 1, 0);
 
-		TensorFlow tensorFlow = new TensorFlow();
-		tensorFlow.options.file.setValue(trainerURL + File.separator + trainerName);
-		frame.addModel(tensorFlow);
+        TensorFlow tensorFlow = new TensorFlow();
+        tensorFlow.options.file.setValue(trainerURL + File.separator + trainerName);
+        frame.addModel(tensorFlow);
 
-		// Add classifier transformer to the pipeline
-		Classifier classifier = new Classifier();
-		classifier.setModel(tensorFlow);
-		classifier.options.merge.set(false);
-		classifier.options.bestMatchOnly.set(true);
-		frame.addConsumer(classifier, imageNormalizer, 1, 0);
+        // Add classifier transformer to the pipeline
+        Classifier classifier = new Classifier();
+        classifier.setModel(tensorFlow);
+        classifier.options.merge.set(false);
+        classifier.options.bestMatchOnly.set(true);
+        frame.addConsumer(classifier, imageNormalizer, 1, 0);
 
-		// Log events
-		EventChannel channel = classifier.getEventChannelOut();
-		EventLogger log = new EventLogger();
-		frame.registerEventListener(log, channel);
+        // Log events
+        EventChannel channel = classifier.getEventChannelOut();
+        EventLogger log = new EventLogger();
+        frame.registerEventListener(log, channel);
 
-		// Start pipeline
-		frame.start();
+        // Start pipeline
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop pipeline
-		frame.stop();
-		frame.release();
-	}
+        // Stop pipeline
+        frame.stop();
+        frame.release();
+    }
 }

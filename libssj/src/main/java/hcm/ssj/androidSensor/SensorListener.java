@@ -37,16 +37,14 @@ import java.util.Arrays;
  * Standard listener for android sensors.<br>
  * Created by Frank Gaibler on 13.08.2015.
  */
-class SensorListener implements SensorEventListener
-{
-    private SensorType sensorType;
+class SensorListener implements SensorEventListener {
+    private final SensorType sensorType;
     private SensorData data;
 
     /**
      * @param sensorType SensorType
      */
-    public SensorListener(SensorType sensorType)
-    {
+    public SensorListener(SensorType sensorType) {
         this.sensorType = sensorType;
 
         float[] val = new float[this.sensorType.getDataSize()];
@@ -58,11 +56,9 @@ class SensorListener implements SensorEventListener
      * @param event SensorEvent
      */
     @Override
-    public void onSensorChanged(SensorEvent event)
-    {
+    public void onSensorChanged(SensorEvent event) {
         // test for proper event
-        if (event.sensor.getType() == sensorType.getType())
-        {
+        if (event.sensor.getType() == sensorType.getType()) {
             synchronized (this) {
                 // set values
                 if (event.values != null)
@@ -76,15 +72,13 @@ class SensorListener implements SensorEventListener
      * @param accuracy int
      */
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy)
-    {
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 
     /**
      * @return SensorData
      */
-    public SensorData getData()
-    {
+    public SensorData getData() {
         SensorData d;
         synchronized (this) {
             d = data;
@@ -92,8 +86,7 @@ class SensorListener implements SensorEventListener
         return d;
     }
 
-    public SensorType getType()
-    {
+    public SensorType getType() {
         return sensorType;
     }
 }

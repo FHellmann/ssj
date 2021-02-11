@@ -40,55 +40,19 @@ import hcm.ssj.core.stream.Stream;
  * Merges multiple streams int one. Streams need to have same type, sr and num.<br>
  * Created by Frank Gaibler on 24.11.2015.
  */
-public class Merge extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends OptionList
-    {
-        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class Merge extends Transformer {
     public final Options options = new Options();
 
     /**
      *
      */
-    public Merge()
-    {
+    public Merge() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        //check for valid stream
-		for (Stream s : stream_in)
-		{
-			if (stream_in[0].type != s.type || stream_in[0].sr != s.sr || stream_in[0].num != s.num)
-			{
-				Log.e("input streams are incompatible");
-			}
-		}
+    public OptionList getOptions() {
+        return options;
     }
 
     /**
@@ -96,16 +60,25 @@ public class Merge extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        for (int i = 0, z = 0; i < stream_in[0].num; i++)
-        {
-            for (int j = 0; j < stream_in.length; j++)
-            {
-                for (int k = 0; k < stream_in[j].dim; k++)
-                {
-                    switch (stream_out.type)
-                    {
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        //check for valid stream
+        for (Stream s : stream_in) {
+            if (stream_in[0].type != s.type || stream_in[0].sr != s.sr || stream_in[0].num != s.num) {
+                Log.e("input streams are incompatible");
+            }
+        }
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        for (int i = 0, z = 0; i < stream_in[0].num; i++) {
+            for (int j = 0; j < stream_in.length; j++) {
+                for (int k = 0; k < stream_in[j].dim; k++) {
+                    switch (stream_out.type) {
                         case BOOL:
                             stream_out.ptrBool()[z++] = stream_in[j].ptrBool()[i * stream_in[j].dim + k];
                             break;
@@ -141,10 +114,9 @@ public class Merge extends Transformer
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int dim = 0;
-        for(Stream s : stream_in)
+        for (Stream s : stream_in)
             dim += s.dim;
 
         return dim;
@@ -155,8 +127,7 @@ public class Merge extends Transformer
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(stream_in[0].type);
     }
 
@@ -165,8 +136,7 @@ public class Merge extends Transformer
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return stream_in[0].type;
     }
 
@@ -175,8 +145,7 @@ public class Merge extends Transformer
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return sampleNumber_in;
     }
 
@@ -185,24 +154,33 @@ public class Merge extends Transformer
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
-        if (options.outputClass.get() != null)
-        {
-            if (overallDimension == options.outputClass.get().length)
-            {
+        if (options.outputClass.get() != null) {
+            if (overallDimension == options.outputClass.get().length) {
                 System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
                 return;
-            } else
-            {
+            } else {
                 Log.w("invalid option outputClass length");
             }
         }
-        for (int i = 0; i < stream_out.desc.length; i++)
-        {
+        for (int i = 0; i < stream_out.desc.length; i++) {
             stream_out.desc[i] = "slctr" + i;
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends OptionList {
+        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

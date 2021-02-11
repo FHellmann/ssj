@@ -27,16 +27,12 @@
 
 package hcm.ssj.camera;
 
-import android.os.SystemClock;
-
 import java.nio.ByteBuffer;
 
 import hcm.ssj.core.Cons;
-import hcm.ssj.core.Log;
 import hcm.ssj.core.SSJException;
 import hcm.ssj.core.SSJFatalException;
 import hcm.ssj.core.SensorChannel;
-import hcm.ssj.core.Util;
 import hcm.ssj.core.option.Option;
 import hcm.ssj.core.option.OptionList;
 import hcm.ssj.core.stream.ImageStream;
@@ -45,112 +41,93 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 13.11.2019.
  */
-public class ImageLoaderChannel extends SensorChannel
-{
-	public static final int IMAGE_CHANNELS = 3;
+public class ImageLoaderChannel extends SensorChannel {
+    public static final int IMAGE_CHANNELS = 3;
+    public final Options options = new Options();
+    byte[] byteArray;
+    private ImageLoaderSensor imageSensor;
+    private int width = -1;
+    private int height = -1;
+    private int sampleDimension = 0;
+    private ByteBuffer byteBuffer;
 
-	public class Options extends OptionList
-	{
-		public final Option<Double> sampleRate = new Option<>("sampleRate", 15., Double.class, "sample rate for loaded image");
+    public ImageLoaderChannel() {
+        _name = this.getClass().getSimpleName();
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    protected void init() throws SSJException {
+        try {
+            imageSensor = (ImageLoaderSensor) _sensor;
+            imageSensor.loadImage();
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+            width = imageSensor.getImageWidth();
+            height = imageSensor.getImageHeight();
+            sampleDimension = width * height * IMAGE_CHANNELS;
+        } catch (SSJFatalException e) {
+            throw new SSJException(e);
+        }
+    }
 
-	private ImageLoaderSensor imageSensor;
-	private int width = -1;
-	private int height = -1;
-	private int sampleDimension = 0;
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        int size = imageSensor.image.getRowBytes() * imageSensor.image.getHeight();
 
-	private ByteBuffer byteBuffer;
-	byte[] byteArray;
+        // Copy image to buffer
+        byteBuffer = ByteBuffer.allocate(size);
+        imageSensor.image.copyPixelsToBuffer(byteBuffer);
 
-	public ImageLoaderChannel()
-	{
-		_name = this.getClass().getSimpleName();
-	}
+        // Contains rgba values in signed byte form [-127, 127], needs to be converted to [0, 255]
+        byteArray = byteBuffer.array();
+    }
 
-	@Override
-	protected void init() throws SSJException
-	{
-		try
-		{
-			imageSensor = (ImageLoaderSensor) _sensor;
-			imageSensor.loadImage();
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        byte[] out = stream_out.ptrB();
 
-			width = imageSensor.getImageWidth();
-			height = imageSensor.getImageHeight();
-			sampleDimension = width * height * IMAGE_CHANNELS;
-		}
-		catch (SSJFatalException e)
-		{
-			throw new SSJException(e);
-		}
-	}
+        for (int i = 0; i < width * height; i++) {
+            out[i * 3] = byteArray[i * 4];
+            out[i * 3 + 1] = byteArray[i * 4 + 1];
+            out[i * 3 + 2] = byteArray[i * 4 + 2];
+        }
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		int size = imageSensor.image.getRowBytes() * imageSensor.image.getHeight();
+        return true;
+    }
 
-		// Copy image to buffer
-		byteBuffer = ByteBuffer.allocate(size);
-		imageSensor.image.copyPixelsToBuffer(byteBuffer);
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		// Contains rgba values in signed byte form [-127, 127], needs to be converted to [0, 255]
-		byteArray = byteBuffer.array();
-	}
+    @Override
+    protected int getSampleDimension() {
+        return sampleDimension;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		byte[] out = stream_out.ptrB();
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.IMAGE;
+    }
 
-		for (int i = 0; i < width * height; i++)
-		{
-			out[i * 3] = byteArray[i * 4];
-			out[i * 3 + 1] = byteArray[i * 4 + 1];
-			out[i * 3 + 2] = byteArray[i * 4 + 2];
-		}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[]{"image"};
 
-		return true;
-	}
+        ((ImageStream) _stream_out).width = width;
+        ((ImageStream) _stream_out).height = height;
+        ((ImageStream) stream_out).format = Cons.ImageFormat.FLEX_RGB_888.val;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    public class Options extends OptionList {
+        public final Option<Double> sampleRate = new Option<>("sampleRate", 15., Double.class, "sample rate for loaded image");
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return sampleDimension;
-	}
-
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.IMAGE;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[]{"image"};
-
-		((ImageStream)_stream_out).width = width;
-		((ImageStream)_stream_out).height = height;
-		((ImageStream) stream_out).format = Cons.ImageFormat.FLEX_RGB_888.val;
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

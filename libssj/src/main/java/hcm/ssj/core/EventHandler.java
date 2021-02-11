@@ -37,7 +37,7 @@ import static hcm.ssj.core.Cons.SLEEP_ON_COMPONENT_IDLE;
 /**
  * An EventHandler is a general component with no regulated inputs or outputs
  * Its only means of communication are events
- *
+ * <p>
  * Created by Johnny on 30.03.2015.
  */
 public abstract class EventHandler extends Component implements EventListener {
@@ -45,37 +45,34 @@ public abstract class EventHandler extends Component implements EventListener {
     protected Pipeline _frame;
     protected boolean _doWakeLock = false;
 
-    public EventHandler()
-    {
+    public EventHandler() {
         _frame = Pipeline.getInstance();
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         Thread.currentThread().setName("SSJ_" + _name);
 
-        if(_evchannel_in == null && _evchannel_out == null)
-        {
+        if (_evchannel_in == null && _evchannel_out == null) {
             _frame.error(_name, "no event channel has been registered", null);
             return;
         }
 
-        PowerManager mgr = (PowerManager)SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
+        PowerManager mgr = (PowerManager) SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = mgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, _name);
 
         //register listener
-        if(_evchannel_in != null && _evchannel_in.size() != 0)
-            for(EventChannel ch : _evchannel_in)
+        if (_evchannel_in != null && _evchannel_in.size() != 0)
+            for (EventChannel ch : _evchannel_in)
                 ch.addEventListener(this);
 
         try {
             enter();
-        } catch(SSJFatalException e) {
+        } catch (SSJFatalException e) {
             _frame.error(_name, "exception in enter", e);
             _safeToKill = true;
             return;
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(_name, "exception in enter", e);
         }
 
@@ -88,25 +85,24 @@ public abstract class EventHandler extends Component implements EventListener {
             }
         }
 
-        while(!_terminate && _frame.isRunning())
-        {
+        while (!_terminate && _frame.isRunning()) {
             try {
-                if(_doWakeLock) wakeLock.acquire();
+                if (_doWakeLock) wakeLock.acquire();
                 process();
-            } catch(SSJFatalException e) {
+            } catch (SSJFatalException e) {
                 _frame.error(_name, "exception in loop", e);
                 _safeToKill = true;
                 return;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 _frame.error(_name, "exception in loop", e);
             } finally {
-                if(_doWakeLock) wakeLock.release();
+                if (_doWakeLock) wakeLock.release();
             }
         }
 
         try {
             flush();
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(_name, "exception in flush", e);
         }
 
@@ -116,13 +112,13 @@ public abstract class EventHandler extends Component implements EventListener {
     /**
      * initialization specific to sensor implementation
      */
-    protected void enter() throws SSJFatalException {};
+    protected void enter() throws SSJFatalException {
+    }
 
     /**
      * thread processing method, alternative to notify(), called in loop
      */
-    protected void process() throws SSJFatalException
-    {
+    protected void process() throws SSJFatalException {
         try {
             Thread.sleep(SLEEP_ON_COMPONENT_IDLE);
         } catch (InterruptedException e) {
@@ -133,10 +129,13 @@ public abstract class EventHandler extends Component implements EventListener {
     /**
      * alternative to process(), called once per received event
      */
-    public void notify(Event event) {}
+    public void notify(Event event) {
+    }
 
     /**
      * called once before termination
      */
-    protected void flush() throws SSJFatalException {};
+    protected void flush() throws SSJFatalException {
+    }
+
 }

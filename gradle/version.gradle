@@ -1,7 +1,3 @@
-def version = "N/A",versionMajor = "0",versionMinor = "0",versionPatch = "0",versionBuild = "0"
-def fullVersionTag = "",shaGit = "",dirty = null
-def longVersionName = null
-
 /*
  * version.gradle
  * Copyright (c) 2018
@@ -29,6 +25,10 @@ def longVersionName = null
  * with this library; if not, see <http://www.gnu.org/licenses/>.
  */
 
+def version = "N/A", versionMajor = "0", versionMinor = "0", versionPatch = "0", versionBuild = "0"
+def fullVersionTag = "", shaGit = "", dirty = null
+def longVersionName = null
+
 // Fetch the version according to git latest tag and "how far are we from last tag"
 try {
     longVersionName = "git -C . describe --tags --long --dirty".execute().text.trim()
@@ -38,7 +38,7 @@ try {
     if (versionPatch == null)
         versionPatch = "0"
 
-    if (versionMajor.charAt(0) == 'v')
+    if (versionMajor.charAt(0) == 'v'.toCharArray()[0])
         versionMajor = versionMajor.substring(1)
     version = "$versionMajor.$versionMinor"
 
@@ -50,7 +50,7 @@ try {
     if (dirty != null) //otherwise lesser will always be dirty
         version = "$version-dirty"
 }
-catch(Exception e1) {
+catch (Exception e1) {
     printf("> Error getting versioning info from git: " + e1.getMessage())
 }
 

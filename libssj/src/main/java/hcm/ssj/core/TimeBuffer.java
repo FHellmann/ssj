@@ -43,29 +43,26 @@ public class TimeBuffer {
     public final static int STATUS_DURATION_TOO_LARGE = -6;
     public final static int STATUS_UNKNOWN_DATA = -7;
     public final static int STATUS_ERROR = -9; //unknown error, buffer is probably closed
-
-    private byte[] _buffer;
-    private long _position;
-
     private final Object _lock = new Object();
+    private final byte[] _buffer;
+    private long _position;
     private boolean _terminate = false;
 
-    private double _sr;
-    private int _dim;
-    private int _bytesPerValue;
-    private Cons.Type _type;
+    private final double _sr;
+    private final int _dim;
+    private final int _bytesPerValue;
+    private final Cons.Type _type;
 
-    private int _capacitySamples;
-    private int _bytesPerSample;
-    private double _sampleDuration;
+    private final int _capacitySamples;
+    private final int _bytesPerSample;
+    private final double _sampleDuration;
 
     private int _offsetSamples;
     private int _lastAccessedSample;
 
-    private Provider _owner;
+    private final Provider _owner;
 
-    public TimeBuffer(double capacity, double sr, int dim, int bytesPerValue, Cons.Type type, Provider owner)
-    {
+    public TimeBuffer(double capacity, double sr, int dim, int bytesPerValue, Cons.Type type, Provider owner) {
         _owner = owner;
 
         _sr = sr;
@@ -73,7 +70,7 @@ public class TimeBuffer {
         _bytesPerValue = bytesPerValue;
         _type = type;
 
-        _capacitySamples = (int)(capacity * sr);
+        _capacitySamples = (int) (capacity * sr);
         _bytesPerSample = bytesPerValue * dim;
 
         _sampleDuration = 1.0 / _sr;
@@ -83,8 +80,7 @@ public class TimeBuffer {
         reset();
     }
 
-    public void reset()
-    {
+    public void reset() {
         _position = 0;
         _offsetSamples = 0;
         _lastAccessedSample = 0;
@@ -92,8 +88,7 @@ public class TimeBuffer {
         _terminate = false;
     }
 
-    public void close()
-    {
+    public void close() {
         _terminate = true;
 
         synchronized (_lock) {
@@ -101,11 +96,10 @@ public class TimeBuffer {
         }
     }
 
-    public void push(Object data, int numBytes)
-    {
+    public void push(Object data, int numBytes) {
         synchronized (_lock) {
             //compute actual position of data within buffer
-            int pos_mod = (int)(_position % _buffer.length);
+            int pos_mod = (int) (_position % _buffer.length);
 
             copy(data, 0, _buffer, pos_mod, numBytes);
 
@@ -114,8 +108,7 @@ public class TimeBuffer {
         }
     }
 
-    private void copy(Object src, int srcpos, byte[] dst, int dstpos, int numBytes)
-    {
+    private void copy(Object src, int srcpos, byte[] dst, int dstpos, int numBytes) {
         if (dstpos + numBytes <= dst.length) {
             // end of buffer not reached
             // copy data in one step
@@ -132,13 +125,12 @@ public class TimeBuffer {
         }
     }
 
-    public void pushZeroes(int numBytes)
-    {
+    public void pushZeroes(int numBytes) {
         Log.w(_owner.getComponentName(), "pushing " + numBytes + " bytes of zeroes");
 
         synchronized (_lock) {
             //compute actual position of data within buffer
-            int pos_mod = (int)(_position % _buffer.length);
+            int pos_mod = (int) (_position % _buffer.length);
 
             fillZero(_buffer, pos_mod, numBytes);
 
@@ -147,25 +139,22 @@ public class TimeBuffer {
         }
     }
 
-    private void fillZero(byte[] buffer, int pos, int num)
-    {
+    private void fillZero(byte[] buffer, int pos, int num) {
         if (pos + num <= buffer.length)
-            Arrays.fill(buffer, pos, pos + num, (byte)0);
-        else
-        {
+            Arrays.fill(buffer, pos, pos + num, (byte) 0);
+        else {
             // end of buffer reached
             // copy data in two steps:
             // 1. copy everything until the end of the buffer is reached
             // 2. copy remaining part from the beginning
             int size_until_end = buffer.length - pos;
             int size_remaining = num - size_until_end;
-            Arrays.fill(buffer, pos, pos + size_until_end, (byte)0);
+            Arrays.fill(buffer, pos, pos + size_until_end, (byte) 0);
             fillZero(buffer, 0, size_remaining);
         }
     }
 
-    private boolean get_(Object dst, long pos, int len)
-    {
+    private boolean get_(Object dst, long pos, int len) {
         synchronized (_lock) {
             //wait for requested data to become available
             while (pos + len > _position && !_terminate) {
@@ -176,11 +165,11 @@ public class TimeBuffer {
                 }
             }
 
-            if(_terminate)
+            if (_terminate)
                 return false;
 
             //compute actual position of data within buffer
-            int pos_mod = (int)(pos % _buffer.length);
+            int pos_mod = (int) (pos % _buffer.length);
 
             if (pos_mod + len <= _buffer.length) {
                 // end of buffer not reached
@@ -201,8 +190,7 @@ public class TimeBuffer {
         return true;
     }
 
-    public int get(Object dst, int startSample, int numSamples)
-    {
+    public int get(Object dst, int startSample, int numSamples) {
         //correct position for sync
         startSample -= _offsetSamples;
 
@@ -225,75 +213,65 @@ public class TimeBuffer {
             return STATUS_DATA_NOT_IN_BUFFER_ANYMORE;
         }
 
-        boolean ok = get_(dst, (long)startSample * _bytesPerSample, numSamples * _bytesPerSample);
+        boolean ok = get_(dst, (long) startSample * _bytesPerSample, numSamples * _bytesPerSample);
 
         _lastAccessedSample = startSample + numSamples - 1;
 
-        if(ok) return STATUS_SUCCESS;
+        if (ok) return STATUS_SUCCESS;
         else return STATUS_ERROR;
     }
 
-    public int get(Object dst, double start_time, double duration)
-    {
-        int pos = (int)(start_time * _sr + 0.5);
-        int pos_stop = (int)((start_time + duration) * _sr + 0.5);
+    public int get(Object dst, double start_time, double duration) {
+        int pos = (int) (start_time * _sr + 0.5);
+        int pos_stop = (int) ((start_time + duration) * _sr + 0.5);
         int len = pos_stop - pos;
 
         return get(dst, pos, len);
     }
 
-    public void sync(double time)
-    {
+    public void sync(double time) {
         setReadTime(time);
     }
 
-    public double getReadTime()
-    {
+    public double getReadTime() {
         long positionSamples = _position / _bytesPerSample;
         return (_offsetSamples + positionSamples) * _sampleDuration;
     }
 
-    public void setReadTime(double time)
-    {
+    public void setReadTime(double time) {
         double delta = getReadTime() - time;
-        _offsetSamples -= (int)(delta * _sr + 0.5);
+        _offsetSamples -= (int) (delta * _sr + 0.5);
     }
 
-    public long getPositionAbs()
-    {
+    public long getPositionAbs() {
         return _position;
     }
 
-    public int getCapacity()
-    {
+    public int getCapacity() {
         return _buffer.length;
     }
 
-    public double getLastAccessedSampleTime ()
-    {
+    public double getLastAccessedSampleTime() {
         return (_offsetSamples + _lastAccessedSample) * _sampleDuration;
     }
 
-    public double getLastWrittenSampleTime ()
-    {
+    public double getLastWrittenSampleTime() {
         return (_offsetSamples + (_position / _bytesPerSample)) * _sampleDuration;
     }
 
-    public double getSampleRate ()
-    {
+    public double getSampleRate() {
         return _sr;
     }
-    public int getBytesPerSample ()
-    {
+
+    public int getBytesPerSample() {
         return _bytesPerSample;
     }
-    public int getBytesPerValue ()
-    {
+
+    public int getBytesPerValue() {
         return _bytesPerValue;
     }
 
-    public Provider getOwner()
-    {
+    public Provider getOwner() {
         return _owner;
     }
 }

@@ -59,8 +59,7 @@ import hcm.ssj.file.FileUtils;
  * Generic model for machine learning
  * Created by Ionut Damian on 10.10.2016.
  */
-public abstract class Model extends Component
-{
+public abstract class Model extends Component {
     protected int[] select_dimensions = null;
 
     protected String modelFileName;
@@ -77,24 +76,11 @@ public abstract class Model extends Component
     protected int output_dim = 0;
     protected String[] output_names = null;
 
-    public class Options extends OptionList
-    {
-        public final Option<FilePath> file = new Option<>("file", null, FilePath.class, "trainer file containing model information");
-
-        public Options()
-        {
-            super();
-            addOptions();
-        }
-    }
-
     @Override
-    public void run()
-    {
+    public void run() {
         Thread.currentThread().setName("SSJ_" + _name);
 
-        if(!_isSetup)
-        {
+        if (!_isSetup) {
             // pipe.error(_name, "not initialized", null);
             Log.e("not initialized");
             _safeToKill = true;
@@ -102,76 +88,57 @@ public abstract class Model extends Component
             return;
         }
 
-        try
-        {
+        try {
             load();
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             Log.e("error loading model", e);
         }
 
-        synchronized (this)
-        {
+        synchronized (this) {
             this.notifyAll();
         }
 
         _safeToKill = true;
     }
 
-    public void waitUntilReady()
-    {
-        if(!isTrained())
-		{
-			synchronized (this)
-			{
-				try
-				{
-					this.wait();
-				}
-				catch (InterruptedException e)
-				{
-				    // Do nothing
-				}
-			}
-		}
+    public void waitUntilReady() {
+        if (!isTrained()) {
+            synchronized (this) {
+                try {
+                    this.wait();
+                } catch (InterruptedException e) {
+                    // Do nothing
+                }
+            }
+        }
     }
 
-    public void setup() throws SSJException
-    {
-        if (_isSetup)
-        {
+    public void setup() throws SSJException {
+        if (_isSetup) {
             return;
         }
 
         // Check if trainer file has been set
-        if (getOptions().file.get() != null && getOptions().file.get().value != null && !getOptions().file.get().value.isEmpty())
-        {
+        if (getOptions().file.get() != null && getOptions().file.get().value != null && !getOptions().file.get().value.isEmpty()) {
             String trainerFile = getOptions().file.get().value;
-            String fileName = trainerFile.substring(trainerFile.lastIndexOf(File.separator)+1);
+            String fileName = trainerFile.substring(trainerFile.lastIndexOf(File.separator) + 1);
             dirPath = trainerFile.substring(0, trainerFile.lastIndexOf(File.separator));
 
-            try
-            {
+            try {
                 parseTrainerFile(FileUtils.getFile(dirPath, fileName));
-            }
-            catch (IOException | XmlPullParserException e)
-            {
+            } catch (IOException | XmlPullParserException e) {
                 throw new SSJException("error parsing trainer file", e);
             }
 
             init(input_dim, output_dim, output_names);
 
             _isSetup = true;
-        }
-        else
-        {
+        } else {
             Log.w("option file not defined");
         }
     }
 
-    public void setup(String[] classNames, int bytes_input, int dim_input, double sr_input, Cons.Type type_input)
-    {
+    public void setup(String[] classNames, int bytes_input, int dim_input, double sr_input, Cons.Type type_input) {
         this.input_bytes = bytes_input;
         this.input_dim = dim_input;
         this.input_sr = sr_input;
@@ -184,77 +151,63 @@ public abstract class Model extends Component
         _isSetup = true;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return _name;
     }
 
-    public void load() throws IOException
-    {
+    public void load() throws IOException {
         loadModel(FileUtils.getFile(dirPath, modelFileName + "." + FileCons.FILE_EXTENSION_MODEL));
 
-        if (modelOptionFileName != null && !modelOptionFileName.isEmpty())
-        {
+        if (modelOptionFileName != null && !modelOptionFileName.isEmpty()) {
             loadOption(FileUtils.getFile(dirPath, modelOptionFileName + "." + FileCons.FILE_EXTENSION_OPTION));
         }
 
         Log.d("model loaded (file: " + modelFileName + ")");
     }
 
-    public void validateInput(Stream[] input) throws IOException
-    {
-        if (!isTrained())
-        {
+    public void validateInput(Stream[] input) throws IOException {
+        if (!isTrained()) {
             throw new IOException("model not loaded or trained");
         }
 
-        if (input[0].bytes != input_bytes || input[0].type != input_type)
-        {
+        if (input[0].bytes != input_bytes || input[0].type != input_type) {
             throw new IOException("input stream (type=" + input[0].type + ", bytes=" + input[0].bytes
-                                          + ") does not match model's expected input (type=" + input_type + ", bytes=" + input_bytes + ", sr=" + input_sr + ")");
+                    + ") does not match model's expected input (type=" + input_type + ", bytes=" + input_bytes + ", sr=" + input_sr + ")");
         }
-        if (input[0].sr != input_sr)
-        {
+        if (input[0].sr != input_sr) {
             Log.w("input stream (sr=" + input[0].sr + ") may not be correct for model (sr=" + input_sr + ")");
         }
 
-        if (input[0].dim != input_dim)
-        {
+        if (input[0].dim != input_dim) {
             throw new IOException("input stream (dim=" + input[0].dim + ") does not match model (dim=" + input_dim + ")");
         }
 
-        if (input[0].num > 1)
-        {
-            Log.w ("stream num > 1, only first sample is used");
+        if (input[0].num > 1) {
+            Log.w("stream num > 1, only first sample is used");
         }
     }
 
-    private void parseTrainerFile(File file) throws XmlPullParserException, IOException, SSJException
-    {
+    private void parseTrainerFile(File file) throws XmlPullParserException, IOException, SSJException {
         XmlPullParser parser = Xml.newPullParser();
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
         parser.setInput(new FileReader(file));
 
         // <trainer> tag
         parser.next();
-        if (parser.getEventType() != XmlPullParser.START_TAG || !parser.getName().equalsIgnoreCase("trainer"))
-        {
+        if (parser.getEventType() != XmlPullParser.START_TAG || !parser.getName().equalsIgnoreCase("trainer")) {
             Log.w("unknown or malformed trainer file");
             return;
         }
 
         ArrayList<String> classNamesList = new ArrayList<>();
 
-        while (parser.next() != XmlPullParser.END_DOCUMENT)
-        {
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
             // <streams> tag
-            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("streams"))
-            {
+            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("streams")) {
                 // <item> tag
                 parser.nextTag();
 
-                if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("item"))
-                {
+                if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("item")) {
                     input_bytes = Integer.valueOf(parser.getAttributeValue(null, "byte"));
                     input_dim = Integer.valueOf(parser.getAttributeValue(null, "dim"));
                     input_sr = Float.valueOf(parser.getAttributeValue(null, "sr"));
@@ -263,15 +216,12 @@ public abstract class Model extends Component
             }
 
             // <classes> tag
-            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("classes"))
-            {
+            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("classes")) {
                 // <item> tag
                 parser.nextTag();
 
-                while (parser.getName().equalsIgnoreCase("item"))
-                {
-                    if (parser.getEventType() == XmlPullParser.START_TAG)
-                    {
+                while (parser.getName().equalsIgnoreCase("item")) {
+                    if (parser.getEventType() == XmlPullParser.START_TAG) {
                         classNamesList.add(parser.getAttributeValue(null, "name"));
                     }
                     parser.nextTag();
@@ -279,116 +229,93 @@ public abstract class Model extends Component
             }
 
             // <outputs> tag
-            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("outputs"))
-            {
+            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("outputs")) {
                 // <item> tag
                 parser.nextTag();
 
-                if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("item"))
-                {
+                if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("item")) {
                     output_dim = Integer.parseInt(parser.getAttributeValue(null, "dim"));
                 }
             }
 
             // <select> tag
-            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("select"))
-            {
+            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("select")) {
                 // <item> tag
                 parser.nextTag();
-                if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("item"))
-                {
+                if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("item")) {
                     int stream_id = Integer.valueOf(parser.getAttributeValue(null, "stream"));
 
-                    if (stream_id != 0)
-                    {
+                    if (stream_id != 0) {
                         Log.w("multiple input streams not supported");
                     }
 
                     String[] select = parser.getAttributeValue(null, "select").split(" ");
                     select_dimensions = new int[select.length];
 
-                    for (int i = 0; i < select.length; i++)
-                    {
+                    for (int i = 0; i < select.length; i++) {
                         select_dimensions[i] = Integer.valueOf(select[i]);
                     }
                 }
             }
 
             // <model> tag
-            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("model"))
-            {
+            if (parser.getEventType() == XmlPullParser.START_TAG && parser.getName().equalsIgnoreCase("model")) {
                 String expectedModel = parser.getAttributeValue(null, "create");
 
-                if(!_name.equals(expectedModel))
-                {
+                if (!_name.equals(expectedModel)) {
                     Log.w("trainer file demands a " + expectedModel + " model, we provide a " + _name + " model.");
                 }
 
                 modelFileName = parser.getAttributeValue(null, "path");
-                modelOptionFileName =  parser.getAttributeValue(null, "option");
+                modelOptionFileName = parser.getAttributeValue(null, "option");
 
                 // Remove model file extension
-                if (modelFileName != null && modelFileName.endsWith("." + FileCons.FILE_EXTENSION_MODEL))
-                {
+                if (modelFileName != null && modelFileName.endsWith("." + FileCons.FILE_EXTENSION_MODEL)) {
                     modelFileName = modelFileName.replaceFirst("(.*)\\." + FileCons.FILE_EXTENSION_MODEL + "$", "$1");
                 }
 
                 //  Remove option file extension
-                if (modelOptionFileName != null && modelOptionFileName.endsWith("." + FileCons.FILE_EXTENSION_OPTION))
-                {
+                if (modelOptionFileName != null && modelOptionFileName.endsWith("." + FileCons.FILE_EXTENSION_OPTION)) {
                     modelOptionFileName = modelOptionFileName.replaceFirst("(.*)\\." + FileCons.FILE_EXTENSION_OPTION + "$", "$1");
                 }
             }
 
             // <trainer> end tag
-            if (parser.getEventType() == XmlPullParser.END_TAG && parser.getName().equalsIgnoreCase("trainer"))
-            {
+            if (parser.getEventType() == XmlPullParser.END_TAG && parser.getName().equalsIgnoreCase("trainer")) {
                 break;
             }
         }
 
-        if (classNamesList.size() > 0)
-        {
+        if (classNamesList.size() > 0) {
             output_names = classNamesList.toArray(new String[0]);
-            
-            if (output_dim == 0)
-            {
+
+            if (output_dim == 0) {
                 output_dim = output_names.length;
             }
-        }
-        else
-        {
-            if (output_dim > 0)
-            {
+        } else {
+            if (output_dim > 0) {
                 output_names = new String[output_dim];
 
-                for (int i = 0; i < output_dim; i++)
-                {
+                for (int i = 0; i < output_dim; i++) {
                     output_names[i] = "out_" + i;
                 }
             }
         }
     }
 
-    public void save(String path, String name) throws IOException
-    {
-        if (!_isSetup)
-        {
+    public void save(String path, String name) throws IOException {
+        if (!_isSetup) {
             return;
         }
 
         File dir = Util.createDirectory(Util.parseWildcards(path));
-        if (dir == null)
-        {
+        if (dir == null) {
             return;
         }
 
-        if (name.endsWith(FileCons.FILE_EXTENSION_TRAINER + FileCons.TAG_DATA_FILE))
-        {
-            name = name.substring(0, name.length()-2);
-        }
-        else if (!name.endsWith(FileCons.FILE_EXTENSION_TRAINER))
-        {
+        if (name.endsWith(FileCons.FILE_EXTENSION_TRAINER + FileCons.TAG_DATA_FILE)) {
+            name = name.substring(0, name.length() - 2);
+        } else if (!name.endsWith(FileCons.FILE_EXTENSION_TRAINER)) {
             name += "." + FileCons.FILE_EXTENSION_TRAINER;
         }
 
@@ -415,8 +342,7 @@ public abstract class Model extends Component
         builder.append("</streams>").append(FileCons.DELIMITER_LINE);
 
         builder.append("<classes>").append(FileCons.DELIMITER_LINE);
-        for(String className : output_names)
-        {
+        for (String className : output_names) {
             builder.append("<item name=\"");
             builder.append(className);
             builder.append("\"/>").append(FileCons.DELIMITER_LINE);
@@ -454,6 +380,7 @@ public abstract class Model extends Component
 
     /**
      * forward data to the model for classification/inference
+     *
      * @param stream Stream
      * @return double[] classification/inference probabilities as outputed by the model
      */
@@ -461,29 +388,27 @@ public abstract class Model extends Component
 
     /**
      * Train model with one sample (incremental training)
+     *
      * @param stream data of the sample to use for training
-     * @param label the label of the data, should match one of the model's classes
+     * @param label  the label of the data, should match one of the model's classes
      */
-    void train(Stream stream, String label)
-    {
+    void train(Stream stream, String label) {
         Log.e(_name + " does not supported training");
     }
 
     /**
      * Train model with multiple samples (batch training)
+     *
      * @param stream data from where to extract the samples
-     * @param anno annotation
+     * @param anno   annotation
      */
-    public void train(Stream stream, Annotation anno)
-    {
-        if(!_isSetup)
-        {
+    public void train(Stream stream, Annotation anno) {
+        if (!_isSetup) {
             Log.e("model not initialized");
             return;
         }
 
-        for(Annotation.Entry e : anno.getEntries())
-        {
+        for (Annotation.Entry e : anno.getEntries()) {
             train(stream.substream(e.from, e.to), e.classlabel);
         }
 
@@ -503,29 +428,32 @@ public abstract class Model extends Component
     /**
      * Save model to file
      */
-    void saveModel(File file)
-    {
+    void saveModel(File file) {
         Log.e("save not supported");
     }
 
     /**
      * Save model options to file
      */
-    void saveOption(File file) {};
+    void saveOption(File file) {
+    }
 
     /**
      * Initialize model variables, called after model parameters have been set but before actually
      * loading the model
      *
-     * @param input_dim number of model inputs
-     * @param output_dim number of model outputs
+     * @param input_dim   number of model inputs
+     * @param output_dim  number of model outputs
      * @param outputNames (optional) output names
      */
     abstract void init(int input_dim, int output_dim, String[] outputNames);
 
-    public boolean isTrained()
-    {
+    public boolean isTrained() {
         return isTrained;
+    }
+
+    public int getOutputDim() {
+        return output_dim;
     }
 
     /**
@@ -533,9 +461,12 @@ public abstract class Model extends Component
      *
      * @param output_dim amount of object classes to recognize.
      */
-    public void setOutputDim(int output_dim)
-    {
+    public void setOutputDim(int output_dim) {
         this.output_dim = output_dim;
+    }
+
+    public String[] getClassNames() {
+        return output_names;
     }
 
     /**
@@ -543,33 +474,28 @@ public abstract class Model extends Component
      *
      * @param classNames recognized object classes.
      */
-    public void setClassNames(String[] classNames)
-    {
+    public void setClassNames(String[] classNames) {
         this.output_names = classNames;
     }
 
-    public int getOutputDim()
-    {
-        return output_dim;
-    }
-
-    public String[] getClassNames()
-    {
-        return output_names;
-    }
-
-    public int[] getInputDim()
-    {
+    public int[] getInputDim() {
         return select_dimensions;
     }
 
-    public double getInputSr()
-    {
+    public double getInputSr() {
         return input_sr;
     }
 
-    public Cons.Type getInputType()
-    {
+    public Cons.Type getInputType() {
         return input_type;
+    }
+
+    public class Options extends OptionList {
+        public final Option<FilePath> file = new Option<>("file", null, FilePath.class, "trainer file containing model information");
+
+        public Options() {
+            super();
+            addOptions();
+        }
     }
 }

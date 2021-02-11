@@ -42,28 +42,26 @@ import hcm.ssj.test.Logger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class NetsyncTest
-{
+public class NetsyncTest {
 
-	@Test
-	public void testListen() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testListen() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		frame.options.sync.set(Pipeline.SyncType.CONTINUOUS);
-		frame.options.syncPort.set(55100);
-		frame.options.syncHost.set("192.168.0.180");
+        frame.options.sync.set(Pipeline.SyncType.CONTINUOUS);
+        frame.options.syncPort.set(55100);
+        frame.options.syncHost.set("192.168.0.180");
 
-		Microphone mic = new Microphone();
-		AudioChannel audio = new AudioChannel();
-		audio.options.sampleRate.set(16000);
-		audio.options.scale.set(true);
-		frame.addSensor(mic, audio);
+        Microphone mic = new Microphone();
+        AudioChannel audio = new AudioChannel();
+        audio.options.sampleRate.set(16000);
+        audio.options.scale.set(true);
+        frame.addSensor(mic, audio);
 
-		Logger dummy = new Logger();
-		dummy.options.reduceNum.set(true);
-		frame.addConsumer(dummy, audio, 0.1, 0);
+        Logger dummy = new Logger();
+        dummy.options.reduceNum.set(true);
+        frame.addConsumer(dummy, audio, 0.1, 0);
 
 		/*
 		BluetoothWriter blw = new BluetoothWriter();
@@ -84,32 +82,28 @@ public class NetsyncTest
         frame.registerEventListener(blew, ch);
         */
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_LONG);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_LONG);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
+        frame.stop();
 
-		Log.i("test finished");
-	}
+        Log.i("test finished");
+    }
 
-	@Test
-	public void testMaster() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testMaster() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		frame.options.sync.set(Pipeline.SyncType.CONTINUOUS);
-		frame.options.syncPort.set(55100);
-		frame.options.syncHost.set(null); //this is the syncHost
+        frame.options.sync.set(Pipeline.SyncType.CONTINUOUS);
+        frame.options.syncPort.set(55100);
+        frame.options.syncHost.set(null); //this is the syncHost
 
 		/*
 		BluetoothReader blr = new BluetoothReader();
@@ -123,15 +117,15 @@ public class NetsyncTest
         frame.addSensor(blr,data);
         */
 
-		Microphone mic = new Microphone();
-		AudioChannel audio = new AudioChannel();
-		audio.options.sampleRate.set(16000);
-		audio.options.scale.set(true);
-		frame.addSensor(mic, audio);
+        Microphone mic = new Microphone();
+        AudioChannel audio = new AudioChannel();
+        audio.options.sampleRate.set(16000);
+        audio.options.scale.set(true);
+        frame.addSensor(mic, audio);
 
-		Logger dummy = new Logger();
-		dummy.options.reduceNum.set(true);
-		frame.addConsumer(dummy, audio, 0.1, 0);
+        Logger dummy = new Logger();
+        dummy.options.reduceNum.set(true);
+        frame.addConsumer(dummy, audio, 0.1, 0);
 
 		/*
 		BluetoothEventReader bler = new BluetoothEventReader();
@@ -145,19 +139,16 @@ public class NetsyncTest
         frame.registerEventListener(evlog, ch);
         */
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		Log.i("test finished");
-	}
+        frame.stop();
+        Log.i("test finished");
+    }
 }

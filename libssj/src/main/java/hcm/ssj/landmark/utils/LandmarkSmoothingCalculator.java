@@ -33,122 +33,109 @@ import hcm.ssj.ssd.Landmark;
 
 /**
  * Created by Michael Dietz on 29.01.2021.
- *
+ * <p>
  * Based on:
  * https://github.com/google/mediapipe/blob/master/mediapipe/calculators/util/landmarks_smoothing_calculator.proto
  * https://github.com/google/mediapipe/blob/master/mediapipe/calculators/util/landmarks_smoothing_calculator.cc
  */
-public class LandmarkSmoothingCalculator
-{
-	static final float MIN_ALLOWED_OBJECT_SCALE = 1e-6f;
+public class LandmarkSmoothingCalculator {
+    static final float MIN_ALLOWED_OBJECT_SCALE = 1e-6f;
 
-	final int imageWidth;
-	final int imageHeight;
+    final int imageWidth;
+    final int imageHeight;
 
-	final int windowSize;
-	final float velocityScale;
-	final int nLandmarks;
+    final int windowSize;
+    final float velocityScale;
+    final int nLandmarks;
 
-	RelativeVelocityFilter[] xFilters;
-	RelativeVelocityFilter[] yFilters;
-	// RelativeVelocityFilter[] zFilters;
+    RelativeVelocityFilter[] xFilters;
+    RelativeVelocityFilter[] yFilters;
+    // RelativeVelocityFilter[] zFilters;
 
-	// Cache variables
-	long timestamp;
-	float objectScale;
-	float valueScale;
+    // Cache variables
+    long timestamp;
+    float objectScale;
+    float valueScale;
 
-	public LandmarkSmoothingCalculator(int windowSize, float velocityScale, int nLandmarks, int imageWidth, int imageHeight)
-	{
-		this.windowSize = windowSize;
-		this.velocityScale = velocityScale;
-		this.nLandmarks = nLandmarks;
+    public LandmarkSmoothingCalculator(int windowSize, float velocityScale, int nLandmarks, int imageWidth, int imageHeight) {
+        this.windowSize = windowSize;
+        this.velocityScale = velocityScale;
+        this.nLandmarks = nLandmarks;
 
-		this.imageWidth = imageWidth;
-		this.imageHeight = imageHeight;
+        this.imageWidth = imageWidth;
+        this.imageHeight = imageHeight;
 
-		initializeFilters(nLandmarks);
-	}
+        initializeFilters(nLandmarks);
+    }
 
-	public void initializeFilters(int nLandmarks)
-	{
-		xFilters = new RelativeVelocityFilter[nLandmarks];
-		yFilters = new RelativeVelocityFilter[nLandmarks];
-		// zFilters = new RelativeVelocityFilter[nLandmarks];
+    public void initializeFilters(int nLandmarks) {
+        xFilters = new RelativeVelocityFilter[nLandmarks];
+        yFilters = new RelativeVelocityFilter[nLandmarks];
+        // zFilters = new RelativeVelocityFilter[nLandmarks];
 
-		for (int i = 0; i < nLandmarks; i++)
-		{
-			xFilters[i] = new RelativeVelocityFilter(windowSize, velocityScale);
-			yFilters[i] = new RelativeVelocityFilter(windowSize, velocityScale);
-			// zFilters[i] = new RelativeVelocityFilter(windowSize, velocityScale);
-		}
-	}
+        for (int i = 0; i < nLandmarks; i++) {
+            xFilters[i] = new RelativeVelocityFilter(windowSize, velocityScale);
+            yFilters[i] = new RelativeVelocityFilter(windowSize, velocityScale);
+            // zFilters[i] = new RelativeVelocityFilter(windowSize, velocityScale);
+        }
+    }
 
-	public void process(List<Landmark> inLandmarks, List<Landmark> outLandmarks)
-	{
-		outLandmarks.clear();
+    public void process(List<Landmark> inLandmarks, List<Landmark> outLandmarks) {
+        outLandmarks.clear();
 
-		timestamp = System.currentTimeMillis();
+        timestamp = System.currentTimeMillis();
 
-		objectScale = getObjectScale(inLandmarks);
+        objectScale = getObjectScale(inLandmarks);
 
-		if (objectScale < MIN_ALLOWED_OBJECT_SCALE)
-		{
-			outLandmarks.addAll(inLandmarks);
+        if (objectScale < MIN_ALLOWED_OBJECT_SCALE) {
+            outLandmarks.addAll(inLandmarks);
 
-			return;
-		}
+            return;
+        }
 
-		valueScale = 1.0f / objectScale;
+        valueScale = 1.0f / objectScale;
 
-		for (int i = 0; i < inLandmarks.size(); i++)
-		{
-			final Landmark inLandmark = inLandmarks.get(i);
+        for (int i = 0; i < inLandmarks.size(); i++) {
+            final Landmark inLandmark = inLandmarks.get(i);
 
-			Landmark outLandmark = new Landmark(inLandmark.visibility);
+            Landmark outLandmark = new Landmark(inLandmark.visibility);
 
-			outLandmark.x = xFilters[i].apply(timestamp, valueScale, inLandmark.x * imageWidth) / imageWidth;
-			outLandmark.y = yFilters[i].apply(timestamp, valueScale, inLandmark.y * imageHeight) / imageHeight;
-			outLandmark.z = inLandmark.z;
-			// outLandmark.z = zFilters[i].apply(timestamp, valueScale, inLandmark.z * imageWidth) / imageWidth;
+            outLandmark.x = xFilters[i].apply(timestamp, valueScale, inLandmark.x * imageWidth) / imageWidth;
+            outLandmark.y = yFilters[i].apply(timestamp, valueScale, inLandmark.y * imageHeight) / imageHeight;
+            outLandmark.z = inLandmark.z;
+            // outLandmark.z = zFilters[i].apply(timestamp, valueScale, inLandmark.z * imageWidth) / imageWidth;
 
-			outLandmarks.add(outLandmark);
-		}
-	}
+            outLandmarks.add(outLandmark);
+        }
+    }
 
-	public float getObjectScale(List<Landmark> landmarks)
-	{
-		float xMin = Float.MAX_VALUE;
-		float xMax = -Float.MAX_VALUE;
-		float yMin = Float.MAX_VALUE;
-		float yMax = -Float.MAX_VALUE;
+    public float getObjectScale(List<Landmark> landmarks) {
+        float xMin = Float.MAX_VALUE;
+        float xMax = -Float.MAX_VALUE;
+        float yMin = Float.MAX_VALUE;
+        float yMax = -Float.MAX_VALUE;
 
-		for (Landmark landmark : landmarks)
-		{
-			if (landmark.x < xMin)
-			{
-				xMin = landmark.x;
-			}
+        for (Landmark landmark : landmarks) {
+            if (landmark.x < xMin) {
+                xMin = landmark.x;
+            }
 
-			if (landmark.x > xMax)
-			{
-				xMax = landmark.x;
-			}
+            if (landmark.x > xMax) {
+                xMax = landmark.x;
+            }
 
-			if (landmark.y < yMin)
-			{
-				yMin = landmark.y;
-			}
+            if (landmark.y < yMin) {
+                yMin = landmark.y;
+            }
 
-			if (landmark.y > yMax)
-			{
-				yMax = landmark.y;
-			}
-		}
+            if (landmark.y > yMax) {
+                yMax = landmark.y;
+            }
+        }
 
-		final float objectWidth = (xMax - xMin) * imageWidth;
-		final float objectHeight = (yMax - yMin) * imageHeight;
+        final float objectWidth = (xMax - xMin) * imageWidth;
+        final float objectHeight = (yMax - yMin) * imageHeight;
 
-		return (objectWidth + objectHeight) / 2.0f;
-	}
+        return (objectWidth + objectHeight) / 2.0f;
+    }
 }

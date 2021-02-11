@@ -42,56 +42,46 @@ import static android.view.DragEvent.ACTION_DROP;
  * Created by Antonio Grieco on 04.10.2017.
  */
 
-public class FeedbackCollectionOnDragListener implements View.OnDragListener
-{
-	private final FeedbackCollectionActivity feedbackCollectionActivity;
+public class FeedbackCollectionOnDragListener implements View.OnDragListener {
+    private final FeedbackCollectionActivity feedbackCollectionActivity;
 
-	public FeedbackCollectionOnDragListener(FeedbackCollectionActivity feedbackCollectionActivity)
-	{
-		this.feedbackCollectionActivity = feedbackCollectionActivity;
-	}
+    public FeedbackCollectionOnDragListener(FeedbackCollectionActivity feedbackCollectionActivity) {
+        this.feedbackCollectionActivity = feedbackCollectionActivity;
+    }
 
-	@Override
-	public boolean onDrag(final View v, DragEvent event)
-	{
-		if (event.getLocalState() instanceof FeedbackComponentView)
-		{
-			final FeedbackComponentView feedbackComponentView = ((FeedbackComponentView) event.getLocalState());
+    @Override
+    public boolean onDrag(final View v, DragEvent event) {
+        if (event.getLocalState() instanceof FeedbackComponentView) {
+            final FeedbackComponentView feedbackComponentView = ((FeedbackComponentView) event.getLocalState());
 
-			switch (event.getAction())
-			{
-				case ACTION_DRAG_STARTED:
-					feedbackCollectionActivity.showDragIcons(feedbackComponentView.getWidth(), feedbackComponentView.getHeight());
-					break;
-				case ACTION_DROP:
-					if (v instanceof FeedbackLevelLayout)
-					{
-						((FeedbackLevelLayout) v).addGridComponent(feedbackComponentView);
-					}
-					else if (v.equals(feedbackCollectionActivity.getRecycleBin()))
-					{
-						feedbackComponentView.post(new Runnable()
-						{
-							@Override
-							public void run()
-							{
-								((ViewGroup) feedbackComponentView.getParent()).removeView(feedbackComponentView);
-								feedbackCollectionActivity.requestReorder();
-							}
-						});
-						PipelineBuilder.getInstance().remove(
-								feedbackComponentView.getFeedbackLevelBehaviourEntry().getKey()
-						);
-					}
-					break;
-				case ACTION_DRAG_ENDED:
-					// Set currently draged to false no matter where the drag ended, to force normal painting.
-					feedbackComponentView.setCurrentlyDraged(false);
-					feedbackCollectionActivity.hideDragIcons();
-					break;
-			}
-			return true;
-		}
-		return false;
-	}
+            switch (event.getAction()) {
+                case ACTION_DRAG_STARTED:
+                    feedbackCollectionActivity.showDragIcons(feedbackComponentView.getWidth(), feedbackComponentView.getHeight());
+                    break;
+                case ACTION_DROP:
+                    if (v instanceof FeedbackLevelLayout) {
+                        ((FeedbackLevelLayout) v).addGridComponent(feedbackComponentView);
+                    } else if (v.equals(feedbackCollectionActivity.getRecycleBin())) {
+                        feedbackComponentView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                ((ViewGroup) feedbackComponentView.getParent()).removeView(feedbackComponentView);
+                                feedbackCollectionActivity.requestReorder();
+                            }
+                        });
+                        PipelineBuilder.getInstance().remove(
+                                feedbackComponentView.getFeedbackLevelBehaviourEntry().getKey()
+                        );
+                    }
+                    break;
+                case ACTION_DRAG_ENDED:
+                    // Set currently draged to false no matter where the drag ended, to force normal painting.
+                    feedbackComponentView.setCurrentlyDraged(false);
+                    feedbackCollectionActivity.hideDragIcons();
+                    break;
+            }
+            return true;
+        }
+        return false;
+    }
 }

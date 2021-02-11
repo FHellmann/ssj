@@ -32,38 +32,36 @@ import java.util.Arrays;
 /**
  * Collection of helper methods for audio.
  */
-public final class AudioUtils
-{
-	/**
-	 * Prevent class from being instantiated.
-	 */
-	private AudioUtils() {}
+public final class AudioUtils {
+    /**
+     * Prevent class from being instantiated.
+     */
+    private AudioUtils() {
+    }
 
-	/**
-	 * Calculate highest and lowest points in given byte array.
-	 * @param data Audio sample.
-	 * @param sampleSize Size of the given audio sample.
-	 * @return Two dimensional byte array of minimums and maximums.
-	 */
-	public static short[][] getExtremes(short[] data, int sampleSize)
-	{
-		short[][] newData = new short[sampleSize][];
-		int groupSize = data.length / sampleSize;
+    /**
+     * Calculate highest and lowest points in given byte array.
+     *
+     * @param data       Audio sample.
+     * @param sampleSize Size of the given audio sample.
+     * @return Two dimensional byte array of minimums and maximums.
+     */
+    public static short[][] getExtremes(short[] data, int sampleSize) {
+        short[][] newData = new short[sampleSize][];
+        int groupSize = data.length / sampleSize;
 
-		for (int i = 0; i < sampleSize; i++)
-		{
-			short[] group = Arrays.copyOfRange(data, i * groupSize,
-											   Math.min((i + 1) * groupSize, data.length));
-			short min = Short.MAX_VALUE;
-			short max = Short.MIN_VALUE;
+        for (int i = 0; i < sampleSize; i++) {
+            short[] group = Arrays.copyOfRange(data, i * groupSize,
+                    Math.min((i + 1) * groupSize, data.length));
+            short min = Short.MAX_VALUE;
+            short max = Short.MIN_VALUE;
 
-			for (short a : group)
-			{
-				min = (short) Math.min(min, a);
-				max = (short) Math.max(max, a);
-			}
-			newData[i] = new short[] { max, min };
-		}
-		return newData;
-	}
+            for (short a : group) {
+                min = (short) Math.min(min, a);
+                max = (short) Math.max(max, a);
+            }
+            newData[i] = new short[]{max, min};
+        }
+        return newData;
+    }
 }

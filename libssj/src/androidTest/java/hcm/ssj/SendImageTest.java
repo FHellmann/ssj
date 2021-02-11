@@ -53,133 +53,124 @@ import hcm.ssj.test.Logger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class SendImageTest
-{
-	private int width = 320 * 2;
-	private int height = 240 * 2;
+public class SendImageTest {
+    private final int width = 320 * 2;
+    private final int height = 240 * 2;
 
-	private float frameSize = 1;
-	private int delta = 0;
-
-
-	@Test
-	public void testBluetoothClient() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
-
-		int minFps = 15;
-		int maxFps = 15;
-
-		double sampleRate = 1;
-
-		String serverName = "Hcm Lab (Galaxy S5)";
-
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
-		cameraSensor.options.width.set(width);
-		cameraSensor.options.height.set(height);
-		cameraSensor.options.previewFpsRangeMin.set(minFps);
-		cameraSensor.options.previewFpsRangeMax.set(maxFps);
-
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set(sampleRate);
-		frame.addSensor(cameraSensor, cameraChannel);
-
-		BluetoothWriter bluetoothWriter = new BluetoothWriter();
-		bluetoothWriter.options.connectionType.set(BluetoothConnection.Type.CLIENT);
-		bluetoothWriter.options.serverName.set(serverName);
-		bluetoothWriter.options.connectionName.set("stream");
-		frame.addConsumer(bluetoothWriter, cameraChannel, frameSize, delta);
-
-		frame.start();
-
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-
-		frame.stop();
-
-		Log.i("test finished");
-	}
+    private final float frameSize = 1;
+    private final int delta = 0;
 
 
-	@Test
-	public void testBluetoothServer() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+    @Test
+    public void testBluetoothClient() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		String trainerName = "inception.trainer";
-		String trainerURL = "https://raw.githubusercontent.com/hcmlab/ssj/syncHost/models";
+        int minFps = 15;
+        int maxFps = 15;
 
-		BluetoothReader bluetoothReader = new BluetoothReader();
-		bluetoothReader.options.connectionType.set(BluetoothConnection.Type.SERVER);
-		bluetoothReader.options.connectionName.set("stream");
+        double sampleRate = 1;
 
-		BluetoothChannel bluetoothChannel = new BluetoothChannel();
-		bluetoothChannel.options.channel_id.set(0);
-		bluetoothChannel.options.dim.set((int) (width * height * 1.5));
-		bluetoothChannel.options.bytes.set(1);
-		bluetoothChannel.options.type.set(Cons.Type.IMAGE);
-		bluetoothChannel.options.sr.set(1.0);
-		bluetoothChannel.options.num.set(1);
-		bluetoothChannel.options.imageHeight.set(height);
-		bluetoothChannel.options.imageWidth.set(width);
-		bluetoothChannel.options.imageFormat.set(Cons.ImageFormat.NV21);
+        String serverName = "Hcm Lab (Galaxy S5)";
 
-		bluetoothChannel.setSyncInterval(20);
-		bluetoothChannel.setWatchInterval(10);
-		frame.addSensor(bluetoothReader, bluetoothChannel);
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.BACK_CAMERA);
+        cameraSensor.options.width.set(width);
+        cameraSensor.options.height.set(height);
+        cameraSensor.options.previewFpsRangeMin.set(minFps);
+        cameraSensor.options.previewFpsRangeMax.set(maxFps);
 
-		NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
-		frame.addTransformer(decoder, bluetoothChannel, frameSize, delta);
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set(sampleRate);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		ImageResizer resizer = new ImageResizer();
-		resizer.options.maintainAspect.set(true);
-		resizer.options.size.set(224);
-		resizer.options.savePreview.set(true);
-		frame.addTransformer(resizer, decoder, frameSize, delta);
+        BluetoothWriter bluetoothWriter = new BluetoothWriter();
+        bluetoothWriter.options.connectionType.set(BluetoothConnection.Type.CLIENT);
+        bluetoothWriter.options.serverName.set(serverName);
+        bluetoothWriter.options.connectionName.set("stream");
+        frame.addConsumer(bluetoothWriter, cameraChannel, frameSize, delta);
 
-		// Add image pixel value normalizer to the pipeline
-		ImageNormalizer imageNormalizer = new ImageNormalizer();
-		imageNormalizer.options.imageMean.set(127.5f);
-		imageNormalizer.options.imageStd.set(1f);
-		frame.addTransformer(imageNormalizer, resizer, frameSize, delta);
+        frame.start();
 
-		TensorFlow tf = new TensorFlow();
-		tf.options.file.setValue(trainerURL + File.separator + trainerName);
-		frame.addModel(tf);
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		Classifier classifier = new Classifier();
-		classifier.options.merge.set(false);
-		classifier.options.log.set(true);
-		classifier.setModel(tf);
-		frame.addConsumer(classifier, imageNormalizer, frameSize, delta);
+        frame.stop();
 
-		Logger logger = new Logger();
-		frame.addConsumer(logger, bluetoothChannel);
+        Log.i("test finished");
+    }
 
-		frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+    @Test
+    public void testBluetoothServer() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		frame.stop();
+        String trainerName = "inception.trainer";
+        String trainerURL = "https://raw.githubusercontent.com/hcmlab/ssj/syncHost/models";
 
-		Log.i("test finished");
-	}
+        BluetoothReader bluetoothReader = new BluetoothReader();
+        bluetoothReader.options.connectionType.set(BluetoothConnection.Type.SERVER);
+        bluetoothReader.options.connectionName.set("stream");
+
+        BluetoothChannel bluetoothChannel = new BluetoothChannel();
+        bluetoothChannel.options.channel_id.set(0);
+        bluetoothChannel.options.dim.set((int) (width * height * 1.5));
+        bluetoothChannel.options.bytes.set(1);
+        bluetoothChannel.options.type.set(Cons.Type.IMAGE);
+        bluetoothChannel.options.sr.set(1.0);
+        bluetoothChannel.options.num.set(1);
+        bluetoothChannel.options.imageHeight.set(height);
+        bluetoothChannel.options.imageWidth.set(width);
+        bluetoothChannel.options.imageFormat.set(Cons.ImageFormat.NV21);
+
+        bluetoothChannel.setSyncInterval(20);
+        bluetoothChannel.setWatchInterval(10);
+        frame.addSensor(bluetoothReader, bluetoothChannel);
+
+        NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
+        frame.addTransformer(decoder, bluetoothChannel, frameSize, delta);
+
+        ImageResizer resizer = new ImageResizer();
+        resizer.options.maintainAspect.set(true);
+        resizer.options.size.set(224);
+        resizer.options.savePreview.set(true);
+        frame.addTransformer(resizer, decoder, frameSize, delta);
+
+        // Add image pixel value normalizer to the pipeline
+        ImageNormalizer imageNormalizer = new ImageNormalizer();
+        imageNormalizer.options.imageMean.set(127.5f);
+        imageNormalizer.options.imageStd.set(1f);
+        frame.addTransformer(imageNormalizer, resizer, frameSize, delta);
+
+        TensorFlow tf = new TensorFlow();
+        tf.options.file.setValue(trainerURL + File.separator + trainerName);
+        frame.addModel(tf);
+
+        Classifier classifier = new Classifier();
+        classifier.options.merge.set(false);
+        classifier.options.log.set(true);
+        classifier.setModel(tf);
+        frame.addConsumer(classifier, imageNormalizer, frameSize, delta);
+
+        Logger logger = new Logger();
+        frame.addConsumer(logger, bluetoothChannel);
+
+        frame.start();
+
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        frame.stop();
+
+        Log.i("test finished");
+    }
 }

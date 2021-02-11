@@ -44,132 +44,67 @@ import hcm.ssj.file.FileCons;
  * Console tab for main activity.<br>
  * Created by Frank Gaibler on 23.09.2016.
  */
-class Console implements ITab
-{
+class Console implements ITab {
     //tab
-    private View view;
-    private String title;
-    private int icon;
+    private final View view;
+    private final String title;
+    private final int icon;
     //console
     private TextView textViewConsole = null;
     private String strLogMsg = "";
     private boolean handleLogMessages = false;
 
-    private Thread threadLog = new Thread()
-    {
+    private final Thread threadLog = new Thread() {
         private final int sleepTime = 100;
-        private Handler handlerLog = new Handler(Looper.getMainLooper());
-        private Runnable runnableLog = new Runnable()
-        {
-            public void run()
-            {
-                if (textViewConsole != null)
-                {
+        private final Handler handlerLog = new Handler(Looper.getMainLooper());
+        private final Runnable runnableLog = new Runnable() {
+            public void run() {
+                if (textViewConsole != null) {
                     textViewConsole.setText(strLogMsg);
                 }
             }
         };
 
         @Override
-        public void run()
-        {
-            while (handleLogMessages)
-            {
-                try
-                {
+        public void run() {
+            while (handleLogMessages) {
+                try {
                     handlerLog.post(runnableLog);
                     Thread.sleep(sleepTime);
 
                     // Scroll to the bottom if it was on bottom before posting the new message
-                    if(view instanceof ConsoleScrollView && ((ConsoleScrollView)view).lockScroll)
-                    {
+                    if (view instanceof ConsoleScrollView && ((ConsoleScrollView) view).lockScroll) {
                         ((ScrollView) view).fullScroll(ScrollView.FOCUS_DOWN);
                     }
-                } catch (InterruptedException ex)
-                {
+                } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
             }
         }
     };
 
-    private Log.LogListener logListener = new Log.LogListener()
-    {
-        private String[] tags = {"0", "1", "V", "D", "I", "W", "E", "A"};
+    private final Log.LogListener logListener = new Log.LogListener() {
         private final int max = 10000;
         private final int interim = max / 2;
+        private final String[] tags = {"0", "1", "V", "D", "I", "W", "E", "A"};
 
         /**
          * @param msg String
          */
-        public void msg(int type, String msg)
-        {
+        public void msg(int type, String msg) {
             strLogMsg += (type > 0 && type < tags.length ? tags[type] : type) + "/" + Cons.LOGTAG + ": " + msg + FileCons.DELIMITER_LINE;
             int length = strLogMsg.length();
-            if (length > max)
-            {
+            if (length > max) {
                 strLogMsg = strLogMsg.substring(length - interim);
                 strLogMsg = strLogMsg.substring(strLogMsg.indexOf(FileCons.DELIMITER_LINE) + FileCons.DELIMITER_LINE.length());
             }
         }
     };
 
-    private class ConsoleScrollView extends ScrollView
-    {
-        public boolean isBottom = false;
-        public boolean lockScroll = false;
-
-        public ConsoleScrollView(Context context)
-        {
-            super(context);
-        }
-
-
-        @Override
-        public boolean onTouchEvent(MotionEvent ev) {
-            boolean ret = super.onTouchEvent(ev);
-
-            if(ev.getActionMasked() == MotionEvent.ACTION_MOVE && isBottom)
-            {
-                lockScroll = true;
-            }
-            else if(ev.getActionMasked() == MotionEvent.ACTION_MOVE && !isBottom)
-            {
-                lockScroll = false;
-            }
-
-            return ret;
-        }
-
-        @Override
-        protected void onScrollChanged(int l, int t, int oldl, int oldt)
-        {
-            // Grab the last child placed in the ScrollView, we need it to determinate the bottom position.
-            View view = getChildAt(0);
-
-            // Calculate the scrolldiff
-            int diff = (view.getBottom()-(getHeight()+getScrollY()));
-
-            // if diff is zero, then the bottom has been reached
-            if( diff <= 0 )
-            {
-                // notify that we have reached the bottom
-                isBottom = true;
-            }
-            else
-            {
-                isBottom = false;
-            }
-
-            super.onScrollChanged(l, t, oldl, oldt);
-        }
-    }
-
     /**
      * @param context Context
      */
-    Console(Context context)
-    {
+    Console(Context context) {
         //view
         textViewConsole = new TextView(context);
         ConsoleScrollView scrollView = new ConsoleScrollView(context);
@@ -185,16 +120,14 @@ class Console implements ITab
     /**
      *
      */
-    void clear()
-    {
+    void clear() {
         strLogMsg = "";
     }
 
     /**
      *
      */
-    void cleanUp()
-    {
+    void cleanUp() {
         handleLogMessages = false;
         Log.removeLogListener(logListener);
     }
@@ -202,8 +135,7 @@ class Console implements ITab
     /**
      *
      */
-    void init()
-    {
+    void init() {
         Log.addLogListener(logListener);
         handleLogMessages = true;
         threadLog.start();
@@ -213,8 +145,7 @@ class Console implements ITab
      * @return View
      */
     @Override
-    public View getView()
-    {
+    public View getView() {
         return view;
     }
 
@@ -222,8 +153,7 @@ class Console implements ITab
      * @return String
      */
     @Override
-    public String getTitle()
-    {
+    public String getTitle() {
         return title;
     }
 
@@ -231,8 +161,45 @@ class Console implements ITab
      * @return int
      */
     @Override
-    public int getIcon()
-    {
+    public int getIcon() {
         return icon;
+    }
+
+    private class ConsoleScrollView extends ScrollView {
+        public boolean isBottom = false;
+        public boolean lockScroll = false;
+
+        public ConsoleScrollView(Context context) {
+            super(context);
+        }
+
+
+        @Override
+        public boolean onTouchEvent(MotionEvent ev) {
+            boolean ret = super.onTouchEvent(ev);
+
+            if (ev.getActionMasked() == MotionEvent.ACTION_MOVE && isBottom) {
+                lockScroll = true;
+            } else if (ev.getActionMasked() == MotionEvent.ACTION_MOVE && !isBottom) {
+                lockScroll = false;
+            }
+
+            return ret;
+        }
+
+        @Override
+        protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+            // Grab the last child placed in the ScrollView, we need it to determinate the bottom position.
+            View view = getChildAt(0);
+
+            // Calculate the scrolldiff
+            int diff = (view.getBottom() - (getHeight() + getScrollY()));
+
+            // if diff is zero, then the bottom has been reached
+            // notify that we have reached the bottom
+            isBottom = diff <= 0;
+
+            super.onScrollChanged(l, t, oldl, oldt);
+        }
     }
 }

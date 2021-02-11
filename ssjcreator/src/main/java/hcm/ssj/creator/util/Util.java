@@ -47,8 +47,7 @@ import hcm.ssj.core.Pipeline;
  * Utility class.<br>
  * Created by Frank Gaibler on 15.09.2016.
  */
-public abstract class Util
-{
+public abstract class Util {
     public final static String SSJ = "SSJ";
     public final static String CREATOR = "Creator";
     public final static String SUFFIX = ".xml";
@@ -58,16 +57,10 @@ public abstract class Util
     public final static String RES = "res";
 
 
-    public enum AppAction
-    {
-        ADD, SAVE, LOAD, CLEAR, DISPLAYED, UNDEFINED
-    }
-
     /**
      *
      */
-    private Util()
-    {
+    private Util() {
     }
 
     /**
@@ -75,11 +68,9 @@ public abstract class Util
      * @param name   String
      * @return File
      */
-    public static File getFile(String folder, String name)
-    {
+    public static File getFile(String folder, String name) {
         File parent = getDirectory(folder);
-        if (!parent.exists())
-        {
+        if (!parent.exists()) {
             parent.mkdirs();
         }
         return new File(parent, name);
@@ -89,13 +80,10 @@ public abstract class Util
      * @param file    File
      * @param content String
      */
-    public static synchronized void appendFile(File file, String content)
-    {
-        try (PrintWriter printWriter = new PrintWriter(new BufferedWriter(new FileWriter(file, true))))
-        {
+    public static synchronized void appendFile(File file, String content) {
+        try (PrintWriter printWriter = new PrintWriter(new BufferedWriter(new FileWriter(file, true)))) {
             printWriter.print(content);
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
             Log.e("error in appendFile(): " + file.getName());
         }
@@ -105,8 +93,7 @@ public abstract class Util
      * @param dirName String
      * @return boolean
      */
-    public static synchronized boolean deleteDirectory(String dirName)
-    {
+    public static synchronized boolean deleteDirectory(String dirName) {
         File file = getDirectory(dirName);
         return file.exists() && deleteRecursive(file);
     }
@@ -117,13 +104,10 @@ public abstract class Util
      * @param file File
      * @return boolean
      */
-    private static boolean deleteRecursive(File file)
-    {
+    private static boolean deleteRecursive(File file) {
         boolean ret = true;
-        if (file.isDirectory())
-        {
-            for (File f : file.listFiles())
-            {
+        if (file.isDirectory()) {
+            for (File f : file.listFiles()) {
                 ret = ret && deleteRecursive(f);
             }
         }
@@ -134,11 +118,9 @@ public abstract class Util
      * @param dirName String
      * @return File
      */
-    public static File getDirectory(String dirName)
-    {
+    public static File getDirectory(String dirName) {
         File file = new File(Environment.getExternalStorageDirectory(), dirName);
-        if (!file.exists())
-        {
+        if (!file.exists()) {
             file.mkdirs();
         }
         return file;
@@ -148,13 +130,10 @@ public abstract class Util
      * @param dirName String
      * @return File[]
      */
-    public static File[] getFilesInDirectory(String dirName)
-    {
-        return getDirectory(dirName).listFiles(new FilenameFilter()
-        {
+    public static File[] getFilesInDirectory(String dirName) {
+        return getDirectory(dirName).listFiles(new FilenameFilter() {
             @Override
-            public boolean accept(File current, String name)
-            {
+            public boolean accept(File current, String name) {
                 return new File(current, name).isDirectory();
             }
         });
@@ -163,8 +142,7 @@ public abstract class Util
     /**
      * @return double
      */
-    public static double getAnnotationTime()
-    {
+    public static double getAnnotationTime() {
         return Pipeline.getInstance().getTime();
     }
 
@@ -172,8 +150,7 @@ public abstract class Util
      * @param activity Activity
      * @return View
      */
-    protected static View addDivider(Activity activity)
-    {
+    protected static View addDivider(Activity activity) {
         int dpValue = 3; // margin in dips
         float d = activity.getResources().getDisplayMetrics().density;
         int margin = (int) (dpValue * d); // margin in pixels
@@ -186,5 +163,9 @@ public abstract class Util
         view.setLayoutParams(layoutParams);
         view.setBackgroundColor(Color.DKGRAY);
         return view;
+    }
+
+    public enum AppAction {
+        ADD, SAVE, LOAD, CLEAR, DISPLAYED, UNDEFINED
     }
 }

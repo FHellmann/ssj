@@ -31,75 +31,61 @@ import hcm.ssj.core.Log;
 
 /**
  * Created by Michael Dietz on 02.02.2021.
- *
+ * <p>
  * Based on:
  * https://github.com/google/mediapipe/blob/master/mediapipe/util/filtering/low_pass_filter.h
  * https://github.com/google/mediapipe/blob/master/mediapipe/util/filtering/low_pass_filter.cc
  */
-public class LowPassFilter
-{
-	float alpha;
-	float rawValue;
-	float storedValue;
+public class LowPassFilter {
+    float alpha;
+    float rawValue;
+    float storedValue;
 
-	boolean initialized = false;
+    boolean initialized = false;
 
-	public LowPassFilter(float alpha)
-	{
-		setAlpha(alpha);
-	}
+    public LowPassFilter(float alpha) {
+        setAlpha(alpha);
+    }
 
-	public float apply(float value)
-	{
-		float result;
+    public float apply(float value) {
+        float result;
 
-		if (initialized)
-		{
-			result = alpha * value + (1.0f - alpha) * storedValue;
-		}
-		else
-		{
-			result = value;
-			initialized = true;
-		}
+        if (initialized) {
+            result = alpha * value + (1.0f - alpha) * storedValue;
+        } else {
+            result = value;
+            initialized = true;
+        }
 
-		rawValue = value;
-		storedValue = result;
+        rawValue = value;
+        storedValue = result;
 
-		return result;
-	}
+        return result;
+    }
 
-	public float applyWithAlpha(float value, float alpha)
-	{
-		setAlpha(alpha);
+    public float applyWithAlpha(float value, float alpha) {
+        setAlpha(alpha);
 
-		return apply(value);
-	}
+        return apply(value);
+    }
 
-	public boolean hasLastRawValue()
-	{
-		return initialized;
-	}
+    public boolean hasLastRawValue() {
+        return initialized;
+    }
 
-	public float lastRawValue()
-	{
-		return rawValue;
-	}
+    public float lastRawValue() {
+        return rawValue;
+    }
 
-	public float lastValue()
-	{
-		return storedValue;
-	}
+    public float lastValue() {
+        return storedValue;
+    }
 
-	private void setAlpha(float alpha)
-	{
-		if (alpha < 0.0f || alpha > 1.0f)
-		{
-			Log.e("Alpha " + alpha + " should be in [0.0, 1.0] range");
-		}
-		else
-		{
-			this.alpha = alpha;
-		}
-	}
+    private void setAlpha(float alpha) {
+        if (alpha < 0.0f || alpha > 1.0f) {
+            Log.e("Alpha " + alpha + " should be in [0.0, 1.0] range");
+        } else {
+            this.alpha = alpha;
+        }
+    }
 }

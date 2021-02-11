@@ -35,75 +35,52 @@ import hcm.ssj.core.option.Option;
 import hcm.ssj.core.option.OptionList;
 import hcm.ssj.core.stream.Stream;
 
-public class FloatSegmentEventSender extends Consumer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public final Option<String> sender = new Option<>("sender", null, String.class, "");
-        public final Option<String> event = new Option<>("event", "event", String.class, "");
-        public final Option<Boolean> mean = new Option<>("mean", true, Boolean.class, "send mean values");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
+public class FloatSegmentEventSender extends Consumer {
     public final Options options = new Options();
 
-    public FloatSegmentEventSender()
-    {
+    public FloatSegmentEventSender() {
         _name = "FloatSegmentEventSender";
         options.sender.set(_name);
     }
 
     @Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
         if (stream_in[0].type != Cons.Type.FLOAT) {
-            throw new SSJFatalException("type "+ stream_in[0].type +" not supported");
+            throw new SSJFatalException("type " + stream_in[0].type + " not supported");
         }
     }
 
     @Override
-    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
-        float ptr[] = stream_in[0].ptrF();
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        float[] ptr = stream_in[0].ptrF();
 
         Event ev = Event.create(Cons.Type.STRING);
         ev.name = options.event.get();
         ev.sender = options.sender.get();
-        ev.time = (int)(1000 * stream_in[0].time + 0.5);
-        ev.dur = (int)(1000 * (stream_in[0].num / stream_in[0].sr) + 0.5);
+        ev.time = (int) (1000 * stream_in[0].time + 0.5);
+        ev.dur = (int) (1000 * (stream_in[0].num / stream_in[0].sr) + 0.5);
         ev.state = Event.State.COMPLETED;
 
         String msg = "";
         if (options.mean.get()) {
             float sum;
-            for (int j = 0; j < stream_in[0].dim; j++)
-            {
+            for (int j = 0; j < stream_in[0].dim; j++) {
                 sum = 0;
-                for (int i = 0; i < stream_in[0].num; i++)
-                {
+                for (int i = 0; i < stream_in[0].num; i++) {
                     sum += ptr[i * stream_in[0].dim + j];
                 }
 
-                msg += String.valueOf(sum / stream_in[0].num) + " ";
+                msg += sum / stream_in[0].num + " ";
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < stream_in[0].num; i++) {
-                for (int j = 0; j < stream_in[0].dim; j++)
-                {
-                    msg += String.valueOf(ptr[i * stream_in[0].dim + j]) + " ";
+                for (int j = 0; j < stream_in[0].dim; j++) {
+                    msg += ptr[i * stream_in[0].dim + j] + " ";
                 }
             }
         }
@@ -113,6 +90,19 @@ public class FloatSegmentEventSender extends Consumer
     }
 
     @Override
-    public void flush(Stream[] stream_in) throws SSJFatalException
-    {}
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> sender = new Option<>("sender", null, String.class, "");
+        public final Option<String> event = new Option<>("event", "event", String.class, "");
+        public final Option<Boolean> mean = new Option<>("mean", true, Boolean.class, "send mean values");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

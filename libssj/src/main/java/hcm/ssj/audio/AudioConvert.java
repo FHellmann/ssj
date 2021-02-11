@@ -40,69 +40,49 @@ import hcm.ssj.core.stream.Stream;
  */
 public class AudioConvert extends Transformer {
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
     public final Options options = new Options();
 
-    public AudioConvert()
-    {
+    public AudioConvert() {
         _name = "AudioConvert";
     }
 
     @Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         Stream audio = null;
-        for(Stream s : stream_in) {
-			if (s.findDataClass("Audio") >= 0)
-			{
-				audio = s;
-			}
+        for (Stream s : stream_in) {
+            if (s.findDataClass("Audio") >= 0) {
+                audio = s;
+            }
         }
-        if(audio == null) {
+        if (audio == null) {
             Log.w("invalid input stream");
             return;
         }
     }
 
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        switch(stream_in[0].type)
-        {
-            case SHORT:
-            {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        switch (stream_in[0].type) {
+            case SHORT: {
                 short[] data = stream_in[0].ptrS();
                 float[] out = stream_out.ptrF();
 
-                for (int i = 0; i < data.length; ++i)
-                {
+                for (int i = 0; i < data.length; ++i) {
                     out[i] = data[i] / 32768.0f;
                 }
             }
             break;
-            case FLOAT:
-            {
+            case FLOAT: {
                 float[] data = stream_in[0].ptrF();
                 short[] out = stream_out.ptrS();
 
-                for (int i = 0; i < data.length; ++i)
-                {
-                    out[i] = (short)(data[i] * 32768);
+                for (int i = 0; i < data.length; ++i) {
+                    out[i] = (short) (data[i] * 32768);
                 }
             }
             break;
@@ -110,26 +90,22 @@ public class AudioConvert extends Transformer {
     }
 
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {}
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
 
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         return stream_in[0].dim;
     }
 
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return sampleNumber_in;
     }
 
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
-        switch(stream_in[0].bytes)
-        {
+    public int getSampleBytes(Stream[] stream_in) {
+        switch (stream_in[0].bytes) {
             case 4:
                 return 2;
             case 2:
@@ -141,10 +117,8 @@ public class AudioConvert extends Transformer {
     }
 
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
-        switch(stream_in[0].type)
-        {
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        switch (stream_in[0].type) {
             case FLOAT:
                 return Cons.Type.SHORT;
             case SHORT:
@@ -156,11 +130,19 @@ public class AudioConvert extends Transformer {
     }
 
     @Override
-    public void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    public void describeOutput(Stream[] stream_in, Stream stream_out) {
         stream_out.desc = new String[stream_out.dim];
 
-        for(int i = 0; i < stream_out.dim; ++i)
+        for (int i = 0; i < stream_out.dim; ++i)
             stream_out.desc[i] = stream_in[0].desc[i];
+    }
+
+    public class Options extends OptionList {
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

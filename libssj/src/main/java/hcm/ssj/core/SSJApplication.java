@@ -33,18 +33,15 @@ import android.content.Context;
 /**
  * Created by Michael Dietz on 01.04.2015.
  */
-public class SSJApplication extends Application
-{
-	private static Context context;
+public class SSJApplication extends Application {
+    private static Context context;
 
-	public void onCreate()
-	{
-		super.onCreate();
-		SSJApplication.context = getApplicationContext();
-	}
+    public static Context getAppContext() {
+        return SSJApplication.context;
+    }
 
-	public static Context getAppContext()
-	{
-		return SSJApplication.context;
-	}
+    public void onCreate() {
+        super.onCreate();
+        SSJApplication.context = getApplicationContext();
+    }
 }

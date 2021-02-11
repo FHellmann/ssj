@@ -42,48 +42,42 @@ import hcm.ssj.feedback.feedbackmanager.actions.AudioAction;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class Auditory extends FeedbackClass
-{
+public class Auditory extends FeedbackClass {
     long lock = 0;
 
     SoundPool player;
 
-    public Auditory(Context context, FeedbackManager.Options options)
-    {
+    public Auditory(Context context, FeedbackManager.Options options) {
         this.context = context;
-		this.options = options;
+        this.options = options;
         type = Type.Audio;
     }
 
-    public void release()
-    {
+    public void release() {
         player.release();
         super.release();
     }
 
     @Override
-    public boolean execute(Action action)
-    {
+    public boolean execute(Action action) {
         AudioAction ev = (AudioAction) action;
 
-		//check locks
-		//global
-		if(System.currentTimeMillis() < lock)
-		{
-			Log.i("ignoring event, global lock active for another " + (lock - System.currentTimeMillis()) + "ms");
-			return false;
-		}
-		//local
-		if (System.currentTimeMillis() - ev.lastExecutionTime < ev.lockSelf)
-		{
-			Log.i("ignoring event, self lock active for another " + (ev.lockSelf - (System.currentTimeMillis() - ev.lastExecutionTime)) + "ms");
-			return false;
-		}
+        //check locks
+        //global
+        if (System.currentTimeMillis() < lock) {
+            Log.i("ignoring event, global lock active for another " + (lock - System.currentTimeMillis()) + "ms");
+            return false;
+        }
+        //local
+        if (System.currentTimeMillis() - ev.lastExecutionTime < ev.lockSelf) {
+            Log.i("ignoring event, self lock active for another " + (ev.lockSelf - (System.currentTimeMillis() - ev.lastExecutionTime)) + "ms");
+            return false;
+        }
 
         player.play(ev.soundId, ev.intensity, ev.intensity, 1, 0, 1);
 
         //set lock
-        if(ev.lock > 0)
+        if (ev.lock > 0)
             lock = System.currentTimeMillis() + (long) ev.lock;
         else
             lock = 0;
@@ -91,8 +85,7 @@ public class Auditory extends FeedbackClass
         return true;
     }
 
-    protected void load(XmlPullParser xml, final Context context)
-    {
+    protected void load(XmlPullParser xml, final Context context) {
         super.load(xml, context);
 
         player = new SoundPool(4, AudioManager.STREAM_NOTIFICATION, 0);

@@ -36,158 +36,136 @@ import java.util.ArrayList;
  */
 public class Timer {
 
+    private final int HISTORY_SIZE = 10;
     private long _now;
     private long _init;
     private long _next;
     private long _delta;
     private long _offset;
-
     private long _tick_start = 0;
-
-    private final int HISTORY_SIZE = 10;
-    private ArrayList<Long> _history = new ArrayList<Long>();
+    private final ArrayList<Long> _history = new ArrayList<Long>();
 
     private boolean _syncFailFlag;
 
-    public Timer()
-    {
+    public Timer() {
         reset();
     }
 
-    public Timer (int interval_in_ms)
-    {
+    public Timer(int interval_in_ms) {
         setClockMs(interval_in_ms);
         reset();
     }
 
-    public Timer (double interval_in_s)
-    {
+    public Timer(double interval_in_s) {
         setClockS(interval_in_s);
         reset();
     }
 
-    public void setClockS(double seconds)
-    {
-        _delta = (long)(seconds * 1000 + 0.5);
+    public void setClockS(double seconds) {
+        _delta = (long) (seconds * 1000 + 0.5);
     }
 
-    public void setClockMs(long milliseconds)
-    {
+    public void setClockMs(long milliseconds) {
         _delta = milliseconds;
     }
 
-    public void setClockHz(double hz)
-    {
+    public void setClockHz(double hz) {
         setClockS(1.0 / hz);
     }
 
-    public void reset ()
-    {
+    public void reset() {
         _syncFailFlag = false;
         _init = SystemClock.elapsedRealtime();
         _next = _delta + _offset;
     }
 
     //offsets the first tick, requires a "reset"
-    public void setStartOffset(double seconds)
-    {
-        _offset = (long)(seconds * 1000 + 0.5);
+    public void setStartOffset(double seconds) {
+        _offset = (long) (seconds * 1000 + 0.5);
     }
 
     //offsets the next tick, requires a "reset"
-    public void setStartOffset(long milliseconds)
-    {
+    public void setStartOffset(long milliseconds) {
         _offset = milliseconds;
     }
 
     //equivalent to SSI's wait()
-    public void sync ()
-    {
+    public void sync() {
         _now = SystemClock.elapsedRealtime() - _init;
-        while (_now < _next)
-        {
-            try
-            {
-                Thread.sleep (_next - _now);
-            }
-            catch (InterruptedException e){
+        while (_now < _next) {
+            try {
+                Thread.sleep(_next - _now);
+            } catch (InterruptedException e) {
                 Log.w("thread interrupt");
             }
 
             _now = SystemClock.elapsedRealtime() - _init;
         }
 
-        if(_now - _next > _delta + Cons.TIMER_SYNC_ACCURACY) {
-            if(!_syncFailFlag) {
+        if (_now - _next > _delta + Cons.TIMER_SYNC_ACCURACY) {
+            if (!_syncFailFlag) {
                 _syncFailFlag = true;
                 Log.i(Thread.currentThread().getStackTrace()[3].getClassName().replace("hcm.ssj.", ""),
-                      "thread too slow, missing sync points");
+                        "thread too slow, missing sync points");
             }
-        } else if(_now - _next <= 1) {
-            if(_syncFailFlag) {
+        } else if (_now - _next <= 1) {
+            if (_syncFailFlag) {
                 _syncFailFlag = false;
                 Log.i(Thread.currentThread().getStackTrace()[3].getClassName().replace("hcm.ssj.", ""),
-                      "thread back in sync");
+                        "thread back in sync");
             }
         }
 
         _next += _delta;
     }
 
-    public void tick_start()
-    {
+    public void tick_start() {
         _tick_start = System.nanoTime();
     }
 
-    public void tick_end()
-    {
+    public void tick_end() {
         _history.add(System.nanoTime() - _tick_start);
-        if(_history.size() > HISTORY_SIZE)
+        if (_history.size() > HISTORY_SIZE)
             _history.remove(0);
     }
 
-    public void tick()
-    {
-        if(_tick_start != 0)
+    public void tick() {
+        if (_tick_start != 0)
             _history.add(SystemClock.elapsedRealtime() - _tick_start);
 
         _tick_start = SystemClock.elapsedRealtime();
 
-        if(_history.size() > HISTORY_SIZE)
+        if (_history.size() > HISTORY_SIZE)
             _history.remove(0);
     }
 
-    public double getMax()
-    {
+    public double getMax() {
         long max = 0;
-        for(Long delta : _history) {
-            if(delta > max)
+        for (Long delta : _history) {
+            if (delta > max)
                 max = delta;
         }
         return max / 1000.0;
     }
 
-    public double getAvgDur()
-    {
-        if(_history.size() == 0)
+    public double getAvgDur() {
+        if (_history.size() == 0)
             return 0;
 
         long sum = 0;
-        for(Long delta : _history) {
+        for (Long delta : _history) {
             sum += delta;
         }
 
-        double avg = (double)sum / (double)_history.size();
+        double avg = (double) sum / (double) _history.size();
         return avg / 1000000.0;
     }
 
-    public long getElapsedMs()
-    {
+    public long getElapsedMs() {
         return SystemClock.elapsedRealtime() - _init;
     }
 
-    public double getElapsed()
-    {
+    public double getElapsed() {
         return getElapsedMs() / 1000.0;
     }
 }

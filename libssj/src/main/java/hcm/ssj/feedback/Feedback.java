@@ -39,91 +39,74 @@ import hcm.ssj.core.option.OptionList;
  * Created by Antonio Grieco on 06.09.2017.
  */
 
-public abstract class Feedback extends EventHandler
-{
+public abstract class Feedback extends EventHandler {
 
-	private long lastExecutionTime = 0;
-	private boolean active = true;
+    private long lastExecutionTime = 0;
+    private boolean active = true;
 
-	private boolean checkLock()
-	{
-		if (System.currentTimeMillis() - lastExecutionTime < getOptions().lock.get())
-		{
-			Log.i("ignoring event, lock active for another " +
-						  (getOptions().lock.get() - (System.currentTimeMillis() - lastExecutionTime)) +
-						  "ms");
-			return false;
-		}
-		else
-		{
-			lastExecutionTime = System.currentTimeMillis();
-			return true;
-		}
-	}
+    private boolean checkLock() {
+        if (System.currentTimeMillis() - lastExecutionTime < getOptions().lock.get()) {
+            Log.i("ignoring event, lock active for another " +
+                    (getOptions().lock.get() - (System.currentTimeMillis() - lastExecutionTime)) +
+                    "ms");
+            return false;
+        } else {
+            lastExecutionTime = System.currentTimeMillis();
+            return true;
+        }
+    }
 
-	@Override
-	protected final void enter() throws SSJFatalException
-	{
-		lastExecutionTime = 0;
-		enterFeedback();
-	}
+    @Override
+    protected final void enter() throws SSJFatalException {
+        lastExecutionTime = 0;
+        enterFeedback();
+    }
 
-	protected abstract void enterFeedback() throws SSJFatalException;
+    protected abstract void enterFeedback() throws SSJFatalException;
 
-	public boolean isActive()
-	{
-		return active;
-	}
+    public boolean isActive() {
+        return active;
+    }
 
-	protected void setActive(boolean active)
-	{
-		this.active = active;
-	}
+    protected void setActive(boolean active) {
+        this.active = active;
+    }
 
-	long getLastExecutionTime()
-	{
-		return lastExecutionTime;
-	}
+    long getLastExecutionTime() {
+        return lastExecutionTime;
+    }
 
-	private boolean activatedByEventName(String eventName)
-	{
-		// Allways activate if no eventnames are specified
-		if (getOptions().eventNames.get() == null || getOptions().eventNames.get().length == 0)
-		{
-			return true;
-		}
-		for (String eventNameToActivate : getOptions().eventNames.get())
-		{
-			if (eventNameToActivate.equals(eventName))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+    private boolean activatedByEventName(String eventName) {
+        // Allways activate if no eventnames are specified
+        if (getOptions().eventNames.get() == null || getOptions().eventNames.get().length == 0) {
+            return true;
+        }
+        for (String eventNameToActivate : getOptions().eventNames.get()) {
+            if (eventNameToActivate.equals(eventName)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	@Override
-	public final void notify(Event event)
-	{
-		if (active && activatedByEventName(event.name) && checkLock())
-		{
-			notifyFeedback(event);
-		}
-	}
+    @Override
+    public final void notify(Event event) {
+        if (active && activatedByEventName(event.name) && checkLock()) {
+            notifyFeedback(event);
+        }
+    }
 
-	public abstract Options getOptions();
+    public abstract Options getOptions();
 
-	public abstract void notifyFeedback(Event event);
+    public abstract void notifyFeedback(Event event);
 
-	public class Options extends OptionList
-	{
+    public class Options extends OptionList {
 
-		public final Option<Integer> lock = new Option<>("lock", 0, Integer.class, "lock time in ms");
-		public final Option<String[]> eventNames = new Option<>("eventNames", null, String[].class, "event names to listen on");
+        public final Option<Integer> lock = new Option<>("lock", 0, Integer.class, "lock time in ms");
+        public final Option<String[]> eventNames = new Option<>("eventNames", null, String[].class, "event names to listen on");
 
-		protected Options()
-		{
-			addOptions();
-		}
-	}
+        protected Options() {
+            addOptions();
+        }
+    }
 }

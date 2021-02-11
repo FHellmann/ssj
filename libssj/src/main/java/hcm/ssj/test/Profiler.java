@@ -36,25 +36,21 @@ import hcm.ssj.core.option.OptionList;
  */
 public class Profiler extends Sensor {
 
-    public Profiler()
-    {
+    public Profiler() {
         _name = "Profiler";
     }
 
     @Override
-	public boolean connect() throws SSJFatalException
-    {
+    public boolean connect() throws SSJFatalException {
         return true;
     }
 
     @Override
-	public void disconnect() throws SSJFatalException
-    {
+    public void disconnect() throws SSJFatalException {
     }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

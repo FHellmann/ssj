@@ -27,11 +27,12 @@
 
 package hcm.ssj;
 
+import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import hcm.ssj.camera.CameraChannel;
 import hcm.ssj.camera.CameraSensor;
 import hcm.ssj.camera.NV21ToRGBDecoder;
@@ -45,55 +46,50 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class PoseLandmarkTest
-{
-	@Test
-	public void testPoseLandmarks() throws Exception
-	{
-		// Get pipeline instance
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class PoseLandmarkTest {
+    @Test
+    public void testPoseLandmarks() throws Exception {
+        // Get pipeline instance
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Instantiate camera sensor and set options
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.FRONT_CAMERA);
-		cameraSensor.options.width.set(640);
-		cameraSensor.options.height.set(480);
-		cameraSensor.options.previewFpsRangeMin.set(15);
-		cameraSensor.options.previewFpsRangeMax.set(15);
+        // Instantiate camera sensor and set options
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.FRONT_CAMERA);
+        cameraSensor.options.width.set(640);
+        cameraSensor.options.height.set(480);
+        cameraSensor.options.previewFpsRangeMin.set(15);
+        cameraSensor.options.previewFpsRangeMax.set(15);
 
-		// Add sensor to the pipeline
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set(10.0);
-		frame.addSensor(cameraSensor, cameraChannel);
+        // Add sensor to the pipeline
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set(10.0);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		// Set up a NV21 decoder
-		NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
-		frame.addTransformer(decoder, cameraChannel);
+        // Set up a NV21 decoder
+        NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
+        frame.addTransformer(decoder, cameraChannel);
 
-		// Add pose landmarks
-		PoseLandmarks poseLandmarks = new PoseLandmarks();
-		poseLandmarks.options.rotation.set(0);
-		frame.addTransformer(poseLandmarks, decoder);
+        // Add pose landmarks
+        PoseLandmarks poseLandmarks = new PoseLandmarks();
+        poseLandmarks.options.rotation.set(0);
+        frame.addTransformer(poseLandmarks, decoder);
 
-		Logger log = new Logger();
-		frame.addConsumer(log, poseLandmarks);
+        Logger log = new Logger();
+        frame.addConsumer(log, poseLandmarks);
 
-		// Start pipeline
-		frame.start();
+        // Start pipeline
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop pipeline
-		frame.stop();
-		frame.release();
-	}
+        // Stop pipeline
+        frame.stop();
+        frame.release();
+    }
 }

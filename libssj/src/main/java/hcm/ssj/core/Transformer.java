@@ -39,48 +39,43 @@ import hcm.ssj.core.stream.Stream;
  */
 public abstract class Transformer extends Provider {
 
+    protected Pipeline _frame;
     private Stream[] _stream_in;
     private int[] _bufferID_in;
-
     private int[] _readPos;
     private int[] _num_frame;
     private int[] _num_delta;
-
     private Timer _timer;
 
-    protected Pipeline _frame;
-
-    public Transformer()
-    {
+    public Transformer() {
         _frame = Pipeline.getInstance();
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         Thread.currentThread().setName("SSJ_" + _name);
 
-        if(!_isSetup) {
+        if (!_isSetup) {
             _frame.error(this.getComponentName(), "not initialized", null);
             return;
         }
 
         android.os.Process.setThreadPriority(threadPriority);
-        PowerManager mgr = (PowerManager)SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
+        PowerManager mgr = (PowerManager) SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
         PowerManager.WakeLock wakeLock = mgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, _name);
 
         //clear data
         Arrays.fill(_readPos, 0);
-        for(int i = 0; i < _stream_in.length; i++)
+        for (int i = 0; i < _stream_in.length; i++)
             _stream_in[i].reset();
 
         try {
             enter(_stream_in, _stream_out);
-        } catch(SSJFatalException e) {
+        } catch (SSJFatalException e) {
             _frame.error(this.getComponentName(), "exception in enter", e);
             _safeToKill = true;
             return;
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(this.getComponentName(), "exception in enter", e);
         }
 
@@ -96,38 +91,36 @@ public abstract class Transformer extends Provider {
         //maintain update rate starting from now
         _timer.reset();
 
-        while(!_terminate && _frame.isRunning())
-        {
+        while (!_terminate && _frame.isRunning()) {
             try {
                 wakeLock.acquire();
 
                 //grab data
                 boolean ok = true;
-                for(int i = 0; i < _bufferID_in.length; i++)
-                {
+                for (int i = 0; i < _bufferID_in.length; i++) {
                     ok &= _frame.getData(_bufferID_in[i], _stream_in[i].ptr(), _readPos[i],
-                                         _stream_in[i].num);
-                    if(ok)
-                        _stream_in[i].time = (double)_readPos[i] / _stream_in[i].sr;
+                            _stream_in[i].num);
+                    if (ok)
+                        _stream_in[i].time = (double) _readPos[i] / _stream_in[i].sr;
 
                     _readPos[i] += _num_frame[i];
                 }
 
                 //if we received data from all sources, process it
-                if(ok) {
+                if (ok) {
                     transform(_stream_in, _stream_out);
                     _frame.pushData(_bufferID, _stream_out.ptr(), _stream_out.tot);
                 }
 
-                if(ok) {
+                if (ok) {
                     //maintain update rate
                     _timer.sync();
                 }
-            } catch(SSJFatalException e) {
+            } catch (SSJFatalException e) {
                 _frame.error(this.getComponentName(), "exception in loop", e);
                 _safeToKill = true;
                 return;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 _frame.error(this.getComponentName(), "exception in loop", e);
             } finally {
                 wakeLock.release();
@@ -136,7 +129,7 @@ public abstract class Transformer extends Provider {
 
         try {
             flush(_stream_in, _stream_out);
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(this.getComponentName(), "exception in flush", e);
         }
         _safeToKill = true;
@@ -145,12 +138,14 @@ public abstract class Transformer extends Provider {
     /**
      * early initialization specific to implementation (called by framework on instantiation)
      */
-    public void init(double frame, double delta) throws SSJException {}
+    public void init(double frame, double delta) throws SSJException {
+    }
 
     /**
      * initialization specific to sensor implementation (called by local thread after framework start)
      */
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {}
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
 
     /**
      * main processing method
@@ -160,17 +155,15 @@ public abstract class Transformer extends Provider {
     /**
      * called once prior to termination
      */
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {}
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+    }
 
     /**
      * general transformer initialization
      */
-    public final void setup(Provider[] sources, double frame, double delta) throws SSJException
-    {
-        for (Provider source : sources)
-        {
-            if (!source.isSetup())
-            {
+    public final void setup(Provider[] sources, double frame, double delta) throws SSJException {
+        for (Provider source : sources) {
+            if (!source.isSetup()) {
                 throw new SSJException("Components must be added in the correct order. Cannot add " + _name + " before its source " + source.getComponentName());
             }
         }
@@ -210,7 +203,7 @@ public abstract class Transformer extends Provider {
             int num_out = getSampleNumber(_num_frame[0]);
             double sr_out = (double) num_out / frame;
 
-            if(num_out > 1 && delta != 0)
+            if (num_out > 1 && delta != 0)
                 Log.w("Non-feature transformer called with positive delta. Transformer may not support this.");
 
             _stream_out = Stream.create(num_out, dim_out, sr_out, type_out);
@@ -220,26 +213,23 @@ public abstract class Transformer extends Provider {
             // configure update rate
             _timer = new Timer(frame);
             _timer.setStartOffset(delta);
-        }
-        catch(Exception e)
-        {
+        } catch (Exception e) {
             throw new SSJException("error configuring component", e);
         }
 
         Log.i("Transformer " + _name + " (output)" + '\n' +
-                "\tbytes=" +_stream_out.bytes+ '\n' +
-                "\tdim=" +_stream_out.dim+ '\n' +
-                "\ttype=" +_stream_out.type.toString() + '\n' +
-                "\tnum=" +_stream_out.num+ '\n' +
-                "\tsr=" +_stream_out.sr);
+                "\tbytes=" + _stream_out.bytes + '\n' +
+                "\tdim=" + _stream_out.dim + '\n' +
+                "\ttype=" + _stream_out.type.toString() + '\n' +
+                "\tnum=" + _stream_out.num + '\n' +
+                "\tsr=" + _stream_out.sr);
 
         _isSetup = true;
     }
 
     @Override
-    public String[] getOutputDescription()
-    {
-        if(!_isSetup) {
+    public String[] getOutputDescription() {
+        if (!_isSetup) {
             Log.e("not initialized");
             return null;
         }
@@ -251,8 +241,11 @@ public abstract class Transformer extends Provider {
     }
 
     public abstract int getSampleDimension(Stream[] stream_in);
+
     public abstract int getSampleBytes(Stream[] stream_in);
+
     public abstract Cons.Type getSampleType(Stream[] stream_in);
+
     public abstract int getSampleNumber(int sampleNumber_in);
 
     protected abstract void describeOutput(Stream[] stream_in, Stream stream_out);

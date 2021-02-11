@@ -39,18 +39,7 @@ import hcm.ssj.core.stream.Stream;
  */
 public class BVPBLEChannel extends SensorChannel {
 
-    public class Options extends OptionList
-    {
-        public final Option<Float> sampleRate = new Option<>("sampleRate", 100f, Float.class, "sensor sample rate in Hz");
-
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
     public Options options = new Options();
-
     protected BLESensorListener _listener;
 
     public BVPBLEChannel() {
@@ -58,16 +47,14 @@ public class BVPBLEChannel extends SensorChannel {
     }
 
     @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
+    public void enter(Stream stream_out) throws SSJFatalException {
 
         _listener = ((BLESensor) _sensor).listener;
 
     }
 
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         _listener.readCh();
         int[] out = stream_out.ptrI();
         out[0] = _listener.getBvp();
@@ -101,8 +88,15 @@ public class BVPBLEChannel extends SensorChannel {
     }
 
     @Override
-    public OptionList getOptions()
-    {
+    public OptionList getOptions() {
         return options;
+    }
+
+    public class Options extends OptionList {
+        public final Option<Float> sampleRate = new Option<>("sampleRate", 100f, Float.class, "sensor sample rate in Hz");
+
+        private Options() {
+            addOptions();
+        }
     }
 }

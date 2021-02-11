@@ -40,16 +40,87 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Johnny on 05.03.2015.
  */
-public class BluetoothChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class BluetoothChannel extends SensorChannel {
+    public final Options options = new Options();
 
-	public class Options extends OptionList
-    {
+    public BluetoothChannel() {
+        _name = "BluetoothReader_Data";
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+
+        if (options.sr.get() == 0 || options.bytes.get() == 0 || options.dim.get() == 0 || options.type.get() == Cons.Type.UNDEF) {
+            throw new SSJFatalException("input channel not configured");
+        }
+    }
+
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!((BluetoothReader) _sensor).getConnection().isConnected()) {
+            return false;
+        }
+
+        byte[] data = ((BluetoothReader) _sensor).getData(options.channel_id.get());
+
+        if (data == null || data.length != stream_out.tot) {
+            Log.w("data mismatch");
+            return false;
+        }
+
+        Util.arraycopy(data, 0, stream_out.ptr(), 0, stream_out.tot);
+        return true;
+    }
+
+    @Override
+    public int getSampleDimension() {
+        return options.dim.get();
+    }
+
+    @Override
+    public double getSampleRate() {
+        return options.sr.get();
+    }
+
+    @Override
+    public int getSampleBytes() {
+        return options.bytes.get();
+    }
+
+    @Override
+    public int getSampleNumber() {
+        return options.num.get();
+    }
+
+    @Override
+    public Cons.Type getSampleType() {
+        return options.type.get();
+    }
+
+    @Override
+    public void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        if (options.outputClass.get() == null || stream_out.dim != options.outputClass.get().length) {
+            Log.w("incomplete definition of output classes");
+            for (int i = 0; i < stream_out.desc.length; i++)
+                stream_out.desc[i] = "BluetoothData" + options.channel_id.get();
+        } else {
+            System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
+        }
+
+        if (getSampleType() == Cons.Type.IMAGE) {
+            ((ImageStream) _stream_out).width = options.imageWidth.get();
+            ((ImageStream) _stream_out).height = options.imageHeight.get();
+            ((ImageStream) stream_out).format = options.imageFormat.get().val;
+        }
+    }
+
+    public class Options extends OptionList {
         public final Option<Integer> channel_id = new Option<>("channel_id", 0, Integer.class, "the channel index as defined by the order in which the streams were sent");
         public final Option<Integer> bytes = new Option<>("bytes", 0, Integer.class, "");
         public final Option<Integer> dim = new Option<>("dim", 0, Integer.class, "");
@@ -66,96 +137,6 @@ public class BluetoothChannel extends SensorChannel
          */
         private Options() {
             addOptions();
-        }
-    }
-
-    public final Options options = new Options();
-
-    public BluetoothChannel()
-    {
-        _name = "BluetoothReader_Data";
-    }
-
-    @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-
-		if (options.sr.get() == 0 || options.bytes.get() == 0 || options.dim.get() == 0 || options.type.get() == Cons.Type.UNDEF)
-		{
-            throw new SSJFatalException("input channel not configured");
-		}
-    }
-
-    @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
-        if (!((BluetoothReader) _sensor).getConnection().isConnected())
-        {
-            return false;
-        }
-
-        byte[] data = ((BluetoothReader)_sensor).getData(options.channel_id.get());
-
-        if(data == null || data.length != stream_out.tot)
-        {
-            Log.w("data mismatch");
-            return false;
-        }
-
-        Util.arraycopy(data, 0, stream_out.ptr(), 0, stream_out.tot);
-        return true;
-    }
-
-    @Override
-    public int getSampleDimension()
-    {
-        return options.dim.get();
-    }
-
-    @Override
-    public double getSampleRate()
-    {
-        return options.sr.get();
-    }
-
-    @Override
-    public int getSampleBytes()
-    {
-        return options.bytes.get();
-    }
-
-    @Override
-    public int getSampleNumber()
-    {
-        return options.num.get();
-    }
-
-    @Override
-    public Cons.Type getSampleType()
-    {
-        return options.type.get();
-    }
-
-    @Override
-    public void describeOutput(Stream stream_out)
-    {
-        stream_out.desc = new String[stream_out.dim];
-        if(options.outputClass.get() == null || stream_out.dim != options.outputClass.get().length)
-        {
-            Log.w("incomplete definition of output classes");
-            for(int i = 0; i < stream_out.desc.length; i++)
-                stream_out.desc[i] = "BluetoothData" + options.channel_id.get();
-        }
-        else
-        {
-            System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
-        }
-
-        if(getSampleType() == Cons.Type.IMAGE)
-        {
-            ((ImageStream) _stream_out).width = options.imageWidth.get();
-            ((ImageStream) _stream_out).height = options.imageHeight.get();
-            ((ImageStream) stream_out).format = options.imageFormat.get().val;
         }
     }
 }

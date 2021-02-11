@@ -46,28 +46,8 @@ import static hcm.ssj.core.Cons.DEFAULT_BL_SERIAL_UUID;
 public class BluetoothPressureSensor extends BluetoothReader {
 
 
-    protected short[][] _irecvData;
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList {
-        public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
-        public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
-        public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "if this is a client");
-
-        /**
-         *
-         */
-        private Options() {
-            addOptions();
-        }
-    }
-
     public final Options options = new Options();
+    protected short[][] _irecvData;
     protected boolean _isreallyConnected = false;
 
     public BluetoothPressureSensor() {
@@ -75,8 +55,12 @@ public class BluetoothPressureSensor extends BluetoothReader {
     }
 
     @Override
-	public void init() throws SSJException
-	{
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void init() throws SSJException {
         try {
             _conn = new BluetoothClient(UUID.fromString(DEFAULT_BL_SERIAL_UUID), options.serverName.get(), options.serverAddr.get());
 
@@ -86,8 +70,7 @@ public class BluetoothPressureSensor extends BluetoothReader {
     }
 
     @Override
-	public boolean connect() throws SSJFatalException
-	{
+    public boolean connect() throws SSJFatalException {
         _irecvData = new short[_provider.size()][];
         for (int i = 0; i < _provider.size(); ++i) {
             _irecvData[i] = new short[_provider.get(i).getOutputStream().tot];
@@ -107,9 +90,8 @@ public class BluetoothPressureSensor extends BluetoothReader {
         return true;
     }
 
-    public void update() throws SSJFatalException
-	{
-		if (!_conn.isConnected() && _isreallyConnected) {
+    public void update() throws SSJFatalException {
+        if (!_conn.isConnected() && _isreallyConnected) {
             return;
         }
 
@@ -175,6 +157,19 @@ public class BluetoothPressureSensor extends BluetoothReader {
 
     public short[] getDataInt(int channel_id) {
         return _irecvData[channel_id];
+    }
+
+    public class Options extends OptionList {
+        public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
+        public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
+        public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "if this is a client");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 
 }

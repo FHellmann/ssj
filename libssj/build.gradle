@@ -26,7 +26,7 @@
  */
 
 apply plugin: 'com.android.library'
-apply from: '../version.gradle'
+apply from: rootProject.file('gradle/version.gradle')
 
 //this will include the mobile MobileSSIConsumer class in the library (requires extra libraries)
 def buildSSIXmlPipe = false
@@ -92,19 +92,31 @@ android {
 //            abiFilters  'armeabi-v7a', 'x86'
 //        }
     }
-
     buildTypes {
+        debug {
+            testCoverageEnabled true
+        }
         release {
             minifyEnabled false
         }
     }
-
+    compileOptions {
+        encoding "UTF-8"
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 //    externalNativeBuild {
 //        cmake {
 //            path "D:\\Workspaces\\SSI\\mobileSSI\\mobileSSI-android-studio\\app\\mobileSSI\\CMakeLists.txt"
 //        }
 //    }
+    testOptions {
+        animationsDisabled true
 
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
     sourceSets {
         main {
             java {
@@ -170,6 +182,9 @@ dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
 }
 
+apply from: rootProject.file('gradle/static-analysis.gradle')
+apply from: rootProject.file('gradle/coverage-submodule.gradle')
+apply from: rootProject.file('gradle/test-logging.gradle')
 //upload to library bintray
-apply from: '../installv1.gradle'
-apply from: '../bintrayv1.gradle'
+apply from: rootProject.file('gradle/installv1.gradle')
+apply from: rootProject.file('gradle/bintrayv1.gradle')

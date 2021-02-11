@@ -45,150 +45,120 @@ import hcm.ssj.core.option.OptionList;
  * Created by Michael Dietz on 04.09.2017.
  */
 
-public class FFMPEGReader extends Sensor
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class FFMPEGReader extends Sensor {
+    // Options
+    public final Options options = new Options();
+    private FFmpegFrameGrabber reader;
+    private Frame imageFrame;
+    private volatile boolean reading;
+    private Thread readingThread;
+    private byte[] frameBuffer;
+    public FFMPEGReader() {
+        _name = this.getClass().getSimpleName();
+    }
 
-	/**
-	 * All options for the FFMPEGReader
-	 */
-	public class Options extends OptionList
-	{
-		public final Option<FilePath> file = new Option<>("file", null, FilePath.class, "file path");
-		public final Option<String> url = new Option<>("url", "udp://127.0.0.1:5000", String.class, "streaming address, e.g. udp://<ip:port>. If set, file option is ignored");
-		public final Option<Integer> width = new Option<>("width", 640, Integer.class, "width in pixel");
-		public final Option<Integer> height = new Option<>("height", 480, Integer.class, "height in pixel");
-		public final Option<Double> fps = new Option<>("fps", 15., Double.class, "fps");
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-		/**
-		 *
-		 */
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    protected boolean connect() throws SSJFatalException {
+        reading = true;
 
-	// Options
-	public final Options options = new Options();
-	private FFmpegFrameGrabber reader;
-	private Frame imageFrame;
+        frameBuffer = new byte[getBufferSize()];
 
-	private volatile boolean reading;
-	private Thread readingThread;
-	private byte[] frameBuffer;
+        readingThread = new Thread(new ReaderThread());
+        readingThread.start();
 
-	public FFMPEGReader()
-	{
-		_name = this.getClass().getSimpleName();
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean connect() throws SSJFatalException
-	{
-		reading = true;
+    @Override
+    protected void disconnect() throws SSJFatalException {
+        reading = false;
 
-		frameBuffer = new byte[getBufferSize()];
+        try {
+            readingThread.join();
+        } catch (InterruptedException e) {
+            Log.e("Error while waiting for reading thread", e);
+        }
+    }
 
-		readingThread = new Thread(new ReaderThread());
-		readingThread.start();
+    public int getBufferSize() {
+        int bufferSize = options.width.get() * options.height.get();
 
-		return true;
-	}
+        // 3 bytes per pixel
+        bufferSize *= 3;
 
-	@Override
-	protected void disconnect() throws SSJFatalException
-	{
-		reading = false;
+        return bufferSize;
+    }
 
-		try
-		{
-			readingThread.join();
-		}
-		catch (InterruptedException e)
-		{
-			Log.e("Error while waiting for reading thread", e);
-		}
-	}
+    public void swapBuffer(byte[] bytes) {
+        synchronized (frameBuffer) {
+            // Get data from buffer
+            if (bytes.length < frameBuffer.length) {
+                Log.e("Buffer read changed from " + bytes.length + " to " + frameBuffer.length);
+                bytes = new byte[frameBuffer.length];
+            }
+            System.arraycopy(frameBuffer, 0, bytes, 0, frameBuffer.length);
+        }
+    }
 
-	public int getBufferSize()
-	{
-		int bufferSize = options.width.get() * options.height.get();
+    /**
+     * All options for the FFMPEGReader
+     */
+    public class Options extends OptionList {
+        public final Option<FilePath> file = new Option<>("file", null, FilePath.class, "file path");
+        public final Option<String> url = new Option<>("url", "udp://127.0.0.1:5000", String.class, "streaming address, e.g. udp://<ip:port>. If set, file option is ignored");
+        public final Option<Integer> width = new Option<>("width", 640, Integer.class, "width in pixel");
+        public final Option<Integer> height = new Option<>("height", 480, Integer.class, "height in pixel");
+        public final Option<Double> fps = new Option<>("fps", 15., Double.class, "fps");
 
-		// 3 bytes per pixel
-		bufferSize *= 3;
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 
-		return bufferSize;
-	}
+    private class ReaderThread implements Runnable {
+        @Override
+        public void run() {
+            ByteBuffer buffer;
 
-	public void swapBuffer(byte[] bytes)
-	{
-		synchronized (frameBuffer)
-		{
-			// Get data from buffer
-			if (bytes.length < frameBuffer.length)
-			{
-				Log.e("Buffer read changed from " + bytes.length + " to " + frameBuffer.length);
-				bytes = new byte[frameBuffer.length];
-			}
-			System.arraycopy(frameBuffer, 0, bytes, 0, frameBuffer.length);
-		}
-	}
+            try {
+                String address = (options.url.get() != null) ? options.url.get() : options.file.get().value;
 
-	private class ReaderThread implements Runnable
-	{
-		@Override
-		public void run()
-		{
-			ByteBuffer buffer;
+                reader = new FFmpegFrameGrabber(address);
+                reader.setImageWidth(options.width.get());
+                reader.setImageHeight(options.height.get());
+                reader.setFrameRate(options.fps.get());
+                reader.setPixelFormat(avutil.AV_PIX_FMT_RGB24);
+                reader.start();
 
-			try
-			{
-				String address = (options.url.get() != null) ? options.url.get() : options.file.get().value;
+                while ((imageFrame = reader.grab()) != null && reading) {
+                    buffer = ((ByteBuffer) imageFrame.image[0].position(0));
 
-				reader = new FFmpegFrameGrabber(address);
-				reader.setImageWidth(options.width.get());
-				reader.setImageHeight(options.height.get());
-				reader.setFrameRate(options.fps.get());
-				reader.setPixelFormat(avutil.AV_PIX_FMT_RGB24);
-				reader.start();
-
-				while ((imageFrame = reader.grab()) != null && reading)
-				{
-					buffer = ((ByteBuffer) imageFrame.image[0].position(0));
-
-					if (buffer.remaining() == getBufferSize())
-					{
-						synchronized (frameBuffer)
-						{
-							buffer.get(frameBuffer);
-						}
-					}
-				}
-			}
-			catch (FrameGrabber.Exception e)
-			{
-				Log.e("Error while grabbing frames", e);
-			}
-			finally
-			{
-				try
-				{
-					if (reader != null)
-					{
-						reader.stop();
-						reader.release();
-					}
-				}
-				catch (FrameGrabber.Exception e)
-				{
-					Log.e("Error while closing reader", e);
-				}
-			}
-		}
-	}
+                    if (buffer.remaining() == getBufferSize()) {
+                        synchronized (frameBuffer) {
+                            buffer.get(frameBuffer);
+                        }
+                    }
+                }
+            } catch (FrameGrabber.Exception e) {
+                Log.e("Error while grabbing frames", e);
+            } finally {
+                try {
+                    if (reader != null) {
+                        reader.stop();
+                        reader.release();
+                    }
+                } catch (FrameGrabber.Exception e) {
+                    Log.e("Error while closing reader", e);
+                }
+            }
+        }
+    }
 }

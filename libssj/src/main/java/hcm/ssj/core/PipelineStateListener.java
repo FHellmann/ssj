@@ -30,7 +30,6 @@ package hcm.ssj.core;
 /**
  * Created by Michael Dietz on 25.09.2020.
  */
-public interface PipelineStateListener
-{
-	void stateUpdated(Pipeline.State state);
+public interface PipelineStateListener {
+    void stateUpdated(Pipeline.State state);
 }

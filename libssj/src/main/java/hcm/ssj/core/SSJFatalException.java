@@ -33,13 +33,17 @@ package hcm.ssj.core;
  */
 public class SSJFatalException extends Exception {
 
-    public SSJFatalException() {}
+    public SSJFatalException() {
+    }
+
     public SSJFatalException(String detailMessage) {
         super(detailMessage);
     }
+
     public SSJFatalException(String detailMessage, Throwable throwable) {
         super(detailMessage, throwable);
     }
+
     public SSJFatalException(Throwable throwable) {
         super(throwable);
     }

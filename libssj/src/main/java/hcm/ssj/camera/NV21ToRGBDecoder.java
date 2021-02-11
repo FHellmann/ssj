@@ -43,83 +43,72 @@ import hcm.ssj.core.stream.Stream;
  *
  * @author Vitaly
  */
-public class NV21ToRGBDecoder extends Transformer
-{
-	private static final int CHANNELS_PER_PIXEL = 3;
+public class NV21ToRGBDecoder extends Transformer {
+    private static final int CHANNELS_PER_PIXEL = 3;
 
-	private int width;
-	private int height;
+    private int width;
+    private int height;
 
-	public NV21ToRGBDecoder()
-	{
-		_name = "NV21ToRGBDecoder";
-	}
+    public NV21ToRGBDecoder() {
+        _name = "NV21ToRGBDecoder";
+    }
 
-	@Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		// Initialize image stream size
-		ImageStream imgstrm = (ImageStream)stream_in[0];
-		width = imgstrm.width;
-		height = imgstrm.height;
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        // Initialize image stream size
+        ImageStream imgstrm = (ImageStream) stream_in[0];
+        width = imgstrm.width;
+        height = imgstrm.height;
 
-		if(imgstrm.format != ImageFormat.NV21)
-		{
-			Log.e("Unsupported input video format. Expecting NV21.");
-		}
-	}
+        if (imgstrm.format != ImageFormat.NV21) {
+            Log.e("Unsupported input video format. Expecting NV21.");
+        }
+    }
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		// Fetch raw NV21 pixel data
-		byte[] nv21Data = stream_in[0].ptrB();
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        // Fetch raw NV21 pixel data
+        byte[] nv21Data = stream_in[0].ptrB();
 
-		// Convert NV21 to RGB and save the pixel data to the output stream
-		byte out[] = stream_out.ptrB();
-		CameraUtil.convertNV21ToRGB(out, nv21Data, width, height, false);
-	}
+        // Convert NV21 to RGB and save the pixel data to the output stream
+        byte[] out = stream_out.ptrB();
+        CameraUtil.convertNV21ToRGB(out, nv21Data, width, height, false);
+    }
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		ImageStream imgstrm = (ImageStream)stream_in[0];
-		return imgstrm.width * imgstrm.height * CHANNELS_PER_PIXEL; //RGB
-	}
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        ImageStream imgstrm = (ImageStream) stream_in[0];
+        return imgstrm.width * imgstrm.height * CHANNELS_PER_PIXEL; //RGB
+    }
 
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return stream_in[0].bytes;
-	}
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return stream_in[0].bytes;
+    }
 
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		if(stream_in[0].type != Cons.Type.IMAGE)
-			Log.e("Input stream type (" +stream_in[0].type.toString()+ ") is unsupported. Expecting " + Cons.Type.IMAGE.toString());
-		return Cons.Type.IMAGE;
-	}
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.IMAGE)
+            Log.e("Input stream type (" + stream_in[0].type.toString() + ") is unsupported. Expecting " + Cons.Type.IMAGE.toString());
+        return Cons.Type.IMAGE;
+    }
 
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return sampleNumber_in;
-	}
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
 
-	@Override
-	protected void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[] { "video" };
+    @Override
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[]{"video"};
 
-		((ImageStream) stream_out).width = ((ImageStream) stream_in[0]).width;
-		((ImageStream) stream_out).height = ((ImageStream) stream_in[0]).height;
-		((ImageStream) stream_out).format = 0x29; //ImageFormat.FLEX_RGB_888;
-	}
+        ((ImageStream) stream_out).width = ((ImageStream) stream_in[0]).width;
+        ((ImageStream) stream_out).height = ((ImageStream) stream_in[0]).height;
+        ((ImageStream) stream_out).format = 0x29; //ImageFormat.FLEX_RGB_888;
+    }
 
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 }

@@ -46,37 +46,20 @@ import hcm.ssj.core.SSJApplication;
 /**
  * Created by Johnny on 07.04.2015.
  */
-public abstract class BluetoothConnection extends BroadcastReceiver implements Runnable
-{
-    public enum Type
-    {
-        CLIENT,
-        SERVER
-    }
-
-    protected String _name = "BluetoothConnection";
-    Pipeline pipe;
-
-    private long _firstError = 0;
-
-    protected BluetoothDevice _connectedDevice = null;
-
-    protected boolean _terminate = false;
-    protected boolean _isConnected = false;
-
+public abstract class BluetoothConnection extends BroadcastReceiver implements Runnable {
     protected final Object _newConnection = new Object();
     protected final Object _newDisconnection = new Object();
-
+    protected String _name = "BluetoothConnection";
+    protected BluetoothDevice _connectedDevice = null;
+    protected boolean _terminate = false;
+    protected boolean _isConnected = false;
     protected InputStream _in;
     protected OutputStream _out;
-
     protected boolean _useObjectStreams = false;
+    Pipeline pipe;
+    private long _firstError = 0;
 
-    public InputStream input() {return _in;}
-    public OutputStream output() {return _out;}
-
-    public BluetoothConnection()
-    {
+    public BluetoothConnection() {
         pipe = Pipeline.getInstance();
 
         //register listener for BL status changes
@@ -89,13 +72,19 @@ public abstract class BluetoothConnection extends BroadcastReceiver implements R
         SSJApplication.getAppContext().registerReceiver(this, filter);
     }
 
-    public void clear()
-    {
+    public InputStream input() {
+        return _in;
+    }
+
+    public OutputStream output() {
+        return _out;
+    }
+
+    public void clear() {
         SSJApplication.getAppContext().unregisterReceiver(this);
     }
 
-    public void connect(boolean useObjectStreams)
-    {
+    public void connect(boolean useObjectStreams) {
         Log.i(_name + " connecting");
         _useObjectStreams = useObjectStreams;
 
@@ -108,8 +97,7 @@ public abstract class BluetoothConnection extends BroadcastReceiver implements R
         Log.i(_name + " connected");
     }
 
-    public void disconnect() throws IOException
-    {
+    public void disconnect() throws IOException {
         Log.i(_name + " disconnecting");
         _terminate = true;
         _isConnected = false;
@@ -133,38 +121,30 @@ public abstract class BluetoothConnection extends BroadcastReceiver implements R
         Log.v("new bluetooth state: " + action);
 
         if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-            BluetoothDevice device = intent.getParcelableExtra( BluetoothDevice.EXTRA_DEVICE );
-            if (!device.equals(_connectedDevice))
-            {
-                Log.v("connected with " + device.getName() );
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            if (!device.equals(_connectedDevice)) {
+                Log.v("connected with " + device.getName());
                 setConnectionStatus(true);
             }
-        }
-
-        else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))    {
-            BluetoothDevice device = intent.getParcelableExtra( BluetoothDevice.EXTRA_DEVICE );
-            if (device.equals(_connectedDevice))
-            {
-                Log.w("disconnected from " + device.getName() );
+        } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            if (device.equals(_connectedDevice)) {
+                Log.w("disconnected from " + device.getName());
                 setConnectionStatus(false);
             }
-        }
-
-        else if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+        } else if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
             final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-                                                 BluetoothAdapter.ERROR);
+                    BluetoothAdapter.ERROR);
             switch (state) {
                 case BluetoothAdapter.STATE_OFF:
                 case BluetoothAdapter.STATE_TURNING_OFF:
                     setConnectionStatus(false);
                     break;
             }
-        }
-
-        else if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
+        } else if (action.equals(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)) {
             final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE,
-                                                 BluetoothAdapter.ERROR);
-            BluetoothDevice device = intent.getParcelableExtra( BluetoothDevice.EXTRA_DEVICE );
+                    BluetoothAdapter.ERROR);
+            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             if (device.equals(_connectedDevice)) {
                 switch (state) {
                     case BluetoothAdapter.STATE_DISCONNECTED:
@@ -179,62 +159,48 @@ public abstract class BluetoothConnection extends BroadcastReceiver implements R
         }
     }
 
-    public void waitForConnection()
-    {
-        while(!isConnected() && !_terminate)
-        {
-            try
-            {
-                synchronized (_newConnection)
-                {
+    public void waitForConnection() {
+        while (!isConnected() && !_terminate) {
+            try {
+                synchronized (_newConnection) {
                     _newConnection.wait();
                 }
+            } catch (InterruptedException e) {
             }
-            catch (InterruptedException e) {}
         }
     }
 
-    public void waitForDisconnection()
-    {
-        while(isConnected() && !_terminate)
-        {
-            try
-            {
-                synchronized (_newDisconnection)
-                {
+    public void waitForDisconnection() {
+        while (isConnected() && !_terminate) {
+            try {
+                synchronized (_newDisconnection) {
                     _newDisconnection.wait();
                 }
+            } catch (InterruptedException e) {
             }
-            catch (InterruptedException e) {}
         }
     }
 
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         boolean value;
-        synchronized (this)
-        {
+        synchronized (this) {
             value = _connectedDevice != null && _isConnected;
         }
         return value;
     }
 
-    public BluetoothDevice getConnectedDevice()
-    {
+    public BluetoothDevice getConnectedDevice() {
         return _connectedDevice;
     }
 
-    protected void setConnectedDevice(BluetoothDevice device)
-    {
+    protected void setConnectedDevice(BluetoothDevice device) {
         synchronized (this) {
             _connectedDevice = device;
         }
     }
 
-    protected void setConnectionStatus(boolean connected)
-    {
-        if(connected)
-        {
+    protected void setConnectionStatus(boolean connected) {
+        if (connected) {
             synchronized (this) {
                 _isConnected = true;
             }
@@ -242,34 +208,33 @@ public abstract class BluetoothConnection extends BroadcastReceiver implements R
             synchronized (_newConnection) {
                 _newConnection.notifyAll();
             }
-        }
-        else
-        {
+        } else {
             synchronized (this) {
                 _isConnected = false;
             }
 
-            synchronized (_newDisconnection){
+            synchronized (_newDisconnection) {
                 _newDisconnection.notifyAll();
             }
         }
     }
 
-    protected void notifyDataTranferResult(boolean value)
-    {
-        if(!value)
-        {
-            if(_firstError == 0)
+    protected void notifyDataTranferResult(boolean value) {
+        if (!value) {
+            if (_firstError == 0)
                 _firstError = System.currentTimeMillis();
-            else if (System.currentTimeMillis() - _firstError > Cons.WAIT_BL_DISCONNECT)
-            {
+            else if (System.currentTimeMillis() - _firstError > Cons.WAIT_BL_DISCONNECT) {
                 Log.w("connection interrupted");
                 setConnectionStatus(false);
             }
-        }
-        else
+        } else
             _firstError = 0;
     }
 
     abstract protected void close();
+
+    public enum Type {
+        CLIENT,
+        SERVER
+    }
 }

@@ -33,8 +33,7 @@ import android.view.View;
  * Interface for tabs.<br>
  * Created by Frank Gaibler on 23.09.2016.
  */
-interface ITab
-{
+interface ITab {
     /**
      * @return View
      */

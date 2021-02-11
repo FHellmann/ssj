@@ -52,152 +52,137 @@ import hcm.ssj.core.option.OptionList;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class MSBand extends Sensor
-{
-	protected BandClient   client;
-	protected BandListener listener;
+public class MSBand extends Sensor {
+    protected BandClient client;
+    protected BandListener listener;
+    protected ChannelInfo[] channels = new ChannelInfo[Channel.values().length];
 
-	protected enum Channel
-	{
-		HeartRate,
-		RRInterval,
-		GSR,
-		SkinTemperature,
-		Acceleration,
-		Gyroscope,
-		AmbientLight,
-		Barometer,
-		Calories,
-		Distance,
-		Pedometer,
-		Altimeter
-	}
+    public MSBand() {
+        _name = "MSBand";
 
-	private class ChannelInfo {
-		public boolean active = false;
-		public int srMode = SampleRate.MS16.ordinal();
-	}
+        for (int i = 0; i < channels.length; i++) {
+            channels[i] = new ChannelInfo();
+        }
 
-	protected ChannelInfo channels[] = new ChannelInfo[Channel.values().length];
+        listener = new BandListener();
+    }
 
-	public void configureChannel(Channel ch, boolean active, int srMode)
-	{
-		channels[ch.ordinal()].active = active;
-		channels[ch.ordinal()].srMode = srMode;
-	}
+    public void configureChannel(Channel ch, boolean active, int srMode) {
+        channels[ch.ordinal()].active = active;
+        channels[ch.ordinal()].srMode = srMode;
+    }
 
-	public MSBand()
-	{
-		_name = "MSBand";
+    @Override
+    protected boolean connect() throws SSJFatalException {
+        boolean connected = false;
 
-		for (int i = 0; i < channels.length; i++) {
-			channels[i] = new ChannelInfo();
-		}
+        disconnect(); //clean up old connection
+        listener.reset();
 
-		listener = new BandListener();
-	}
+        Log.i("connecting to ms band ...");
+        BandInfo[] devices = BandClientManager.getInstance().getPairedBands();
 
-	@Override
-	protected boolean connect() throws SSJFatalException
-	{
-		boolean connected = false;
+        if (devices.length > 0) {
+            client = BandClientManager.getInstance().create(SSJApplication.getAppContext(), devices[0]);
+            client.registerConnectionCallback(listener);
 
-		disconnect(); //clean up old connection
-		listener.reset();
+            try {
+                if (ConnectionState.CONNECTED == client.connect().await()) {
+                    SharedPreferences pref = SSJApplication.getAppContext().getSharedPreferences("p7", 0);
+                    pref.edit().putInt("c3", 1).commit();
 
-		Log.i("connecting to ms band ...");
-		BandInfo[] devices = BandClientManager.getInstance().getPairedBands();
+                    // Register listeners
+                    if (channels[Channel.HeartRate.ordinal()].active)
+                        client.getSensorManager().registerHeartRateEventListener(listener);
+                    if (channels[Channel.RRInterval.ordinal()].active)
+                        client.getSensorManager().registerRRIntervalEventListener(listener);
+                    if (channels[Channel.GSR.ordinal()].active)
+                        client.getSensorManager().registerGsrEventListener(listener, GsrSampleRate.values()[channels[Channel.GSR.ordinal()].srMode]);
+                    if (channels[Channel.SkinTemperature.ordinal()].active)
+                        client.getSensorManager().registerSkinTemperatureEventListener(listener);
+                    if (channels[Channel.Acceleration.ordinal()].active)
+                        client.getSensorManager().registerAccelerometerEventListener(listener, SampleRate.values()[channels[Channel.Acceleration.ordinal()].srMode]);
+                    if (channels[Channel.Gyroscope.ordinal()].active)
+                        client.getSensorManager().registerGyroscopeEventListener(listener, SampleRate.values()[channels[Channel.Gyroscope.ordinal()].srMode]);
+                    if (channels[Channel.AmbientLight.ordinal()].active)
+                        client.getSensorManager().registerAmbientLightEventListener(listener);
+                    if (channels[Channel.Barometer.ordinal()].active)
+                        client.getSensorManager().registerBarometerEventListener(listener);
+                    if (channels[Channel.Calories.ordinal()].active)
+                        client.getSensorManager().registerCaloriesEventListener(listener);
+                    if (channels[Channel.Distance.ordinal()].active)
+                        client.getSensorManager().registerDistanceEventListener(listener);
+                    if (channels[Channel.Pedometer.ordinal()].active)
+                        client.getSensorManager().registerPedometerEventListener(listener);
+                    if (channels[Channel.Altimeter.ordinal()].active)
+                        client.getSensorManager().registerAltimeterEventListener(listener);
 
-		if (devices.length > 0)
-		{
-			client = BandClientManager.getInstance().create(SSJApplication.getAppContext(), devices[0]);
-			client.registerConnectionCallback(listener);
+                    // Wait for values
+                    long time = SystemClock.elapsedRealtime();
+                    while (!_terminate && !listener.hasReceivedData() && SystemClock.elapsedRealtime() - time < _frame.options.waitSensorConnect.get() * 1000) {
+                        try {
+                            Thread.sleep(Cons.SLEEP_IN_LOOP);
+                        } catch (InterruptedException e) {
+                        }
+                    }
 
-			try
-			{
-				if (ConnectionState.CONNECTED == client.connect().await())
-				{
-					SharedPreferences pref = SSJApplication.getAppContext().getSharedPreferences("p7", 0);
-					pref.edit().putInt("c3", 1).commit();
+                    if (listener.hasReceivedData()) {
+                        connected = true;
+                    } else {
+                        Log.e("Unable to connect to ms band");
+                    }
+                }
+            } catch (InterruptedException | BandException e) {
+                throw new SSJFatalException("Error while connecting to ms band", e);
+            } catch (InvalidBandVersionException e) {
+                throw new SSJFatalException("Old ms band version not supported", e);
+            }
+        }
 
-					// Register listeners
-					if(channels[Channel.HeartRate.ordinal()].active) client.getSensorManager().registerHeartRateEventListener(listener);
-					if(channels[Channel.RRInterval.ordinal()].active) client.getSensorManager().registerRRIntervalEventListener(listener);
-					if(channels[Channel.GSR.ordinal()].active) client.getSensorManager().registerGsrEventListener(listener, GsrSampleRate.values()[channels[Channel.GSR.ordinal()].srMode]);
-					if(channels[Channel.SkinTemperature.ordinal()].active) client.getSensorManager().registerSkinTemperatureEventListener(listener);
-					if(channels[Channel.Acceleration.ordinal()].active) client.getSensorManager().registerAccelerometerEventListener(listener, SampleRate.values()[channels[Channel.Acceleration.ordinal()].srMode]);
-					if(channels[Channel.Gyroscope.ordinal()].active) client.getSensorManager().registerGyroscopeEventListener(listener, SampleRate.values()[channels[Channel.Gyroscope.ordinal()].srMode]);
-					if(channels[Channel.AmbientLight.ordinal()].active) client.getSensorManager().registerAmbientLightEventListener(listener);
-					if(channels[Channel.Barometer.ordinal()].active) client.getSensorManager().registerBarometerEventListener(listener);
-					if(channels[Channel.Calories.ordinal()].active) client.getSensorManager().registerCaloriesEventListener(listener);
-					if(channels[Channel.Distance.ordinal()].active) client.getSensorManager().registerDistanceEventListener(listener);
-					if(channels[Channel.Pedometer.ordinal()].active) client.getSensorManager().registerPedometerEventListener(listener);
-					if(channels[Channel.Altimeter.ordinal()].active) client.getSensorManager().registerAltimeterEventListener(listener);
+        return connected;
+    }
 
-					// Wait for values
-					long time = SystemClock.elapsedRealtime();
-					while (!_terminate && !listener.hasReceivedData() && SystemClock.elapsedRealtime() - time < _frame.options.waitSensorConnect.get() * 1000)
-					{
-						try
-						{
-							Thread.sleep(Cons.SLEEP_IN_LOOP);
-						}
-						catch (InterruptedException e)
-						{
-						}
-					}
+    protected boolean checkConnection() {
+        return listener.isConnected();
+    }
 
-					if (listener.hasReceivedData())
-					{
-						connected = true;
-					}
-					else
-					{
-						Log.e("Unable to connect to ms band");
-					}
-				}
-			}
-			catch (InterruptedException | BandException e)
-			{
-				throw new SSJFatalException("Error while connecting to ms band", e);
-			}
-			catch (InvalidBandVersionException e)
-			{
-				throw new SSJFatalException("Old ms band version not supported", e);
-			}
-		}
+    @Override
+    protected void disconnect() throws SSJFatalException {
+        Log.d("Disconnecting from MS Band");
+        if (client != null) {
+            try {
+                client.getSensorManager().unregisterAllListeners();
+                client.disconnect().await(1000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException | TimeoutException | BandException e) {
+                Log.e("Error while disconnecting from ms band", e);
+            }
+        }
 
-		return connected;
-	}
+        client = null;
+    }
 
-	protected boolean checkConnection()
-	{
-		return listener.isConnected();
-	}
+    @Override
+    public OptionList getOptions() {
+        return null;
+    }
 
-	@Override
-	protected void disconnect() throws SSJFatalException
-	{
-		Log.d("Disconnecting from MS Band");
-		if (client != null)
-		{
-			try
-			{
-				client.getSensorManager().unregisterAllListeners();
-				client.disconnect().await(1000, TimeUnit.MILLISECONDS);
-			}
-			catch (InterruptedException | TimeoutException | BandException e)
-			{
-				Log.e("Error while disconnecting from ms band", e);
-			}
-		}
+    protected enum Channel {
+        HeartRate,
+        RRInterval,
+        GSR,
+        SkinTemperature,
+        Acceleration,
+        Gyroscope,
+        AmbientLight,
+        Barometer,
+        Calories,
+        Distance,
+        Pedometer,
+        Altimeter
+    }
 
-		client = null;
-	}
-
-	@Override
-	public OptionList getOptions()
-	{
-		return null;
-	}
+    private class ChannelInfo {
+        public boolean active = false;
+        public int srMode = SampleRate.MS16.ordinal();
+    }
 }

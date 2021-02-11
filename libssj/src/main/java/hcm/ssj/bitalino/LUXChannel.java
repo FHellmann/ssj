@@ -39,83 +39,70 @@ import hcm.ssj.core.stream.Stream;
  * Created by Ionut Damian on 06.07.2016.
  * outputs luminosity in percent
  */
-public class LUXChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class LUXChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BitalinoListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> channel = new Option<>("channel", 5, Integer.class, "channel id (between 0 and 5)");
-		public final Option<Integer> numBits = new Option<>("numBits", 10, Integer.class, "the first 4 channels are sampled using 10-bit resolution, the last two may be sampled using 6-bit");
+    public LUXChannel() {
+        _name = "Bitalino_LUXChannel";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	protected BitalinoListener _listener;
+    @Override
+    public void init() throws SSJException {
+        ((Bitalino) _sensor).addChannel(options.channel.get());
+    }
 
-	public LUXChannel()
-	{
-		_name = "Bitalino_LUXChannel";
-	}
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((Bitalino) _sensor).listener;
+    }
 
-	@Override
-	public void init() throws SSJException
-	{
-		((Bitalino)_sensor).addChannel(options.channel.get());
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((Bitalino) _sensor).listener;
-	}
+        float[] out = stream_out.ptrF();
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+        float adc = _listener.getAnalogData(options.channel.get());
+        out[0] = adc / (2 << options.numBits.get() - 1);
 
-		float[] out = stream_out.ptrF();
+        return true;
+    }
 
-		float adc = _listener.getAnalogData(options.channel.get());
-		out[0] = adc / (2 << options.numBits.get() -1);
+    @Override
+    protected double getSampleRate() {
+        return ((Bitalino) _sensor).options.sr.get();
+    }
 
-		return true;
-	}
+    @Override
+    protected int getSampleDimension() {
+        return 1;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return ((Bitalino)_sensor).options.sr.get();
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 1;
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "LUX";
+    }
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> channel = new Option<>("channel", 5, Integer.class, "channel id (between 0 and 5)");
+        public final Option<Integer> numBits = new Option<>("numBits", 10, Integer.class, "the first 4 channels are sampled using 10-bit resolution, the last two may be sampled using 6-bit");
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "LUX";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

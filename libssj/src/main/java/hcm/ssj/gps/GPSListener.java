@@ -35,84 +35,71 @@ import android.os.Bundle;
 /**
  * Created by Michael Dietz on 05.07.2016.
  */
-public class GPSListener implements LocationListener
-{
-	private double latitude;
-	private double longitude;
-	private long   time;
-	private long   updateTime;
+public class GPSListener implements LocationListener {
+    public boolean receivedData;
+    private double latitude;
+    private double longitude;
+    private long time;
+    private final long updateTime;
 
-	public boolean receivedData;
+    public GPSListener(long updateTime) {
+        reset();
 
-	public GPSListener(long updateTime)
-	{
-		reset();
+        this.updateTime = updateTime;
+    }
 
-		this.updateTime = updateTime;
-	}
+    public void reset() {
+        latitude = 0;
+        longitude = 0;
+        time = 0;
 
-	public void reset()
-	{
-		latitude = 0;
-		longitude = 0;
-		time = 0;
+        receivedData = false;
+    }
 
-		receivedData = false;
-	}
+    @Override
+    public void onLocationChanged(Location location) {
+        if (location.getProvider().equals(LocationManager.NETWORK_PROVIDER) && location.getTime() - time > updateTime * 2) {
+            receivedData = true;
 
-	@Override
-	public void onLocationChanged(Location location)
-	{
-		if (location.getProvider().equals(LocationManager.NETWORK_PROVIDER) && location.getTime() - time > updateTime * 2)
-		{
-			receivedData = true;
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
+        }
 
-			latitude = location.getLatitude();
-			longitude = location.getLongitude();
-		}
+        if (location.getProvider().equals(LocationManager.GPS_PROVIDER)) {
+            receivedData = true;
 
-		if (location.getProvider().equals(LocationManager.GPS_PROVIDER))
-		{
-			receivedData = true;
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
+            time = location.getTime();
+        }
+    }
 
-			latitude = location.getLatitude();
-			longitude = location.getLongitude();
-			time = location.getTime();
-		}
-	}
+    public double getLatitude() {
+        return latitude;
+    }
 
-	public double getLatitude()
-	{
-		return latitude;
-	}
+    public double getLongitude() {
+        return longitude;
+    }
 
-	public double getLongitude()
-	{
-		return longitude;
-	}
+    public long getTime() {
+        return time;
+    }
 
-	public long getTime()
-	{
-		return time;
-	}
+    // Unused listener methods
 
-	// Unused listener methods
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
 
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras)
-	{
+    }
 
-	}
+    @Override
+    public void onProviderEnabled(String provider) {
 
-	@Override
-	public void onProviderEnabled(String provider)
-	{
+    }
 
-	}
-
-	@Override
-	public void onProviderDisabled(String provider)
-	{
-		receivedData = false;
-	}
+    @Override
+    public void onProviderDisabled(String provider) {
+        receivedData = false;
+    }
 }

@@ -40,297 +40,257 @@ import info.plux.pluxapi.bitalino.BITalinoFrame;
 /**
  * Created by Michael Dietz on 07.01.2020.
  */
-public class PulseChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class PulseChannel extends SensorChannel {
+    public final Options options = new Options();
+    PulseListener listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> channel = new Option<>("Channel", 0, Integer.class, "channel id (between 0 and 5)");
-		public final Option<Integer> beatThreshold = new Option<>("Beat threshold", 550, Integer.class, "Signal threshold for heart beat");
-		public final Option<Boolean> outputRaw = new Option<>("Output Raw", true, Boolean.class, "Output raw signal value");
-		public final Option<Boolean> outputBpm = new Option<>("Output BPM", false, Boolean.class, "Output calculated bpm value");
-		public final Option<Boolean> outputIbi = new Option<>("Output IBI", false, Boolean.class, "Output calculated ibi value");
+    public PulseChannel() {
+        _name = "Bitalino_PulseChannel";
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+        this.listener = new PulseListener();
+    }
 
-	PulseListener listener;
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public PulseChannel()
-	{
-		_name = "Bitalino_PulseChannel";
+    @Override
+    protected void init() throws SSJException {
+        Bitalino sensor = ((Bitalino) _sensor);
 
-		this.listener = new PulseListener();
-	}
+        sensor.addChannel(options.channel.get());
+        sensor.listener = this.listener;
+    }
 
-	@Override
-	protected void init() throws SSJException
-	{
-		Bitalino sensor = ((Bitalino)_sensor);
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!listener.isConnected()) {
+            return false;
+        }
 
-		sensor.addChannel(options.channel.get());
-		sensor.listener = this.listener;
-	}
+        float[] out = stream_out.ptrF();
+        int dim = 0;
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!listener.isConnected())
-		{
-			return false;
-		}
+        if (options.outputRaw.get()) {
+            out[dim++] = listener.rawSignal;
+        }
+        if (options.outputBpm.get()) {
+            out[dim++] = listener.bpm;
+        }
+        if (options.outputIbi.get()) {
+            out[dim] = listener.ibi;
+        }
 
-		float[] out = stream_out.ptrF();
-		int dim = 0;
+        return true;
+    }
 
-		if (options.outputRaw.get())
-		{
-			out[dim++] = listener.rawSignal;
-		}
-		if (options.outputBpm.get())
-		{
-			out[dim++] = listener.bpm;
-		}
-		if (options.outputIbi.get())
-		{
-			out[dim] = listener.ibi;
-		}
+    @Override
+    protected double getSampleRate() {
+        return ((Bitalino) _sensor).options.sr.get();
+    }
 
-		return true;
-	}
+    @Override
+    protected int getSampleDimension() {
+        int dim = 0;
+        if (options.outputRaw.get()) {
+            dim += 1;
+        }
+        if (options.outputBpm.get()) {
+            dim += 1;
+        }
+        if (options.outputIbi.get()) {
+            dim += 1;
+        }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return ((Bitalino)_sensor).options.sr.get();
-	}
+        return dim;
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		int dim = 0;
-		if (options.outputRaw.get())
-		{
-			dim += 1;
-		}
-		if (options.outputBpm.get())
-		{
-			dim += 1;
-		}
-		if (options.outputIbi.get())
-		{
-			dim += 1;
-		}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-		return dim;
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
+        int dim = 0;
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
+        if (options.outputRaw.get()) {
+            stream_out.desc[dim++] = "raw pulse signal";
+        }
+        if (options.outputBpm.get()) {
+            stream_out.desc[dim++] = "bpm";
+        }
+        if (options.outputIbi.get()) {
+            stream_out.desc[dim] = "ibi";
+        }
+    }
 
-		int dim = 0;
+    public class Options extends OptionList {
+        public final Option<Integer> channel = new Option<>("Channel", 0, Integer.class, "channel id (between 0 and 5)");
+        public final Option<Integer> beatThreshold = new Option<>("Beat threshold", 550, Integer.class, "Signal threshold for heart beat");
+        public final Option<Boolean> outputRaw = new Option<>("Output Raw", true, Boolean.class, "Output raw signal value");
+        public final Option<Boolean> outputBpm = new Option<>("Output BPM", false, Boolean.class, "Output calculated bpm value");
+        public final Option<Boolean> outputIbi = new Option<>("Output IBI", false, Boolean.class, "Output calculated ibi value");
 
-		if (options.outputRaw.get())
-		{
-			stream_out.desc[dim++] = "raw pulse signal";
-		}
-		if (options.outputBpm.get())
-		{
-			stream_out.desc[dim++] = "bpm";
-		}
-		if (options.outputIbi.get())
-		{
-			stream_out.desc[dim] = "ibi";
-		}
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 
+    class PulseListener extends BitalinoListener {
+        private static final int QUEUE_SIZE = 10;
+        int rawSignal;
+        long ibi;
+        float avgIbi;
+        float bpm;
+        private long lastDataTime;
+        private long lastBeatTime;
+        private int max;
+        private int min;
+        private int amplitude;
+        private int threshold;
+        private boolean isPulse;
+        private boolean firstBeat;
+        private boolean secondBeat;
+        private final LimitedSizeQueue<Long> lastIbis;
 
-	class PulseListener extends BitalinoListener
-	{
-		private static final int QUEUE_SIZE = 10;
+        public PulseListener() {
+            lastIbis = new LimitedSizeQueue<>(QUEUE_SIZE);
 
-		private long lastDataTime;
-		private long lastBeatTime;
-		private int max;
-		private int min;
-		private int amplitude;
-		private int threshold;
-		private boolean isPulse;
-		private boolean firstBeat;
-		private boolean secondBeat;
-		private LimitedSizeQueue<Long> lastIbis;
+            reset();
+        }
 
-		int rawSignal;
-		long ibi;
-		float avgIbi;
-		float bpm;
+        public void reset() {
+            super.reset();
 
-		public PulseListener()
-		{
-			lastIbis = new LimitedSizeQueue<>(QUEUE_SIZE);
+            lastDataTime = 0;
+            lastBeatTime = 0;
 
-			reset();
-		}
+            // 750ms per beat = 80 Beats Per Minute (BPM)
+            ibi = 750;
 
-		public void reset()
-		{
-			super.reset();
+            avgIbi = 0;
 
-			lastDataTime = 0;
-			lastBeatTime = 0;
+            rawSignal = 0;
 
-			// 750ms per beat = 80 Beats Per Minute (BPM)
-			ibi = 750;
+            // Max at 1/2 the input range of 0..1023
+            max = 512;
 
-			avgIbi = 0;
+            // Min at 1/2 the input range
+            min = 512;
 
-			rawSignal = 0;
+            threshold = options.beatThreshold.get();
 
-			// Max at 1/2 the input range of 0..1023
-			max = 512;
+            // Beat amplitude 1/10 of input range.
+            amplitude = 100;
 
-			// Min at 1/2 the input range
-			min = 512;
+            bpm = 0;
 
-			threshold = options.beatThreshold.get();
+            isPulse = false;
+            firstBeat = true;
+            secondBeat = false;
 
-			// Beat amplitude 1/10 of input range.
-			amplitude = 100;
+            if (lastIbis != null) {
+                lastIbis.clear();
+            }
+        }
 
-			bpm = 0;
+        @Override
+        public void onBITalinoDataAvailable(BITalinoFrame biTalinoFrame) {
+            dataReceived();
 
-			isPulse = false;
-			firstBeat = true;
-			secondBeat = false;
+            lastDataTime = System.currentTimeMillis();
 
-			if (lastIbis != null)
-			{
-				lastIbis.clear();
-			}
-		}
+            rawSignal = biTalinoFrame.getAnalog(options.channel.get());
 
-		@Override
-		public void onBITalinoDataAvailable(BITalinoFrame biTalinoFrame)
-		{
-			dataReceived();
+            // Monitor the time since the last beat to avoid noise
+            long timeSinceLastBeat = lastDataTime - lastBeatTime;
 
-			lastDataTime = System.currentTimeMillis();
+            // Find min of the pulse wave and avoid noise by waiting 3/5 of last IBI
+            if (rawSignal < threshold && timeSinceLastBeat > ibi / 5.0 * 3.0) {
+                if (rawSignal < min) {
+                    min = rawSignal;
+                }
+            }
 
-			rawSignal = biTalinoFrame.getAnalog(options.channel.get());
+            // Find highest point in pulse wave (threshold condition helps avoid noise)
+            if (rawSignal > threshold && rawSignal > max) {
+                max = rawSignal;
+            }
 
-			// Monitor the time since the last beat to avoid noise
-			long timeSinceLastBeat = lastDataTime - lastBeatTime;
+            // Avoid high frequency noise
+            if (timeSinceLastBeat > 250) {
+                // Pulse detected
+                if (rawSignal > threshold && !isPulse && timeSinceLastBeat > ibi / 5.0 * 3.0) {
+                    // Set the Pulse flag when we think there is a pulse
+                    isPulse = true;
 
-			// Find min of the pulse wave and avoid noise by waiting 3/5 of last IBI
-			if (rawSignal < threshold && timeSinceLastBeat > ibi / 5.0 * 3.0)
-			{
-				if (rawSignal < min)
-				{
-					min = rawSignal;
-				}
-			}
+                    // Measure time between beats in ms
+                    ibi = lastDataTime - lastBeatTime;
 
-			// Find highest point in pulse wave (threshold condition helps avoid noise)
-			if (rawSignal > threshold && rawSignal > max)
-			{
-				max = rawSignal;
-			}
+                    // Keep track of time for next pulse
+                    lastBeatTime = lastDataTime;
 
-			// Avoid high frequency noise
-			if (timeSinceLastBeat > 250)
-			{
-				// Pulse detected
-				if (rawSignal > threshold && !isPulse && timeSinceLastBeat > ibi / 5.0 * 3.0)
-				{
-					// Set the Pulse flag when we think there is a pulse
-					isPulse = true;
+                    // Fill the queue to get a realistic BPM at startup
+                    if (secondBeat) {
+                        secondBeat = false;
 
-					// Measure time between beats in ms
-					ibi = lastDataTime - lastBeatTime;
+                        for (int i = 0; i < QUEUE_SIZE; i++) {
+                            lastIbis.add(ibi);
+                        }
+                    }
 
-					// Keep track of time for next pulse
-					lastBeatTime = lastDataTime;
+                    // IBI value is unreliable so discard it
+                    if (firstBeat) {
+                        firstBeat = false;
+                        secondBeat = true;
 
-					// Fill the queue to get a realistic BPM at startup
-					if (secondBeat)
-					{
-						secondBeat = false;
+                        return;
+                    }
 
-						for (int i = 0; i < QUEUE_SIZE; i++)
-						{
-							lastIbis.add(ibi);
-						}
-					}
+                    // Add the latest IBI to the rate array
+                    lastIbis.add(ibi);
 
-					// IBI value is unreliable so discard it
-					if (firstBeat)
-					{
-						firstBeat = false;
-						secondBeat = true;
+                    // Average the last 10 IBI values
+                    avgIbi = 0;
 
-						return;
-					}
+                    for (int i = 0; i < QUEUE_SIZE; i++) {
+                        avgIbi += lastIbis.get(i);
+                    }
 
-					// Add the latest IBI to the rate array
-					lastIbis.add(ibi);
+                    avgIbi = avgIbi / (float) QUEUE_SIZE;
 
-					// Average the last 10 IBI values
-					avgIbi = 0;
+                    // Calculate beats per minute
+                    bpm = 60000 / avgIbi;
+                }
+            }
 
-					for (int i = 0; i < QUEUE_SIZE; i++)
-					{
-						avgIbi += lastIbis.get(i);
-					}
+            // When the values are going down, the beat is over
+            if (rawSignal < threshold && isPulse) {
+                // Reset the Pulse flag
+                isPulse = false;
 
-					avgIbi = avgIbi / (float) QUEUE_SIZE;
+                // Get amplitude of the pulse wave
+                amplitude = max - min;
 
-					// Calculate beats per minute
-					bpm = 60000 / avgIbi;
-				}
-			}
+                // Set threshold at 50% of amplitude
+                threshold = (int) (amplitude / 2.0f + min);
 
-			// When the values are going down, the beat is over
-			if (rawSignal < threshold && isPulse)
-			{
-				// Reset the Pulse flag
-				isPulse = false;
+                // Reset min and max
+                min = threshold;
+                max = threshold;
+            }
 
-				// Get amplitude of the pulse wave
-				amplitude = max - min;
+            // If 2.5 seconds go by without a beat
+            if (timeSinceLastBeat > 2500) {
+                reset();
 
-				// Set threshold at 50% of amplitude
-				threshold = (int) (amplitude / 2.0f + min);
-
-				// Reset min and max
-				min = threshold;
-				max = threshold;
-			}
-
-			// If 2.5 seconds go by without a beat
-			if (timeSinceLastBeat > 2500)
-			{
-				reset();
-
-				lastDataTime = System.currentTimeMillis();
-				lastBeatTime = lastDataTime;
-			}
-		}
-	}
+                lastDataTime = System.currentTimeMillis();
+                lastBeatTime = lastDataTime;
+            }
+        }
+    }
 }

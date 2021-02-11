@@ -39,170 +39,145 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 10.08.2015.
  */
-public class Butfilt extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class Butfilt extends Transformer {
+    public final Options options = new Options();
+    IIR _iir;
+    Matrix<Float> _coefficients;
+    float[] _firstSample;
+    boolean _firstCall;
+    public Butfilt() {
+        _name = "Butfilt";
+    }
 
-	public enum Type
-	{
-		LOW,
-		HIGH,
-		BAND
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public class Options extends OptionList
-	{
-		public final Option<Type> type  = new Option<>("type", Type.LOW, Type.class, "");
-		public final Option<Integer> order = new Option<>("order", 1, Integer.class, "Filter order");
-		public final Option<Boolean> norm = new Option<>("norm", true, Boolean.class, "Frequency values are normalized in interval [0..1], where 1 is the nyquist frequency (=half the sample rate)");
-		public final Option<Double> low = new Option<>("low", 0., Double.class, "Low cutoff frequency given either as normalized value in interval [0..1] or as an absolute value in Hz (see -norm)");
-		public final Option<Double> high = new Option<>("high", 1., Double.class, "High cutoff frequency given either as normalized value in interval [0..1] or as an absolute value in Hz (see -norm)");
-		public final Option<Boolean> zero = new Option<>("zero", true, Boolean.class, "Subtract first sample from signal to avoid artifacts at the beginning of the signal");
+    protected Matrix<Float> getCoefficients(double sr) {
+        double low = options.norm.get() ? options.low.get() : 2 * options.low.get() / sr;
+        double high = options.norm.get() ? options.high.get() : 2 * options.high.get() / sr;
 
-		/**
-		 *
-		 */
-		private Options() {
-			addOptions();
-		}
-	}
+        return initCoefficients(options.type.get(), options.order.get(), low, high);
+    }
 
-	public final Options options = new Options();
+    protected Matrix<Float> initCoefficients(Type type, int order, double low, double high) {
+        Matrix<Float> coefficients = null;
 
-	IIR _iir;
-	Matrix<Float> _coefficients;
-	float[] _firstSample;
+        switch (type) {
+            case LOW:
+                coefficients = FilterTools.getInstance().getLPButter(order, low);
+                break;
+            case HIGH:
+                coefficients = FilterTools.getInstance().getHPButter(order, high);
+                break;
+            case BAND:
+                coefficients = FilterTools.getInstance().getBPButter(order, low, high);
+                break;
+        }
 
-	boolean _firstCall;
+        return coefficients;
+    }
 
-	public Butfilt()
-	{
-		_name = "Butfilt";
-	}
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        _coefficients = getCoefficients(stream_in[0].sr);
 
-	protected Matrix<Float> getCoefficients(double sr)
-	{
-		double low = options.norm.get() ? options.low.get() : 2 * options.low.get() / sr;
-		double high = options.norm.get() ? options.high.get() : 2 * options.high.get() / sr;
+        _iir = new IIR();
+        _iir.setCoefficients(_coefficients);
+        _iir.enter(stream_in, stream_out);
 
-		return initCoefficients(options.type.get(), options.order.get(), low, high);
-	}
+        _firstCall = true;
+    }
 
-	protected Matrix<Float> initCoefficients(Type type, int order, double low, double high)
-	{
-		Matrix<Float> coefficients = null;
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        if (_firstCall) {
+            if (options.zero.get()) {
+                _firstSample = new float[stream_in[0].dim];
 
-		switch (type)
-		{
-			case LOW:
-				coefficients = FilterTools.getInstance().getLPButter(order, low);
-				break;
-			case HIGH:
-				coefficients = FilterTools.getInstance().getHPButter(order, high);
-				break;
-			case BAND:
-				coefficients = FilterTools.getInstance().getBPButter(order, low, high);
-				break;
-		}
+                System.arraycopy(stream_in[0].ptrF(), 0, _firstSample, 0, stream_in[0].dim);
+            }
 
-		return coefficients;
-	}
+            _firstCall = false;
+        }
 
-	@Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		_coefficients = getCoefficients(stream_in[0].sr);
+        if (_firstSample != null) {
+            float[] ptr = stream_in[0].ptrF();
+            int ptrIndex = 0;
 
-		_iir = new IIR();
-		_iir.setCoefficients(_coefficients);
-		_iir.enter(stream_in, stream_out);
+            for (int i = 0; i < stream_in[0].num; i++) // TODO SSI: info.frame_num?
+            {
+                for (int j = 0; j < stream_in[0].dim; j++) {
+                    ptr[ptrIndex++] -= _firstSample[j];
+                }
+            }
+        }
 
-		_firstCall = true;
-	}
+        _iir.transform(stream_in, stream_out);
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		if (_firstCall)
-		{
-			if (options.zero.get())
-			{
-				_firstSample = new float[stream_in[0].dim];
+        if (_firstSample != null) {
+            float[] ptr = stream_out.ptrF();
+            int ptrIndex = 0;
 
-				System.arraycopy(stream_in[0].ptrF(), 0, _firstSample, 0, stream_in[0].dim);
-			}
+            for (int i = 0; i < stream_in[0].num; i++) // TODO SSI: info.frame_num?
+            {
+                for (int j = 0; j < stream_in[0].dim; j++) {
+                    ptr[ptrIndex++] += _firstSample[j];
+                }
+            }
+        }
+    }
 
-			_firstCall = false;
-		}
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        return stream_in[0].dim;
+    }
 
-		if (_firstSample != null)
-		{
-			float[] ptr = stream_in[0].ptrF();
-			int ptrIndex = 0;
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return Util.sizeOf(Cons.Type.FLOAT); // Float
+    }
 
-			for (int i = 0; i < stream_in[0].num; i++) // TODO SSI: info.frame_num?
-			{
-				for (int j = 0; j < stream_in[0].dim; j++)
-				{
-					ptr[ptrIndex++] -= _firstSample[j];
-				}
-			}
-		}
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.FLOAT) {
+            Log.e("unsupported input type");
+        }
 
-		_iir.transform(stream_in, stream_out);
+        return Cons.Type.FLOAT;
+    }
 
-		if (_firstSample != null)
-		{
-			float[] ptr = stream_out.ptrF();
-			int ptrIndex = 0;
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
 
-			for (int i = 0; i < stream_in[0].num; i++) // TODO SSI: info.frame_num?
-			{
-				for (int j = 0; j < stream_in[0].dim; j++)
-				{
-					ptr[ptrIndex++] += _firstSample[j];
-				}
-			}
-		}
-	}
+    @Override
+    public void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[stream_in[0].dim];
+        System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
+    }
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		return stream_in[0].dim;
-	}
+    public enum Type {
+        LOW,
+        HIGH,
+        BAND
+    }
 
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return Util.sizeOf(Cons.Type.FLOAT); // Float
-	}
+    public class Options extends OptionList {
+        public final Option<Type> type = new Option<>("type", Type.LOW, Type.class, "");
+        public final Option<Integer> order = new Option<>("order", 1, Integer.class, "Filter order");
+        public final Option<Boolean> norm = new Option<>("norm", true, Boolean.class, "Frequency values are normalized in interval [0..1], where 1 is the nyquist frequency (=half the sample rate)");
+        public final Option<Double> low = new Option<>("low", 0., Double.class, "Low cutoff frequency given either as normalized value in interval [0..1] or as an absolute value in Hz (see -norm)");
+        public final Option<Double> high = new Option<>("high", 1., Double.class, "High cutoff frequency given either as normalized value in interval [0..1] or as an absolute value in Hz (see -norm)");
+        public final Option<Boolean> zero = new Option<>("zero", true, Boolean.class, "Subtract first sample from signal to avoid artifacts at the beginning of the signal");
 
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		if (stream_in[0].type != Cons.Type.FLOAT)
-		{
-			Log.e("unsupported input type");
-		}
-
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return sampleNumber_in;
-	}
-
-	@Override
-	public void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[stream_in[0].dim];
-		System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
-	}
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

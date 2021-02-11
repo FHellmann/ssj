@@ -37,21 +37,18 @@ import hcm.ssj.core.option.OptionList;
  * Standard file options.<br>
  * Created by Frank Gaibler on 22.09.2016.
  */
-public interface IFileWriter
-{
+public interface IFileWriter {
     /**
      * Standard options
      */
-    class Options extends OptionList
-    {
+    class Options extends OptionList {
         public final Option<FolderPath> filePath = new Option<>("path", new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE + File.separator + "[time]"), FolderPath.class, "where to save the file");
         public final Option<String> fileName = new Option<>("fileName", null, String.class, "file name");
 
         /**
          *
          */
-        protected Options()
-        {
+        protected Options() {
             addOptions();
         }
     }

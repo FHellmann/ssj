@@ -40,53 +40,45 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 07.07.2016.
  */
-public class ValueEventSender extends Consumer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class ValueEventSender extends Consumer {
+    public final Options options = new Options();
 
-	public class Options extends OptionList
-	{
-		public final Option<String>    sender   = new Option<>("sender", null, String.class, "");
-		public final Option<String>    event    = new Option<>("event", "event", String.class, "");
+    public ValueEventSender() {
+        _name = "ValueEventSender";
+        options.sender.set(_name);
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        if (!EnumSet.of(Cons.Type.BYTE, Cons.Type.CHAR, Cons.Type.SHORT, Cons.Type.INT, Cons.Type.LONG, Cons.Type.FLOAT, Cons.Type.DOUBLE, Cons.Type.BOOL).contains(stream_in[0].type)) {
+            throw new SSJFatalException("type " + stream_in[0].type + " not supported");
+        }
+    }
 
-	public ValueEventSender()
-	{
-		_name = "ValueEventSender";
-		options.sender.set(_name);
-	}
+    @Override
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        Event ev = Event.create(stream_in[0].type);
+        ev.name = options.event.get();
+        ev.sender = options.sender.get();
+        ev.time = (int) (1000 * stream_in[0].time + 0.5);
+        ev.dur = (int) (1000 * (stream_in[0].num / stream_in[0].sr) + 0.5);
+        ev.state = Event.State.COMPLETED;
 
-	@Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-	{
-		if (!EnumSet.of(Cons.Type.BYTE, Cons.Type.CHAR, Cons.Type.SHORT, Cons.Type.INT, Cons.Type.LONG, Cons.Type.FLOAT, Cons.Type.DOUBLE, Cons.Type.BOOL).contains(stream_in[0].type))
-		{
-			throw new SSJFatalException("type "+ stream_in[0].type +" not supported");
-		}
-	}
+        ev.setData(stream_in[0].ptr());
+        _evchannel_out.pushEvent(ev);
+    }
 
-	@Override
-	protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-	{
-		Event ev = Event.create(stream_in[0].type);
-		ev.name = options.event.get();
-		ev.sender = options.sender.get();
-		ev.time = (int) (1000 * stream_in[0].time + 0.5);
-		ev.dur = (int) (1000 * (stream_in[0].num / stream_in[0].sr) + 0.5);
-		ev.state = Event.State.COMPLETED;
+    public class Options extends OptionList {
+        public final Option<String> sender = new Option<>("sender", null, String.class, "");
+        public final Option<String> event = new Option<>("event", "event", String.class, "");
 
-		ev.setData(stream_in[0].ptr());
-		_evchannel_out.pushEvent(ev);
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

@@ -52,183 +52,154 @@ import hcm.ssj.core.stream.Stream;
  * @author Vitaly Krumins
  */
 
-public class TensorFlow extends Model
-{
-	public class Options extends Model.Options
-	{
-		public final Option<String> inputNode = new Option<>("input", "input", String.class, "name of the input node");
-		public final Option<String> outputNode = new Option<>("output", "output", String.class, "name of the output node");
-		public final Option<long[]> shape = new Option<>("shape", null, long[].class, "shape of the input tensor");
+public class TensorFlow extends Model {
+    static {
+        System.loadLibrary("tensorflow_inference");
+    }
 
-		private Options()
-		{
-			super();
-			addOptions();
-		}
-	}
+    public Options options = new Options();
 
-	public Options options = new Options();
+    private Graph graph;
+    private Session session;
 
-	private Graph graph;
-	private Session session;
+    public TensorFlow() {
+        _name = "TensorFlow";
+    }
 
-	static
-	{
-		System.loadLibrary("tensorflow_inference");
-	}
+    @Override
+    public Model.Options getOptions() {
+        return options;
+    }
 
+    @Override
+    void init(int input_dim, int output_dim, String[] outputNames) {
 
-	public TensorFlow()
-	{
-		_name = "TensorFlow";
-	}
+    }
 
+    @Override
+    protected float[] forward(Stream stream) {
+        if (!isTrained) {
+            Log.w("not trained");
+            return null;
+        }
 
-	@Override
-	public Model.Options getOptions()
-	{
-		return options;
-	}
+        float[] floatValues = stream.ptrF();
+        float[] probabilities = makePrediction(floatValues);
 
-	@Override
-	void init(int input_dim, int output_dim, String[] outputNames)
-	{
+        return probabilities;
+    }
 
-	}
+    @Override
+    protected void loadOption(File file) {
+        XmlPullParser parser = Xml.newPullParser();
 
-	@Override
-	protected float[] forward(Stream stream)
-	{
-		if (!isTrained)
-		{
-			Log.w("not trained");
-			return null;
-		}
+        try {
+            parser.setInput(new FileReader(file));
+            parser.next();
 
-		float[] floatValues = stream.ptrF();
-		float[] probabilities = makePrediction(floatValues);
+            int eventType = parser.getEventType();
 
-		return probabilities;
-	}
+            // Check if option file is of the right format.
+            if (eventType != XmlPullParser.START_TAG || !parser.getName().equalsIgnoreCase("options")) {
+                Log.w("unknown or malformed trainer file");
+                return;
+            }
 
-	@Override
-	protected void loadOption(File file)
-	{
-		XmlPullParser parser = Xml.newPullParser();
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG) {
+                    if (parser.getName().equalsIgnoreCase("item")) {
+                        String optionName = parser.getAttributeValue(null, "name");
+                        String optionValue = parser.getAttributeValue(null, "value");
 
-		try
-		{
-			parser.setInput(new FileReader(file));
-			parser.next();
+                        Object currentValue = options.getOptionValue(optionName);
+                        if (currentValue == null)
+                            options.setOptionValue(optionName, optionValue);
+                    }
+                }
+                eventType = parser.next();
+            }
+        } catch (Exception e) {
+            Log.e(e.getMessage());
+        }
+    }
 
-			int eventType = parser.getEventType();
+    @Override
+    protected void loadModel(File file) {
+        FileInputStream fileInputStream;
+        byte[] fileBytes = new byte[(int) file.length()];
 
-			// Check if option file is of the right format.
-			if (eventType != XmlPullParser.START_TAG || !parser.getName().equalsIgnoreCase("options"))
-			{
-				Log.w("unknown or malformed trainer file");
-				return;
-			}
+        try {
+            fileInputStream = new FileInputStream(file);
+            fileInputStream.read(fileBytes);
+            fileInputStream.close();
 
-			while (eventType != XmlPullParser.END_DOCUMENT)
-			{
-				if (eventType == XmlPullParser.START_TAG)
-				{
-					if (parser.getName().equalsIgnoreCase("item"))
-					{
-						String optionName = parser.getAttributeValue(null, "name");
-						String optionValue = parser.getAttributeValue(null, "value");
+            graph = new Graph();
+            graph.importGraphDef(fileBytes);
+            session = new Session(graph);
+        } catch (Exception e) {
+            Log.e("Error while importing the model: " + e.getMessage());
+            return;
+        }
 
-						Object currentValue = options.getOptionValue(optionName);
-						if(currentValue == null)
-							options.setOptionValue(optionName, optionValue);
-					}
-				}
-				eventType = parser.next();
-			}
-		}
-		catch (Exception e)
-		{
-			Log.e(e.getMessage());
-		}
-	}
+        isTrained = true;
+    }
 
-	@Override
-	protected void loadModel(File file)
-	{
-		FileInputStream fileInputStream;
-		byte[] fileBytes = new byte[(int) file.length()];
+    /**
+     * Makes prediction about the given image data.
+     *
+     * @param floatValues RGB float data.
+     * @return Probability array.
+     */
+    private float[] makePrediction(float[] floatValues) {
+        Tensor input = Tensor.create(options.shape.get(), FloatBuffer.wrap(floatValues));
+        Tensor result = session.runner()
+                .feed(options.inputNode.get(), input)
+                .fetch(options.outputNode.get())
+                .run().get(0);
 
-		try
-		{
-			fileInputStream = new FileInputStream(file);
-			fileInputStream.read(fileBytes);
-			fileInputStream.close();
+        long[] rshape = result.shape();
 
-			graph = new Graph();
-			graph.importGraphDef(fileBytes);
-			session = new Session(graph);
-		}
-		catch (Exception e)
-		{
-			Log.e("Error while importing the model: " + e.getMessage());
-			return;
-		}
+        if (result.numDimensions() != 2 || rshape[0] != 1) {
+            throw new RuntimeException(
+                    String.format(
+                            "Expected model to produce a [1 N] shaped tensor where N is the number of labels, instead it produced one with shape %s",
+                            Arrays.toString(rshape)));
+        }
 
-		isTrained = true;
-	}
+        int nlabels = (int) rshape[1];
+        return result.copyTo(new float[1][nlabels])[0];
+    }
 
+    /**
+     * Parses string representation of input tensor shape.
+     *
+     * @param shape String that represents tensor shape.
+     * @return shape of the input tensor as a n-dimensional array.
+     */
+    private long[] parseTensorShape(String shape) {
+        // Delete square brackets and white spaces.
+        String formatted = shape.replaceAll("\\[", "").replaceAll("\\]", "").replaceAll("\\s", "");
 
-	/**
-	 * Makes prediction about the given image data.
-	 *
-	 * @param floatValues RGB float data.
-	 * @return Probability array.
-	 */
-	private float[] makePrediction(float[] floatValues)
-	{
-		Tensor input = Tensor.create(options.shape.get(), FloatBuffer.wrap(floatValues));
-		Tensor result = session.runner()
-				.feed(options.inputNode.get(), input)
-				.fetch(options.outputNode.get())
-				.run().get(0);
+        // Separate each dimension value.
+        String[] shapeArray = formatted.split(",");
 
-		long[] rshape = result.shape();
+        long[] tensorShape = new long[shapeArray.length];
 
-		if (result.numDimensions() != 2 || rshape[0] != 1)
-		{
-			throw new RuntimeException(
-					String.format(
-							"Expected model to produce a [1 N] shaped tensor where N is the number of labels, instead it produced one with shape %s",
-							Arrays.toString(rshape)));
-		}
+        for (int i = 0; i < shapeArray.length; i++) {
+            tensorShape[i] = Integer.parseInt(shapeArray[i]);
+        }
 
-		int nlabels = (int) rshape[1];
-		return result.copyTo(new float[1][nlabels])[0];
-	}
+        return tensorShape;
+    }
 
+    public class Options extends Model.Options {
+        public final Option<String> inputNode = new Option<>("input", "input", String.class, "name of the input node");
+        public final Option<String> outputNode = new Option<>("output", "output", String.class, "name of the output node");
+        public final Option<long[]> shape = new Option<>("shape", null, long[].class, "shape of the input tensor");
 
-	/**
-	 * Parses string representation of input tensor shape.
-	 *
-	 * @param shape String that represents tensor shape.
-	 * @return shape of the input tensor as a n-dimensional array.
-	 */
-	private long[] parseTensorShape(String shape)
-	{
-		// Delete square brackets and white spaces.
-		String formatted = shape.replaceAll("\\[", "").replaceAll("\\]", "").replaceAll("\\s", "");
-
-		// Separate each dimension value.
-		String[] shapeArray = formatted.split(",");
-
-		long[] tensorShape = new long[shapeArray.length];
-
-		for (int i = 0; i < shapeArray.length; i++)
-		{
-			tensorShape[i] = Integer.parseInt(shapeArray[i]);
-		}
-
-		return tensorShape;
-	}
+        private Options() {
+            super();
+            addOptions();
+        }
+    }
 }

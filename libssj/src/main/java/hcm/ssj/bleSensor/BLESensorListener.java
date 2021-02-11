@@ -92,8 +92,8 @@ public class BLESensorListener {
     private int RMSSD = 0; //bvp raw values
     private int bpm = 0;
     private int gsr = 0;
-    private String service;
-    private String characterisitc;
+    private final String service;
+    private final String characterisitc;
     //private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private String mBluetoothDeviceAddress;
@@ -442,13 +442,23 @@ public class BLESensorListener {
         }
     }
 
-    public int getBpm() {return bpm;}
+    public int getBpm() {
+        return bpm;
+    }
 
-    public int getRMSSD() { return RMSSD;}
+    public int getRMSSD() {
+        return RMSSD;
+    }
 
-    public int getAcc() {return accelerometer;}
+    public int getAcc() {
+        return accelerometer;
+    }
 
-    public int getGsr() { return gsr;}
+    public int getGsr() {
+        return gsr;
+    }
 
-    public int getTemperature() { return temperature;}
-};
+    public int getTemperature() {
+        return temperature;
+    }
+}

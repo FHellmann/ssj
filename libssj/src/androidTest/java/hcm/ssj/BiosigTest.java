@@ -45,36 +45,31 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class BiosigTest
-{
-	@Test
-	public void testArousal() throws Exception
-	{
-		Pipeline frame = Pipeline.getInstance();
+public class BiosigTest {
+    @Test
+    public void testArousal() throws Exception {
+        Pipeline frame = Pipeline.getInstance();
 
-		Empatica empatica = new Empatica();
-		GSRChannel data = new GSRChannel();
-		frame.addSensor(empatica, data);
+        Empatica empatica = new Empatica();
+        GSRChannel data = new GSRChannel();
+        frame.addSensor(empatica, data);
 
-		GSRArousalEstimation arousal = new GSRArousalEstimation();
-		frame.addTransformer(arousal, data, 0.25, 0);
+        GSRArousalEstimation arousal = new GSRArousalEstimation();
+        frame.addTransformer(arousal, data, 0.25, 0);
 
-		Logger dummy = new Logger();
-		frame.addConsumer(dummy, arousal, 0.25, 0);
+        Logger dummy = new Logger();
+        frame.addConsumer(dummy, arousal, 0.25, 0);
 
-		frame.start();
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		frame.stop();
-		Log.i("arousal test finished");
-	}
+        frame.stop();
+        Log.i("arousal test finished");
+    }
 }

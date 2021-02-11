@@ -43,38 +43,29 @@ import hcm.ssj.core.event.Event;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class SpeechRate extends Condition
-{
+public class SpeechRate extends Condition {
     LinkedList<Float> _sr = new LinkedList<Float>();
     int _history_size;
 
     XmlPullParser _parser;
 
-    public SpeechRate()
-    {
-        try
-        {
+    public SpeechRate() {
+        try {
             _parser = Xml.newPullParser();
             _parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-        }
-        catch (XmlPullParserException e)
-        {
+        } catch (XmlPullParserException e) {
             throw new RuntimeException(e);
         }
     }
-    
+
     @Override
-    public float parseEvent(Event event)
-    {
-        try
-        {
+    public float parseEvent(Event event) {
+        try {
             float srate = 0;
             _parser.setInput(new StringReader(event.ptrStr()));
 
-            while (_parser.next() != XmlPullParser.END_DOCUMENT)
-            {
-                if (_parser.getEventType() == XmlPullParser.START_TAG && _parser.getName().equalsIgnoreCase("tuple"))
-                {
+            while (_parser.next() != XmlPullParser.END_DOCUMENT) {
+                if (_parser.getEventType() == XmlPullParser.START_TAG && _parser.getName().equalsIgnoreCase("tuple")) {
                     if (_parser.getAttributeValue(null, "string").equalsIgnoreCase("Speechrate (syllables/sec)")) {
                         srate = Float.parseFloat(_parser.getAttributeValue(null, "value"));
 
@@ -84,13 +75,10 @@ public class SpeechRate extends Condition
 
                         break;
                     }
-                }
-                else if(_parser.getEventType() == XmlPullParser.END_TAG && _parser.getName().equalsIgnoreCase("event"))
+                } else if (_parser.getEventType() == XmlPullParser.END_TAG && _parser.getName().equalsIgnoreCase("event"))
                     break; //jump out once we reach end tag
             }
-        }
-        catch (XmlPullParserException | IOException e)
-        {
+        } catch (XmlPullParserException | IOException e) {
             throw new RuntimeException("failed parsing event", e);
         }
 
@@ -100,28 +88,22 @@ public class SpeechRate extends Condition
         return value;
     }
 
-    private float getAvg(LinkedList<Float> vec)
-    {
-        if(vec.size() == 0)
+    private float getAvg(LinkedList<Float> vec) {
+        if (vec.size() == 0)
             return 0;
 
         float sum = 0;
-        for(float i : vec)
-        {
+        for (float i : vec) {
             sum += i;
         }
         return sum / vec.size();
     }
 
     @Override
-    protected void load(XmlPullParser xml, Context context)
-    {
-        try
-        {
+    protected void load(XmlPullParser xml, Context context) {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "condition");
-        }
-        catch (XmlPullParserException | IOException e)
-        {
+        } catch (XmlPullParserException | IOException e) {
             Log.e("error parsing config file", e);
         }
 

@@ -36,29 +36,26 @@ import hcm.ssj.creator.R;
  * Created by Antonio Grieco on 29.06.2017.
  */
 
-public enum ConnectionType{
+public enum ConnectionType {
 
-	STREAMCONNECTION(new PathEffect(), R.color.colorConnectionStream),
-	EVENTCONNECTION(new DashPathEffect(new float[]{45f,  30f}, 0), R.color.colorConnectionEvent),
-	EVENTTRIGGERCONNECTION(null, R.color.colorConnectionEvent),
-	MODELCONNECTION(new DashPathEffect(new float[]{10f,  10f}, 0), R.color.colorConnectionModel);
+    STREAMCONNECTION(new PathEffect(), R.color.colorConnectionStream),
+    EVENTCONNECTION(new DashPathEffect(new float[]{45f, 30f}, 0), R.color.colorConnectionEvent),
+    EVENTTRIGGERCONNECTION(null, R.color.colorConnectionEvent),
+    MODELCONNECTION(new DashPathEffect(new float[]{10f, 10f}, 0), R.color.colorConnectionModel);
 
-	private final PathEffect pathEffect;
-	private final int color;
+    private final PathEffect pathEffect;
+    private final int color;
 
-	ConnectionType(PathEffect pathEffect, int color)
-	{
-		this.pathEffect = pathEffect;
-		this.color = color;
-	}
+    ConnectionType(PathEffect pathEffect, int color) {
+        this.pathEffect = pathEffect;
+        this.color = color;
+    }
 
-	public PathEffect getPathEffect()
-	{
-		return pathEffect;
-	}
+    public PathEffect getPathEffect() {
+        return pathEffect;
+    }
 
-	public int getColor()
-	{
-		return color;
-	}
+    public int getColor() {
+        return color;
+    }
 }

@@ -38,8 +38,7 @@ import hcm.ssj.core.SSJApplication;
  * Constants used for the file operations<br>
  * Created by Frank Gaibler on 31.08.2015.
  */
-public class FileCons
-{
+public class FileCons {
     public static final String DELIMITER_DIMENSION = " ";
     public static final String DELIMITER_LINE = "\r\n"; //works on android and windows, System.getProperty("line.separator") might not
     public static final String TAG_DATA_FILE = "~";
@@ -50,7 +49,7 @@ public class FileCons
     public static final String FILE_EXTENSION_ANNO = "annotation";
     public static final String FILE_EXTENSION_TRAINER = "trainer";
     public static final String FILE_EXTENSION_MODEL = "model";
-    public static final String FILE_EXTENSION_OPTION= "option";
+    public static final String FILE_EXTENSION_OPTION = "option";
     public static final String SSJ_EXTERNAL_STORAGE = new File(Environment.getExternalStorageDirectory(), "SSJ").getPath();
     public static final String SSJ_DATA = SSJ_EXTERNAL_STORAGE + File.separator + "Data";
     public static final String DOWNLOAD_DIR = SSJ_EXTERNAL_STORAGE + File.separator + "download";

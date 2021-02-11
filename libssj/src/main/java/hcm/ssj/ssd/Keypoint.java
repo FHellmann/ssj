@@ -30,19 +30,16 @@ package hcm.ssj.ssd;
 /**
  * Created by Michael Dietz on 11.01.2021.
  */
-public class Keypoint
-{
-	public float x;
-	public float y;
+public class Keypoint {
+    public float x;
+    public float y;
 
-	public Keypoint()
-	{
+    public Keypoint() {
 
-	}
+    }
 
-	public Keypoint(float x, float y)
-	{
-		this.x = x;
-		this.y = y;
-	}
+    public Keypoint(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
 }

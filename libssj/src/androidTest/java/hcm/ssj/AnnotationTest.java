@@ -42,33 +42,31 @@ import hcm.ssj.core.Cons;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class AnnotationTest
-{
-	private String trainerFileName = "activity.NaiveBayes.trainer";
-	private String modelPath = "/sdcard/SSJ/Creator/res";
+public class AnnotationTest {
+    private final String trainerFileName = "activity.NaiveBayes.trainer";
+    private final String modelPath = "/sdcard/SSJ/Creator/res";
 
-	// Helper variables
-	private String modelFileName;
-	private String modelOptionFileName;
+    // Helper variables
+    private String modelFileName;
+    private String modelOptionFileName;
 
-	private int[] select_dimensions;
-	private String[] classNames;
-	private int bytes;
-	private int dim;
-	private float sr;
-	private Cons.Type type;
+    private int[] select_dimensions;
+    private String[] classNames;
+    private int bytes;
+    private int dim;
+    private float sr;
+    private Cons.Type type;
 
-	@Test
-	public void LoadSaveTest() throws Exception
-	{
-		Annotation anno = new Annotation();
-		anno.load("/sdcard/SSJ/mouse.annotation");
-		anno.save("/sdcard/SSJ", "mouse2.annotation");
+    @Test
+    public void LoadSaveTest() throws Exception {
+        Annotation anno = new Annotation();
+        anno.load("/sdcard/SSJ/mouse.annotation");
+        anno.save("/sdcard/SSJ", "mouse2.annotation");
 
-		anno.convertToFrames(1.0, "xx", 0, 0.5);
-		anno.save("/sdcard/SSJ", "mouse_cont.annotation");
+        anno.convertToFrames(1.0, "xx", 0, 0.5);
+        anno.save("/sdcard/SSJ", "mouse_cont.annotation");
 
-		return;
+        return;
 
-	}
+    }
 }

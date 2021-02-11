@@ -38,257 +38,220 @@ import hcm.ssj.core.stream.Stream;
 
 /**
  * Created by Michael Dietz on 10.08.2015.
- *
+ * <p>
  * Normalizes input stream using moving/sliding minim and/or maximum for the chosen window.
  */
-public class MvgNorm extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class MvgNorm extends Transformer {
+    public final Options options = new Options();
+    float _rangeA;
+    float _rangeD;
+    Norm _norm;
+    Transformer _mvg;
+    Stream _dataTmp;
+    public MvgNorm() {
+        _name = "MvgNorm";
+    }
 
-	public enum Norm
-	{
-		AVG_VAR,
-		MIN_MAX,
-		SUB_AVG,
-		SUB_MIN
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public enum Method
-	{
-		MOVING,
-		SLIDING
-	}
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        _rangeA = options.rangeA.get();
+        _rangeD = options.rangeB.get() - options.rangeA.get();
+        _norm = options.norm.get();
 
-	public class Options extends OptionList
-	{
-		public final Option<Norm> norm = new Option<>("norm", Norm.AVG_VAR, Norm.class, "");
-		public final Option<Float> rangeA = new Option<>("rangeA", 0.f, Float.class, "");
-		public final Option<Float> rangeB = new Option<>("rangeB", 1.f, Float.class, "");
-		public final Option<Float> windowSize = new Option<>("windowSize", 10.f, Float.class, "");
-		public final Option<Method> method = new Option<>("method", Method.MOVING, Method.class, "");
-		public final Option<Integer> numberOfBlocks = new Option<>("numberOfBlocks", 10, Integer.class, "");
+        switch (_norm) {
+            case AVG_VAR: {
+                MvgAvgVar mvgAvgVar = new MvgAvgVar();
+                mvgAvgVar.options.format.set(MvgAvgVar.Format.AVG_AND_VAR);
+                mvgAvgVar.options.method.set(options.method.get() == Method.MOVING ? MvgAvgVar.Method.MOVING : MvgAvgVar.Method.SLIDING);
+                mvgAvgVar.options.window.set((double) options.windowSize.get());
 
-		/**
-		 *
-		 */
-		private Options() {
-			addOptions();
-		}
-	}
+                _mvg = mvgAvgVar;
+                break;
+            }
+            case MIN_MAX: {
+                MvgMinMax mvgMinMax = new MvgMinMax();
+                mvgMinMax.options.format.set(MvgMinMax.Format.ALL);
+                mvgMinMax.options.method.set(options.method.get() == Method.MOVING ? MvgMinMax.Method.MOVING : MvgMinMax.Method.SLIDING);
+                mvgMinMax.options.windowSize.set(options.windowSize.get());
 
-	public final Options options = new Options();
+                _mvg = mvgMinMax;
+                break;
+            }
+            case SUB_AVG: {
+                MvgAvgVar mvgAvgVar = new MvgAvgVar();
+                mvgAvgVar.options.format.set(MvgAvgVar.Format.AVERAGE);
+                mvgAvgVar.options.method.set(options.method.get() == Method.MOVING ? MvgAvgVar.Method.MOVING : MvgAvgVar.Method.SLIDING);
+                mvgAvgVar.options.window.set((double) options.windowSize.get());
 
-	float       _rangeA;
-	float       _rangeD;
-	Norm        _norm;
-	Transformer _mvg;
-	Stream      _dataTmp;
+                _mvg = mvgAvgVar;
+                break;
+            }
+            case SUB_MIN: {
+                MvgMinMax mvgMinMax = new MvgMinMax();
+                mvgMinMax.options.format.set(MvgMinMax.Format.MIN);
+                mvgMinMax.options.method.set(options.method.get() == Method.MOVING ? MvgMinMax.Method.MOVING : MvgMinMax.Method.SLIDING);
+                mvgMinMax.options.windowSize.set(options.windowSize.get());
+                mvgMinMax.options.numberOfBlocks.set(options.numberOfBlocks.get());
 
-	public MvgNorm()
-	{
-		_name = "MvgNorm";
-	}
+                _mvg = mvgMinMax;
+                break;
+            }
+        }
 
-	@Override
-	public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		_rangeA = options.rangeA.get();
-		_rangeD = options.rangeB.get() - options.rangeA.get();
-		_norm = options.norm.get();
+        _dataTmp = Stream.create(stream_in[0].num, _mvg.getSampleDimension(stream_in), Util.calcSampleRate(_mvg, stream_in[0]), _mvg.getSampleType(stream_in));
 
-		switch (_norm)
-		{
-			case AVG_VAR:
-			{
-				MvgAvgVar mvgAvgVar = new MvgAvgVar();
-				mvgAvgVar.options.format.set(MvgAvgVar.Format.AVG_AND_VAR);
-				mvgAvgVar.options.method.set(options.method.get() == Method.MOVING ? MvgAvgVar.Method.MOVING : MvgAvgVar.Method.SLIDING);
-				mvgAvgVar.options.window.set((double) options.windowSize.get());
+        _mvg.enter(stream_in, _dataTmp);
+    }
 
-				_mvg = mvgAvgVar;
-				break;
-			}
-			case MIN_MAX:
-			{
-				MvgMinMax mvgMinMax = new MvgMinMax();
-				mvgMinMax.options.format.set(MvgMinMax.Format.ALL);
-				mvgMinMax.options.method.set(options.method.get() == Method.MOVING ? MvgMinMax.Method.MOVING : MvgMinMax.Method.SLIDING);
-				mvgMinMax.options.windowSize.set(options.windowSize.get());
+    @Override
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        int sampleDimension = stream_in[0].dim;
+        int sampleNumber = stream_in[0].num;
 
-				_mvg = mvgMinMax;
-				break;
-			}
-			case SUB_AVG:
-			{
-				MvgAvgVar mvgAvgVar = new MvgAvgVar();
-				mvgAvgVar.options.format.set(MvgAvgVar.Format.AVERAGE);
-				mvgAvgVar.options.method.set(options.method.get() == Method.MOVING ? MvgAvgVar.Method.MOVING : MvgAvgVar.Method.SLIDING);
-				mvgAvgVar.options.window.set((double) options.windowSize.get());
+        _mvg.transform(stream_in, _dataTmp);
 
-				_mvg = mvgAvgVar;
-				break;
-			}
-			case SUB_MIN:
-			{
-				MvgMinMax mvgMinMax = new MvgMinMax();
-				mvgMinMax.options.format.set(MvgMinMax.Format.MIN);
-				mvgMinMax.options.method.set(options.method.get() == Method.MOVING ? MvgMinMax.Method.MOVING : MvgMinMax.Method.SLIDING);
-				mvgMinMax.options.windowSize.set(options.windowSize.get());
-				mvgMinMax.options.numberOfBlocks.set(options.numberOfBlocks.get());
+        float[] srcPtr = stream_in[0].ptrF();
+        float[] dstPtr = stream_out.ptrF();
+        float[] tmpPtr = _dataTmp.ptrF();
 
-				_mvg = mvgMinMax;
-				break;
-			}
-		}
+        int srcPtrIndex = 0;
+        int dstPtrIndex = 0;
+        int tmpPtrIndex = 0;
 
-		_dataTmp = Stream.create(stream_in[0].num, _mvg.getSampleDimension(stream_in), Util.calcSampleRate(_mvg, stream_in[0]), _mvg.getSampleType(stream_in));
+        switch (_norm) {
+            case AVG_VAR: {
+                float x, y, avgVal, varVal;
 
-		_mvg.enter(stream_in, _dataTmp);
-	}
+                for (int i = 0; i < sampleNumber; i++) {
+                    for (int j = 0; j < sampleDimension; j++) {
+                        x = srcPtr[srcPtrIndex++];
+                        avgVal = tmpPtr[tmpPtrIndex++];
+                        varVal = tmpPtr[tmpPtrIndex++];
+                        y = (float) ((x - avgVal) / Math.sqrt(varVal));
 
-	@Override
-	public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-	{
-		int sampleDimension = stream_in[0].dim;
-		int sampleNumber = stream_in[0].num;
+                        dstPtr[dstPtrIndex++] = y;
+                    }
+                }
 
-		_mvg.transform(stream_in, _dataTmp);
+                break;
+            }
+            case MIN_MAX: {
+                float x, y, minVal, maxVal, difVal;
 
-		float[] srcPtr = stream_in[0].ptrF();
-		float[] dstPtr = stream_out.ptrF();
-		float[] tmpPtr = _dataTmp.ptrF();
+                for (int i = 0; i < sampleNumber; i++) {
+                    for (int j = 0; j < sampleDimension; j++) {
+                        x = srcPtr[srcPtrIndex++];
+                        minVal = tmpPtr[tmpPtrIndex++];
+                        maxVal = tmpPtr[tmpPtrIndex++];
+                        difVal = maxVal - minVal;
 
-		int srcPtrIndex = 0;
-		int dstPtrIndex = 0;
-		int tmpPtrIndex = 0;
+                        if (difVal != 0) {
+                            y = (x - minVal) / difVal;
+                        } else {
+                            y = 0;
+                        }
 
-		switch (_norm)
-		{
-			case AVG_VAR:
-			{
-				float x, y, avgVal, varVal;
+                        y = _rangeA + y * _rangeD;
 
-				for (int i = 0; i < sampleNumber; i++)
-				{
-					for (int j = 0; j < sampleDimension; j++)
-					{
-						x = srcPtr[srcPtrIndex++];
-						avgVal = tmpPtr[tmpPtrIndex++];
-						varVal = tmpPtr[tmpPtrIndex++];
-						y = (float) ((x - avgVal) / Math.sqrt(varVal));
+                        dstPtr[dstPtrIndex++] = y;
+                    }
+                }
 
-						dstPtr[dstPtrIndex++] = y;
-					}
-				}
+                break;
+            }
+            case SUB_AVG: {
+                float x, y, avgVal;
 
-				break;
-			}
-			case MIN_MAX:
-			{
-				float x, y, minVal, maxVal, difVal;
+                for (int i = 0; i < sampleNumber; i++) {
+                    for (int j = 0; j < sampleDimension; j++) {
+                        x = srcPtr[srcPtrIndex++];
+                        avgVal = tmpPtr[tmpPtrIndex++];
+                        y = x - avgVal;
 
-				for (int i = 0; i < sampleNumber; i++)
-				{
-					for (int j = 0; j < sampleDimension; j++)
-					{
-						x = srcPtr[srcPtrIndex++];
-						minVal = tmpPtr[tmpPtrIndex++];
-						maxVal = tmpPtr[tmpPtrIndex++];
-						difVal = maxVal - minVal;
+                        dstPtr[dstPtrIndex++] = y;
+                    }
+                }
 
-						if (difVal != 0)
-						{
-							y = (x - minVal) / difVal;
-						}
-						else
-						{
-							y = 0;
-						}
+                break;
+            }
+            case SUB_MIN: {
+                float x, y, minVal;
 
-						y = _rangeA + y * _rangeD;
+                for (int i = 0; i < sampleNumber; i++) {
+                    for (int j = 0; j < sampleDimension; j++) {
+                        x = srcPtr[srcPtrIndex++];
+                        minVal = tmpPtr[tmpPtrIndex++];
+                        y = x - minVal;
 
-						dstPtr[dstPtrIndex++] = y;
-					}
-				}
+                        dstPtr[dstPtrIndex++] = y;
+                    }
+                }
 
-				break;
-			}
-			case SUB_AVG:
-			{
-				float x, y, avgVal;
+                break;
+            }
+        }
+    }
 
-				for (int i = 0; i < sampleNumber; i++)
-				{
-					for (int j = 0; j < sampleDimension; j++)
-					{
-						x = srcPtr[srcPtrIndex++];
-						avgVal = tmpPtr[tmpPtrIndex++];
-						y = x - avgVal;
+    @Override
+    public int getSampleDimension(Stream[] stream_in) {
+        return stream_in[0].dim;
+    }
 
-						dstPtr[dstPtrIndex++] = y;
-					}
-				}
+    @Override
+    public int getSampleBytes(Stream[] stream_in) {
+        return Util.sizeOf(Cons.Type.FLOAT); // Float
+    }
 
-				break;
-			}
-			case SUB_MIN:
-			{
-				float x, y, minVal;
+    @Override
+    public Cons.Type getSampleType(Stream[] stream_in) {
+        if (stream_in[0].type != Cons.Type.FLOAT) {
+            Log.e("unsupported input type");
+        }
 
-				for (int i = 0; i < sampleNumber; i++)
-				{
-					for (int j = 0; j < sampleDimension; j++)
-					{
-						x = srcPtr[srcPtrIndex++];
-						minVal = tmpPtr[tmpPtrIndex++];
-						y = x - minVal;
+        return Cons.Type.FLOAT;
+    }
 
-						dstPtr[dstPtrIndex++] = y;
-					}
-				}
+    @Override
+    public int getSampleNumber(int sampleNumber_in) {
+        return sampleNumber_in;
+    }
 
-				break;
-			}
-		}
-	}
+    @Override
+    public void describeOutput(Stream[] stream_in, Stream stream_out) {
+        stream_out.desc = new String[stream_in[0].dim];
+        System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
+    }
 
-	@Override
-	public int getSampleDimension(Stream[] stream_in)
-	{
-		return stream_in[0].dim;
-	}
+    public enum Norm {
+        AVG_VAR,
+        MIN_MAX,
+        SUB_AVG,
+        SUB_MIN
+    }
 
-	@Override
-	public int getSampleBytes(Stream[] stream_in)
-	{
-		return Util.sizeOf(Cons.Type.FLOAT); // Float
-	}
+    public enum Method {
+        MOVING,
+        SLIDING
+    }
 
-	@Override
-	public Cons.Type getSampleType(Stream[] stream_in)
-	{
-		if (stream_in[0].type != Cons.Type.FLOAT)
-		{
-			Log.e("unsupported input type");
-		}
+    public class Options extends OptionList {
+        public final Option<Norm> norm = new Option<>("norm", Norm.AVG_VAR, Norm.class, "");
+        public final Option<Float> rangeA = new Option<>("rangeA", 0.f, Float.class, "");
+        public final Option<Float> rangeB = new Option<>("rangeB", 1.f, Float.class, "");
+        public final Option<Float> windowSize = new Option<>("windowSize", 10.f, Float.class, "");
+        public final Option<Method> method = new Option<>("method", Method.MOVING, Method.class, "");
+        public final Option<Integer> numberOfBlocks = new Option<>("numberOfBlocks", 10, Integer.class, "");
 
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	public int getSampleNumber(int sampleNumber_in)
-	{
-		return sampleNumber_in;
-	}
-
-	@Override
-	public void describeOutput(Stream[] stream_in, Stream stream_out)
-	{
-		stream_out.desc = new String[stream_in[0].dim];
-		System.arraycopy(stream_in[0].desc, 0, stream_out.desc, 0, stream_in[0].desc.length);
-	}
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

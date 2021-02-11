@@ -43,62 +43,38 @@ import hcm.ssj.signal.Selector;
 /**
  * Generic classifier
  */
-public class ClassifierT extends Transformer implements IModelHandler
-{
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends IModelHandler.Options
-    {
-        public final Option<Boolean> merge = new Option<>("merge", true, Boolean.class, "merge input streams");
-
-        private Options()
-        {
-            super();
-            addOptions();
-        }
-    }
+public class ClassifierT extends Transformer implements IModelHandler {
 
     public final Options options = new Options();
-
     private Selector selector = null;
     private Stream[] stream_merged;
     private Stream[] stream_selected;
     private Merge merge = null;
-
     private Model model = null;
-
-    public ClassifierT()
-    {
+    public ClassifierT() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
-        if (stream_in.length > 1 && !options.merge.get())
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
+        if (stream_in.length > 1 && !options.merge.get()) {
             throw new SSJFatalException("sources count not supported");
         }
 
-        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF)
-        {
+        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF) {
             throw new SSJFatalException("stream type not supported");
         }
 
-        if (!model.isSetup())
-        {
+        if (!model.isSetup()) {
             throw new SSJFatalException("model not initialized. Did you provide a trainer file?");
         }
 
@@ -108,8 +84,7 @@ public class ClassifierT extends Transformer implements IModelHandler
 
         Stream[] input = stream_in;
 
-        if(options.merge.get())
-        {
+        if (options.merge.get()) {
             merge = new Merge();
             stream_merged = new Stream[1];
             stream_merged[0] = Stream.create(input[0].num, merge.getSampleDimension(input), input[0].sr, input[0].type);
@@ -117,17 +92,13 @@ public class ClassifierT extends Transformer implements IModelHandler
             input = stream_merged;
         }
 
-        try
-        {
+        try {
             model.validateInput(input);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("model validation failed", e);
         }
 
-        if(model.getInputDim() != null)
-        {
+        if (model.getInputDim() != null) {
             selector = new Selector();
             selector.options.values.set(model.getInputDim());
             stream_selected = new Stream[1];
@@ -141,25 +112,22 @@ public class ClassifierT extends Transformer implements IModelHandler
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         Stream[] input = stream_in;
 
-        if(options.merge.get() && stream_in.length > 1) {
+        if (options.merge.get() && stream_in.length > 1) {
             merge.transform(input, stream_merged[0]);
             input = stream_merged;
         }
-        if(selector != null) {
+        if (selector != null) {
             selector.transform(input, stream_selected[0]);
             input = stream_selected;
         }
 
         float[] probs = model.forward(input[0]);
-        if (probs != null)
-        {
+        if (probs != null) {
             float[] out = stream_out.ptrF();
-            for (int i = 0; i < probs.length; i++)
-            {
+            for (int i = 0; i < probs.length; i++) {
                 out[i] = probs[i];
             }
         }
@@ -170,10 +138,8 @@ public class ClassifierT extends Transformer implements IModelHandler
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
-        if(model == null)
-        {
+    public int getSampleDimension(Stream[] stream_in) {
+        if (model == null) {
             Log.e("model header not loaded, cannot determine num classes.");
             return 0;
         }
@@ -186,8 +152,7 @@ public class ClassifierT extends Transformer implements IModelHandler
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -196,8 +161,7 @@ public class ClassifierT extends Transformer implements IModelHandler
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return Cons.Type.FLOAT;
     }
 
@@ -206,21 +170,18 @@ public class ClassifierT extends Transformer implements IModelHandler
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return 1;
     }
 
     @Override
-    public void setModel(Model model)
-    {
-        this.model = model;
+    public Model getModel() {
+        return model;
     }
 
     @Override
-    public Model getModel()
-    {
-        return model;
+    public void setModel(Model model) {
+        this.model = model;
     }
 
     /**
@@ -228,23 +189,30 @@ public class ClassifierT extends Transformer implements IModelHandler
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
 
-        if(model != null)
-        {
+        if (model != null) {
             //define output stream
             if (model.getClassNames() != null)
                 System.arraycopy(model.getClassNames(), 0, stream_out.desc, 0, stream_out.desc.length);
-        }
-        else
-        {
-            for (int i = 0; i < overallDimension; i++)
-            {
+        } else {
+            for (int i = 0; i < overallDimension; i++) {
                 stream_out.desc[i] = "class" + i;
             }
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends IModelHandler.Options {
+        public final Option<Boolean> merge = new Option<>("merge", true, Boolean.class, "merge input streams");
+
+        private Options() {
+            super();
+            addOptions();
         }
     }
 }

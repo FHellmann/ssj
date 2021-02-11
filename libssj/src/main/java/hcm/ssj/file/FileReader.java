@@ -50,31 +50,7 @@ import hcm.ssj.core.option.OptionList;
  * File reader for SSJ.<br>
  * Created by Frank Gaibler on 20.08.2015.
  */
-public class FileReader extends Sensor
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     *
-     */
-    public class Options extends OptionList
-    {
-        public final Option<FilePath> file = new Option<>("file", null, FilePath.class, "file path");
-        public final Option<Boolean> loop = new Option<>("loop", true, Boolean.class, "");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class FileReader extends Sensor {
     public final Options options = new Options();
     private File fileHeader;
     private File fileReal;
@@ -83,26 +59,26 @@ public class FileReader extends Sensor
     private int pos;
     private SimpleHeader simpleHeader = null;
     private boolean initialized = false;
-
     /**
      *
      */
-    public FileReader()
-    {
+    public FileReader() {
         _name = this.getClass().getSimpleName();
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
     }
 
     /**
      *
      */
-    protected final void readerInit() throws IOException
-    {
-        if (!initialized)
-        {
+    protected final void readerInit() throws IOException {
+        if (!initialized) {
             initialized = true;
 
-            if (options.file.get() == null)
-            {
+            if (options.file.get() == null) {
                 throw new IOException("file not specified");
             }
 
@@ -112,29 +88,22 @@ public class FileReader extends Sensor
     }
 
     /**
-	 *
+     *
      */
     @Override
-    protected boolean connect() throws SSJFatalException
-    {
-        try
-        {
+    protected boolean connect() throws SSJFatalException {
+        try {
             readerInit();
             simpleHeader = getSimpleHeader();
-        }
-        catch (IOException | XmlPullParserException e)
-        {
+        } catch (IOException | XmlPullParserException e) {
             throw new SSJFatalException("unable to initialize file reader", e);
         }
 
-		if (simpleHeader._ftype.equals("BINARY"))
-		{
-			inputBinary = getFileConnection(fileReal, inputBinary);
-		}
-		else if (simpleHeader._ftype.equals("ASCII"))
-		{
-			inputASCII = getFileConnection(fileReal, inputASCII);
-		}
+        if (simpleHeader._ftype.equals("BINARY")) {
+            inputBinary = getFileConnection(fileReal, inputBinary);
+        } else if (simpleHeader._ftype.equals("ASCII")) {
+            inputASCII = getFileConnection(fileReal, inputASCII);
+        }
 
         pos = 0;
         return true;
@@ -143,10 +112,8 @@ public class FileReader extends Sensor
     /**
      * @return SimpleHeader
      */
-    protected SimpleHeader getSimpleHeader() throws IOException, XmlPullParserException
-    {
-        if (simpleHeader == null)
-        {
+    protected SimpleHeader getSimpleHeader() throws IOException, XmlPullParserException {
+        if (simpleHeader == null) {
             SimpleXmlParser simpleXmlParser = new SimpleXmlParser();
             SimpleXmlParser.XmlValues xmlValues = simpleXmlParser.parse(
                     new FileInputStream(fileHeader),
@@ -174,18 +141,14 @@ public class FileReader extends Sensor
     /**
      *
      */
-    private void setFiles()
-    {
+    private void setFiles() {
         String path = fileHeader.getPath();
-        if (path.endsWith(FileCons.TAG_DATA_FILE))
-        {
+        if (path.endsWith(FileCons.TAG_DATA_FILE)) {
             fileReal = fileHeader;
             fileHeader = new File(path.substring(0, path.length() - 1));
-        } else if (fileHeader.getName().contains("."))
-        {
+        } else if (fileHeader.getName().contains(".")) {
             fileReal = new File(path + FileCons.TAG_DATA_FILE);
-        } else
-        {
+        } else {
             fileHeader = new File(path + "." + FileCons.FILE_EXTENSION_STREAM);
             fileReal = new File(path + "." + FileCons.FILE_EXTENSION_STREAM + FileCons.TAG_DATA_FILE);
         }
@@ -195,16 +158,12 @@ public class FileReader extends Sensor
      * @param reader BufferedReader
      * @return BufferedReader
      */
-    private BufferedInputStream closeStream(BufferedInputStream reader)
-    {
-        if (reader != null)
-        {
-            try
-            {
+    private BufferedInputStream closeStream(BufferedInputStream reader) {
+        if (reader != null) {
+            try {
                 reader.close();
                 reader = null;
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not close reader", e);
             }
         }
@@ -215,16 +174,12 @@ public class FileReader extends Sensor
      * @param reader BufferedReader
      * @return BufferedReader
      */
-    private BufferedReader closeStream(BufferedReader reader)
-    {
-        if (reader != null)
-        {
-            try
-            {
+    private BufferedReader closeStream(BufferedReader reader) {
+        if (reader != null) {
+            try {
                 reader.close();
                 reader = null;
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not close reader", e);
             }
         }
@@ -232,11 +187,10 @@ public class FileReader extends Sensor
     }
 
     /**
-	 *
+     *
      */
     @Override
-    protected void disconnect() throws SSJFatalException
-    {
+    protected void disconnect() throws SSJFatalException {
         inputBinary = closeStream(inputBinary);
         inputASCII = closeStream(inputASCII);
         initialized = false;
@@ -247,18 +201,14 @@ public class FileReader extends Sensor
      * @param stream BufferedInputStream
      * @return BufferedInputStream
      */
-    private BufferedInputStream getFileConnection(File file, BufferedInputStream stream)
-    {
-        if (stream != null)
-        {
+    private BufferedInputStream getFileConnection(File file, BufferedInputStream stream) {
+        if (stream != null) {
             stream = closeStream(stream);
         }
-        try
-        {
+        try {
             InputStream inputStream = new FileInputStream(file);
             stream = new BufferedInputStream(inputStream);
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             Log.e("file not found", e);
         }
         return stream;
@@ -269,19 +219,15 @@ public class FileReader extends Sensor
      * @param reader BufferedReader
      * @return BufferedReader
      */
-    private BufferedReader getFileConnection(File file, BufferedReader reader)
-    {
-        if (reader != null)
-        {
+    private BufferedReader getFileConnection(File file, BufferedReader reader) {
+        if (reader != null) {
             reader = closeStream(reader);
         }
-        try
-        {
+        try {
             InputStream inputStream = new FileInputStream(file);
             reader = new BufferedReader(new InputStreamReader(inputStream));
 
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             Log.e("file not found", e);
         }
         return reader;
@@ -291,16 +237,12 @@ public class FileReader extends Sensor
      * @param reader BufferedReader
      * @return String
      */
-    private String readLine(BufferedReader reader)
-    {
+    private String readLine(BufferedReader reader) {
         String line = null;
-        if (reader != null)
-        {
-            try
-            {
+        if (reader != null) {
+            try {
                 line = reader.readLine();
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not read line", e);
             }
         }
@@ -311,16 +253,12 @@ public class FileReader extends Sensor
      * @param stream BufferedInputStream
      * @return String
      */
-    private int read(BufferedInputStream stream, byte[] buffer, int numBytes)
-    {
+    private int read(BufferedInputStream stream, byte[] buffer, int numBytes) {
         int ret = 0;
-        if (stream != null)
-        {
-            try
-            {
+        if (stream != null) {
+            try {
                 ret = stream.read(buffer, 0, numBytes);
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not read line", e);
             }
         }
@@ -328,14 +266,12 @@ public class FileReader extends Sensor
     }
 
     /**
-        * @return String
-    */
-    protected String getDataASCII()
-    {
+     * @return String
+     */
+    protected String getDataASCII() {
 
         String data = readLine(inputASCII);
-        if (data == null && options.loop.get())
-        {
+        if (data == null && options.loop.get()) {
             Log.d("end of file reached, looping");
             inputASCII = getFileConnection(fileReal, inputASCII);
             data = readLine(inputASCII);
@@ -343,32 +279,43 @@ public class FileReader extends Sensor
         return data;
     }
 
-
-    protected int getDataBinary(byte[] buffer, int numBytes)
-    {
+    protected int getDataBinary(byte[] buffer, int numBytes) {
         int ret = read(inputBinary, buffer, numBytes);
-        if(ret == -1 && options.loop.get())
-        {
+        if (ret == -1 && options.loop.get()) {
             Log.d("end of file reached, looping");
             inputBinary = getFileConnection(fileReal, inputBinary);
             ret = read(inputBinary, buffer, numBytes);
 
-            if(ret <= 0)
+            if (ret <= 0)
                 Log.e("unexpected error reading from file");
         }
 
-        if(numBytes != ret)
+        if (numBytes != ret)
             Log.e("unexpected amount of bytes read from file");
 
         return ret;
     }
 
-    protected void skip(int bytes)
-    {
+    protected void skip(int bytes) {
         try {
             inputBinary.skip(bytes);
         } catch (IOException e) {
             Log.e("exception while skipping bytes", e);
+        }
+    }
+
+    /**
+     *
+     */
+    public class Options extends OptionList {
+        public final Option<FilePath> file = new Option<>("file", null, FilePath.class, "file path");
+        public final Option<Boolean> loop = new Option<>("loop", true, Boolean.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

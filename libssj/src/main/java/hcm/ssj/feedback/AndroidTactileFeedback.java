@@ -42,60 +42,51 @@ import hcm.ssj.core.option.Option;
  * Created by Antonio Grieco on 06.09.2017.
  */
 
-public class AndroidTactileFeedback extends Feedback
-{
-	public class Options extends Feedback.Options
-	{
+public class AndroidTactileFeedback extends Feedback {
+    public final Options options = new Options();
+    private Vibrator vibrator = null;
 
-		public final Option<long[]> vibrationPattern = new Option<>("vibrationPattern", new long[]{0, 500}, long[].class, "vibration pattern (starts with delay)");
-		private Options()
-		{
-			super();
-			addOptions();
-		}
+    public AndroidTactileFeedback() {
+        _name = "AndroidTactileFeedback";
+        Log.d("Instantiated AndroidTactileFeedback " + this.hashCode());
+    }
 
-	}
-	public final Options options = new Options();
+    @Override
+    public Feedback.Options getOptions() {
+        return options;
+    }
 
-	private Vibrator vibrator = null;
+    @Override
+    public void enterFeedback() throws SSJFatalException {
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new SSJFatalException("no input channels");
+        }
 
-	public AndroidTactileFeedback()
-	{
-		_name = "AndroidTactileFeedback";
-		Log.d("Instantiated AndroidTactileFeedback " + this.hashCode());
-	}
+        vibrator = (Vibrator) SSJApplication.getAppContext().getSystemService(Context.VIBRATOR_SERVICE);
+        if (!vibrator.hasVibrator()) {
+            throw new SSJFatalException("device can't vibrate");
+        }
+    }
 
-	@Override
-	public Feedback.Options getOptions()
-	{
-		return options;
-	}
+    @Override
+    public void notifyFeedback(Event event) {
+        Log.i("vibration on android: " + Arrays.toString(options.vibrationPattern.get()));
+        vibrator.vibrate(options.vibrationPattern.get(), -1);
+    }
 
-	@Override
-	public void enterFeedback() throws SSJFatalException
-	{
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new SSJFatalException("no input channels");
-		}
+    @Override
+    public void flush() throws SSJFatalException {
+        vibrator.cancel();
+    }
 
-		vibrator = (Vibrator) SSJApplication.getAppContext().getSystemService(Context.VIBRATOR_SERVICE);
-		if (!vibrator.hasVibrator())
-		{
-			throw new SSJFatalException("device can't vibrate");
-		}
-	}
+    public class Options extends Feedback.Options {
 
-	@Override
-	public void notifyFeedback(Event event)
-	{
-		Log.i("vibration on android: " + Arrays.toString(options.vibrationPattern.get()));
-		vibrator.vibrate(options.vibrationPattern.get(), -1);
-	}
+        public final Option<long[]> vibrationPattern = new Option<>("vibrationPattern", new long[]{0, 500}, long[].class, "vibration pattern (starts with delay)");
 
-	@Override
-	public void flush() throws SSJFatalException
-	{
-		vibrator.cancel();
-	}
+        private Options() {
+            super();
+            addOptions();
+        }
+
+    }
 }

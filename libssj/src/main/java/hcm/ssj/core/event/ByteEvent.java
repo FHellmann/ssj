@@ -61,8 +61,9 @@ public class ByteEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (byte[])data;
+        this.data = (byte[]) data;
     }
+
     public void setData(byte[] data) {
         this.data = data;
     }

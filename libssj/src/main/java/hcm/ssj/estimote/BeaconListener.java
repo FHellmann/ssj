@@ -40,86 +40,72 @@ import java.util.Map;
  * Created by Michael Dietz on 08.03.2017.
  */
 
-public class BeaconListener implements BeaconManager.RangingListener
-{
-	private static final int TIMEOUT = 60 * 1000; //in ms
+public class BeaconListener implements BeaconManager.RangingListener {
+    private static final int TIMEOUT = 60 * 1000; //in ms
 
-	private long                              lastDataTimestamp;
-	private Map<String, Double>               beaconDistances;
-	private EstimoteBeacon.IdentificationMode idMode;
+    private long lastDataTimestamp;
+    private Map<String, Double> beaconDistances;
+    private EstimoteBeacon.IdentificationMode idMode;
 
-	public BeaconListener()
-	{
-		reset();
-	}
+    public BeaconListener() {
+        reset();
+    }
 
-	public void reset()
-	{
-		lastDataTimestamp = 0;
+    public void reset() {
+        lastDataTimestamp = 0;
 
-		beaconDistances = new HashMap<>();
-	}
+        beaconDistances = new HashMap<>();
+    }
 
-	@Override
-	public void onBeaconsDiscovered(Region region, List<Beacon> list)
-	{
-		dataReceived();
+    @Override
+    public void onBeaconsDiscovered(Region region, List<Beacon> list) {
+        dataReceived();
 
-		for (Beacon beacon : list)
-		{
-			beaconDistances.put(getIdentifier(beacon), calculateDistance(beacon));
-		}
-	}
+        for (Beacon beacon : list) {
+            beaconDistances.put(getIdentifier(beacon), calculateDistance(beacon));
+        }
+    }
 
-	private String getIdentifier(Beacon beacon)
-	{
-		String key = beacon.getMacAddress().toStandardString();
+    private String getIdentifier(Beacon beacon) {
+        String key = beacon.getMacAddress().toStandardString();
 
-		if (idMode == EstimoteBeacon.IdentificationMode.UUID_MAJOR_MINOR)
-		{
-			key = beacon.getProximityUUID() + ":" + beacon.getMajor() + ":" + beacon.getMinor();
-		}
+        if (idMode == EstimoteBeacon.IdentificationMode.UUID_MAJOR_MINOR) {
+            key = beacon.getProximityUUID() + ":" + beacon.getMajor() + ":" + beacon.getMinor();
+        }
 
-		return key;
-	}
+        return key;
+    }
 
-	public double getDistance(String beaconIdentifier)
-	{
-		double distance = -1;
+    public double getDistance(String beaconIdentifier) {
+        double distance = -1;
 
-		if (beaconDistances.containsKey(beaconIdentifier.toLowerCase()))
-		{
-			distance = beaconDistances.get(beaconIdentifier.toLowerCase());
-		}
+        if (beaconDistances.containsKey(beaconIdentifier.toLowerCase())) {
+            distance = beaconDistances.get(beaconIdentifier.toLowerCase());
+        }
 
-		return distance;
-	}
+        return distance;
+    }
 
-	private double calculateDistance(Beacon beacon)
-	{
-		double calculatedDistance = Math.pow(10d, ((double) beacon.getMeasuredPower() - beacon.getRssi()) / (10 * 4));
-		double estimoteDistance = Utils.computeAccuracy(beacon);
+    private double calculateDistance(Beacon beacon) {
+        double calculatedDistance = Math.pow(10d, ((double) beacon.getMeasuredPower() - beacon.getRssi()) / (10 * 4));
+        double estimoteDistance = Utils.computeAccuracy(beacon);
 
-		return (calculatedDistance + estimoteDistance) / 2.0;
-	}
+        return (calculatedDistance + estimoteDistance) / 2.0;
+    }
 
-	private void dataReceived()
-	{
-		lastDataTimestamp = System.currentTimeMillis();
-	}
+    private void dataReceived() {
+        lastDataTimestamp = System.currentTimeMillis();
+    }
 
-	public boolean isConnected()
-	{
-		return System.currentTimeMillis() - lastDataTimestamp < TIMEOUT;
-	}
+    public boolean isConnected() {
+        return System.currentTimeMillis() - lastDataTimestamp < TIMEOUT;
+    }
 
-	public boolean hasReceivedData()
-	{
-		return lastDataTimestamp != 0;
-	}
+    public boolean hasReceivedData() {
+        return lastDataTimestamp != 0;
+    }
 
-	public void setIdMode(EstimoteBeacon.IdentificationMode idMode)
-	{
-		this.idMode = idMode;
-	}
+    public void setIdMode(EstimoteBeacon.IdentificationMode idMode) {
+        this.idMode = idMode;
+    }
 }

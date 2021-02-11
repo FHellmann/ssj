@@ -34,12 +34,11 @@ import java.util.ArrayList;
  */
 public abstract class Sensor extends Component {
 
-    private boolean _isConnected = false;
     protected Pipeline _frame;
     protected ArrayList<SensorChannel> _provider = new ArrayList<>();
+    private boolean _isConnected = false;
 
-    public Sensor()
-    {
+    public Sensor() {
         _frame = Pipeline.getInstance();
     }
 
@@ -47,38 +46,31 @@ public abstract class Sensor extends Component {
         _provider.add(p);
     }
 
-    public ArrayList<SensorChannel> getProviders()
-    {
+    public ArrayList<SensorChannel> getProviders() {
         return _provider;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         Thread.currentThread().setName("SSJ_" + _name);
 
         //if user did not specify a custom priority, use low priority
-        android.os.Process.setThreadPriority( (threadPriority == Cons.THREAD_PRIORITY_NORMAL) ? Cons.THREAD_PRIORIIY_LOW : threadPriority );
+        android.os.Process.setThreadPriority((threadPriority == Cons.THREAD_PRIORITY_NORMAL) ? Cons.THREAD_PRIORIIY_LOW : threadPriority);
         _isConnected = false;
 
-        while(!_terminate)
-        {
-            if(!_isConnected && !_frame.isStopping())
-            {
-                try
-                {
+        while (!_terminate) {
+            if (!_isConnected && !_frame.isStopping()) {
+                try {
                     _isConnected = connect();
                     if (!_isConnected) {
                         waitCheckConnect();
                         continue;
                     }
 
-                    synchronized (this)
-                    {
+                    synchronized (this) {
                         this.notifyAll();
                     }
-                }
-                catch (SSJFatalException e) {
+                } catch (SSJFatalException e) {
                     _frame.error(this.getComponentName(), "failed to connect to sensor", e);
                     _safeToKill = true;
                     return;
@@ -89,11 +81,11 @@ public abstract class Sensor extends Component {
 
             try {
                 update();
-            } catch(SSJFatalException e) {
+            } catch (SSJFatalException e) {
                 _frame.error(this.getComponentName(), "exception in sensor update", e);
                 _safeToKill = true;
                 return;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 _frame.error(this.getComponentName(), "exception in sensor update", e);
             }
 
@@ -102,7 +94,7 @@ public abstract class Sensor extends Component {
 
         try {
             disconnect();
-        } catch(Exception e) {
+        } catch (Exception e) {
             _frame.error(this.getComponentName(), "failed to disconnect from sensor", e);
         }
         _isConnected = false;
@@ -112,20 +104,22 @@ public abstract class Sensor extends Component {
     /**
      * early initialization specific to implementation (called by framework on instantiation)
      */
-    protected void init() throws SSJException {}
+    protected void init() throws SSJException {
+    }
 
     /**
      * initialization specific to sensor implementation (called by local thread after framework start)
      */
     protected abstract boolean connect() throws SSJFatalException;
-    protected boolean checkConnection() {return true;}
 
-    private void waitCheckConnect()
-    {
-        try{
+    protected boolean checkConnection() {
+        return true;
+    }
+
+    private void waitCheckConnect() {
+        try {
             Thread.sleep(Cons.SLEEP_ON_COMPONENT_IDLE);
-        }
-        catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             Log.w("thread interrupt");
         }
     }
@@ -133,8 +127,7 @@ public abstract class Sensor extends Component {
     /**
      * called once per frame, can be overwritten
      */
-    protected void update() throws SSJFatalException
-    {
+    protected void update() throws SSJFatalException {
         waitCheckConnect();
     }
 
@@ -143,27 +136,23 @@ public abstract class Sensor extends Component {
      */
     protected abstract void disconnect() throws SSJFatalException;
 
-    public boolean isConnected()
-    {
+    public boolean isConnected() {
         return _isConnected;
     }
 
-    public void waitForConnection()
-    {
-            while (!isConnected() && !_terminate)
-            {
-                try {
-                    synchronized (this)
-                    {
-                        this.wait();
-                    }
-                } catch (InterruptedException e) {}
+    public void waitForConnection() {
+        while (!isConnected() && !_terminate) {
+            try {
+                synchronized (this) {
+                    this.wait();
+                }
+            } catch (InterruptedException e) {
             }
+        }
     }
 
     @Override
-    public void clear()
-    {
+    public void clear() {
         _provider.clear();
         super.reset();
     }

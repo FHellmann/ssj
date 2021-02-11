@@ -55,48 +55,43 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class MSBandTest
-{
-	@Test
-	public void testChannels() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class MSBandTest {
+    @Test
+    public void testChannels() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		MSBand sensor = new MSBand();
+        // Sensor
+        MSBand sensor = new MSBand();
 
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new DistanceChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new BarometerChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new BrightnessChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new AccelerationChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new AltimeterChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new CaloriesChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new GSRChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new GyroscopeChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new HeartRateChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new IBIChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new PedometerChannel()), 1, 0);
-		frame.addConsumer(new Logger(), frame.addSensor(sensor, new SkinTempChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new DistanceChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new BarometerChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new BrightnessChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new AccelerationChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new AltimeterChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new CaloriesChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new GSRChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new GyroscopeChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new HeartRateChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new IBIChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new PedometerChannel()), 1, 0);
+        frame.addConsumer(new Logger(), frame.addSensor(sensor, new SkinTempChannel()), 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
-	}
+        // Stop framework
+        frame.stop();
+        frame.clear();
+    }
 
 
 }

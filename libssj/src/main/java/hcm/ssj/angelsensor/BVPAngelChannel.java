@@ -37,76 +37,64 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 15.04.2015.
  */
-public class BVPAngelChannel extends SensorChannel
-{
+public class BVPAngelChannel extends SensorChannel {
 
-	public class Options extends OptionList
-	{
-		public final Option<Float> sampleRate = new Option<>("sampleRate", 100f, Float.class, "sensor sample rate");
+    public final Options options = new Options();
+    protected AngelSensorListener _listener;
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+    public BVPAngelChannel() {
+        _name = "Angel_BVP";
+    }
 
-	protected AngelSensorListener _listener;
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
 
-	public BVPAngelChannel()
-	{
-		_name = "Angel_BVP";
-	}
+        _listener = ((AngelSensor) _sensor).listener;
+    }
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        int[] out = stream_out.ptrI();
+        out[0] = _listener.getBvp();
+        return true;
+    }
 
-		_listener = ((AngelSensor)_sensor).listener;
-	}
+    @Override
+    public double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		int[] out = stream_out.ptrI();
-		out[0] = _listener.getBvp();
-		return true;
-	}
+    @Override
+    public int getSampleDimension() {
+        return 1;
+    }
 
-	@Override
-	public double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    public int getSampleBytes() {
+        return 4;
+    }
 
-	@Override
-	public int getSampleDimension()
-	{
-		return 1;
-	}
+    @Override
+    public Cons.Type getSampleType() {
+        return Cons.Type.INT;
+    }
 
-	@Override
-	public int getSampleBytes()
-	{
-		return 4;
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "BVP";
+    }
 
-	@Override
-	public Cons.Type getSampleType()
-	{
-		return Cons.Type.INT;
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "BVP";
-	}
+    public class Options extends OptionList {
+        public final Option<Float> sampleRate = new Option<>("sampleRate", 100f, Float.class, "sensor sample rate");
 
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

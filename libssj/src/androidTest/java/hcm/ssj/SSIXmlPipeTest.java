@@ -28,6 +28,7 @@
 package hcm.ssj;
 
 import android.content.res.AssetManager;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -49,83 +50,78 @@ import static java.lang.System.loadLibrary;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class SSIXmlPipeTest
-{
-	public native void startSSI(String path, AssetManager am, boolean extractFiles);
+public class SSIXmlPipeTest {
+    public native void startSSI(String path, AssetManager am, boolean extractFiles);
 
-	public native void stopSSI();
+    public native void stopSSI();
 
-	/**
-	 * @throws Exception
-	 */
-	@Test
-	public void testSensors() throws Exception
-	{
-		loadLibrary("ssiframe");
-		loadLibrary("ssievent");
-		loadLibrary("ssiioput");
-		loadLibrary("ssiandroidsensors");
-		loadLibrary("ssimodel");
-		loadLibrary("ssisignal");
-		loadLibrary("ssissjSensor");
-		loadLibrary("android_xmlpipe");
+    /**
+     * @throws Exception
+     */
+    @Test
+    public void testSensors() throws Exception {
+        loadLibrary("ssiframe");
+        loadLibrary("ssievent");
+        loadLibrary("ssiioput");
+        loadLibrary("ssiandroidsensors");
+        loadLibrary("ssimodel");
+        loadLibrary("ssisignal");
+        loadLibrary("ssissjSensor");
+        loadLibrary("android_xmlpipe");
 
-		// Test for every sensor type
-		SensorType acc = SensorType.GYROSCOPE;
-		SensorType mag = SensorType.ACCELEROMETER;
+        // Test for every sensor type
+        SensorType acc = SensorType.GYROSCOPE;
+        SensorType mag = SensorType.ACCELEROMETER;
 
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		AndroidSensor sensor = new AndroidSensor();
-		AndroidSensor s2 = new AndroidSensor();
+        // Sensor
+        AndroidSensor sensor = new AndroidSensor();
+        AndroidSensor s2 = new AndroidSensor();
 
-		// Channel
-		AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
-		sensorChannel.options.sensorType.set(acc);
-		AndroidSensorChannel sensorPmag = new AndroidSensorChannel();
-		sensorPmag.options.sensorType.set(mag);
+        // Channel
+        AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
+        sensorChannel.options.sensorType.set(acc);
+        AndroidSensorChannel sensorPmag = new AndroidSensorChannel();
+        sensorPmag.options.sensorType.set(mag);
 
-		frame.addSensor(sensor, sensorChannel);
-		frame.addSensor(s2, sensorPmag);
+        frame.addSensor(sensor, sensorChannel);
+        frame.addSensor(s2, sensorPmag);
 
-		// Logger
-		Logger log = new Logger();
-		frame.addConsumer(log, sensorChannel, 1, 0);
-		frame.addConsumer(log, sensorPmag, 1, 0);
+        // Logger
+        Logger log = new Logger();
+        frame.addConsumer(log, sensorChannel, 1, 0);
+        frame.addConsumer(log, sensorPmag, 1, 0);
 
-		MobileSSIConsumer mobileSSI2 = new MobileSSIConsumer();
-		MobileSSIConsumer mobileSSI = new MobileSSIConsumer();
+        MobileSSIConsumer mobileSSI2 = new MobileSSIConsumer();
+        MobileSSIConsumer mobileSSI = new MobileSSIConsumer();
 
-		mobileSSI.setId(1);
-		mobileSSI2.setId(2);
+        mobileSSI.setId(1);
+        mobileSSI2.setId(2);
 
-		frame.addConsumer(mobileSSI, sensorChannel, 1, 0);
-		frame.addConsumer(mobileSSI2, sensorPmag, 1, 0);
+        frame.addConsumer(mobileSSI, sensorChannel, 1, 0);
+        frame.addConsumer(mobileSSI2, sensorPmag, 1, 0);
 
-		// Start framework
-		startSSI("/sdcard/android_xmlpipe", null, false);
-		Thread.sleep(3100);
-		frame.start();
+        // Start framework
+        startSSI("/sdcard/android_xmlpipe", null, false);
+        Thread.sleep(3100);
+        frame.start();
 
-		mobileSSI.setSensor(sensorChannel, null, mobileSSI.getId());
-		mobileSSI2.setSensor(sensorPmag, null, mobileSSI2.getId());
+        mobileSSI.setSensor(sensorChannel, null, mobileSSI.getId());
+        mobileSSI2.setSensor(sensorPmag, null, mobileSSI2.getId());
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		stopSSI();
-		frame.stop();
-		frame.release();
-	}
+        // Stop framework
+        stopSSI();
+        frame.stop();
+        frame.release();
+    }
 }

@@ -32,12 +32,10 @@ import hcm.ssj.core.Cons;
 /**
  * Created by Johnny on 11.06.2015.
  */
-public class CharStream extends Stream
-{
+public class CharStream extends Stream {
     private char[] _ptr;
 
-    public CharStream(int num, int dim, double sr)
-    {
+    public CharStream(int num, int dim, double sr) {
         super(num, dim, sr);
 
         this.bytes = 2;
@@ -48,33 +46,27 @@ public class CharStream extends Stream
     }
 
     @Override
-    public char[] ptr()
-{
-    return _ptr;
-}
-    public char[] ptrC()
-    {
+    public char[] ptr() {
         return _ptr;
     }
 
-    public void adjust(int num)
-    {
-        if(num < this.num)
-        {
+    public char[] ptrC() {
+        return _ptr;
+    }
+
+    public void adjust(int num) {
+        if (num < this.num) {
             this.num = num;
             this.tot = num * dim * bytes;
-        }
-        else
-        {
+        } else {
             this.num = num;
             this.tot = num * dim * bytes;
             _ptr = new char[num * dim];
         }
     }
 
-    public CharStream select(int[] new_dims)
-    {
-        if(dim == new_dims.length)
+    public CharStream select(int[] new_dims) {
+        if (dim == new_dims.length)
             return this;
 
         CharStream slice = new CharStream(num, new_dims.length, sr);
@@ -83,9 +75,8 @@ public class CharStream extends Stream
         char[] src = this.ptr();
         char[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
-            for(int i = 0; i < new_dims.length; i++)
+        while (srcPos < num * dim) {
+            for (int i = 0; i < new_dims.length; i++)
                 dst[dstPos++] = src[srcPos + new_dims[i]];
 
             srcPos += dim;
@@ -94,9 +85,8 @@ public class CharStream extends Stream
         return slice;
     }
 
-    public CharStream select(int new_dim)
-    {
-        if(dim == 1)
+    public CharStream select(int new_dim) {
+        if (dim == 1)
             return this;
 
         CharStream slice = new CharStream(num, 1, sr);
@@ -105,8 +95,7 @@ public class CharStream extends Stream
         char[] src = this.ptr();
         char[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
+        while (srcPos < num * dim) {
             dst[dstPos++] = src[srcPos + new_dim];
             srcPos += dim;
         }
@@ -115,8 +104,7 @@ public class CharStream extends Stream
     }
 
     @Override
-    public Stream clone()
-    {
+    public Stream clone() {
         CharStream copy = new CharStream(num, dim, sr);
         System.arraycopy(_ptr, 0, copy._ptr, 0, _ptr.length);
 

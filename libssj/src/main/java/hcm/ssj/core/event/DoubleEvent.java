@@ -61,8 +61,9 @@ public class DoubleEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (double[])data;
+        this.data = (double[]) data;
     }
+
     public void setData(double[] data) {
         this.data = data;
     }

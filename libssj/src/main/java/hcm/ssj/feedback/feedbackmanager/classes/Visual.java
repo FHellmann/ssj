@@ -57,21 +57,17 @@ import hcm.ssj.feedback.feedbackmanager.actions.VisualAction;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class Visual extends FeedbackClass
-{
-    protected ImageSwitcher img[];
+public class Visual extends FeedbackClass {
+    protected static long s_lock = 0;
+    protected ImageSwitcher[] img;
     protected float defBrightness = 0.5f;
-
-	protected static long s_lock = 0;
-
     protected long timeout = 0;
     private boolean isSetup;
     private int position = 0;
 
     private Activity activity;
 
-    public Visual(Context context, FeedbackManager.Options options)
-    {
+    public Visual(Context context, FeedbackManager.Options options) {
         this.context = context;
         this.options = options;
         type = Type.Visual;
@@ -79,39 +75,36 @@ public class Visual extends FeedbackClass
     }
 
     @Override
-    public boolean execute(Action action)
-    {
-        if(!isSetup)
+    public boolean execute(Action action) {
+        if (!isSetup)
             return false;
 
         VisualAction ev = (VisualAction) action;
 
         //check locks
-		//global
-        if(System.currentTimeMillis() < s_lock)
-        {
+        //global
+        if (System.currentTimeMillis() < s_lock) {
             Log.i("ignoring event, global lock active for another " + (s_lock - System.currentTimeMillis()) + "ms");
             return false;
         }
-		//local
-		if (System.currentTimeMillis() - ev.lastExecutionTime < ev.lockSelf + ev.dur)
-		{
-			Log.i("ignoring event, self lock active for another " + (ev.lockSelf + ev.dur - (System.currentTimeMillis() - ev.lastExecutionTime)) + "ms");
-			return false;
-		}
+        //local
+        if (System.currentTimeMillis() - ev.lastExecutionTime < ev.lockSelf + ev.dur) {
+            Log.i("ignoring event, self lock active for another " + (ev.lockSelf + ev.dur - (System.currentTimeMillis() - ev.lastExecutionTime)) + "ms");
+            return false;
+        }
 
         updateIcons(ev.icons);
         updateBrightness(ev.brightness);
 
         //set dur
-        if(ev.dur > 0)
+        if (ev.dur > 0)
             //return to default (first) event after dur milliseconds has passed
             timeout = System.currentTimeMillis() + (long) ev.dur;
         else
             timeout = 0;
 
         //set global lock
-        if(ev.lock > 0)
+        if (ev.lock > 0)
             s_lock = System.currentTimeMillis() + (long) ev.dur + (long) ev.lock;
         else
             s_lock = 0;
@@ -119,9 +112,8 @@ public class Visual extends FeedbackClass
         return true;
     }
 
-    public void update()
-    {
-        if(timeout == 0 || System.currentTimeMillis() < timeout)
+    public void update() {
+        if (timeout == 0 || System.currentTimeMillis() < timeout)
             return;
 
         //if a lock is set, return icons to default configuration
@@ -131,24 +123,19 @@ public class Visual extends FeedbackClass
         timeout = 0;
     }
 
-    protected void updateIcons(Drawable icons[])
-    {
+    protected void updateIcons(Drawable[] icons) {
         //set feedback icon
         updateImageSwitcher(img[0], icons[0]);
 
         //set quality icon
-        if(icons.length == 2 && img.length == 2 && img[1] != null)
-        {
+        if (icons.length == 2 && img.length == 2 && img[1] != null) {
             updateImageSwitcher(img[1], icons[1]);
         }
     }
 
-    protected void updateBrightness(final float brightness)
-    {
-        activity.runOnUiThread(new Runnable()
-        {
-            public void run()
-            {
+    protected void updateBrightness(final float brightness) {
+        activity.runOnUiThread(new Runnable() {
+            public void run() {
                 WindowManager.LayoutParams lp = activity.getWindow().getAttributes();
                 lp.screenBrightness = brightness;
                 activity.getWindow().setAttributes(lp);
@@ -156,22 +143,17 @@ public class Visual extends FeedbackClass
         });
     }
 
-    protected void updateImageSwitcher(final ImageSwitcher view, final Drawable img)
-    {
-        view.post(new Runnable()
-        {
-            public void run()
-            {
+    protected void updateImageSwitcher(final ImageSwitcher view, final Drawable img) {
+        view.post(new Runnable() {
+            public void run() {
                 view.setImageDrawable(img);
             }
         });
     }
 
-    protected void load(XmlPullParser xml, final Context context)
-    {
+    protected void load(XmlPullParser xml, final Context context) {
         int fade = 0;
-        try
-        {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "feedback");
 
             String fade_str = xml.getAttributeValue(null, "fade");
@@ -185,9 +167,7 @@ public class Visual extends FeedbackClass
             String bright_str = xml.getAttributeValue(null, "def_brightness");
             if (bright_str != null)
                 defBrightness = Float.valueOf(bright_str);
-        }
-        catch(IOException | XmlPullParserException | InvalidParameterException e)
-        {
+        } catch (IOException | XmlPullParserException | InvalidParameterException e) {
             Log.e("error parsing config file", e);
         }
 
@@ -196,25 +176,21 @@ public class Visual extends FeedbackClass
         buildLayout(context, fade);
     }
 
-    private void buildLayout(final Context context, final int fade)
-    {
-        if(options.layout.get() == null)
-        {
+    private void buildLayout(final Context context, final int fade) {
+        if (options.layout.get() == null) {
             Log.e("layout not set, cannot render visual feedback");
             return;
         }
 
         Handler handler = new Handler(context.getMainLooper());
-        handler.post(new Runnable()
-        {
+        handler.post(new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
                 TableLayout table = options.layout.get();
                 table.setStretchAllColumns(true);
 
                 activity = getActivity(table);
-                if(activity == null)
+                if (activity == null)
                     Log.w("unable to get activity from layout");
 
                 int rows = ((VisualAction) action).icons.length;
@@ -222,21 +198,17 @@ public class Visual extends FeedbackClass
 
                 //if this is the first visual class, init rows
                 if (table.getChildCount() == 0)
-                    for(int i = 0; i < rows; ++i)
+                    for (int i = 0; i < rows; ++i)
                         table.addView(new TableRow(context), i);
 
-                for(int i = 0; i < rows; ++i)
-                {
+                for (int i = 0; i < rows; ++i) {
                     TableRow tr = (TableRow) table.getChildAt(i);
                     tr.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT, 1f));
 
                     //if the image switcher has already been initialized by a class on previous level
-                    if(tr.getChildAt(position) != null)
-                    {
-                        img[i] = (ImageSwitcher)tr.getChildAt(position);
-                    }
-                    else
-                    {
+                    if (tr.getChildAt(position) != null) {
+                        img[i] = (ImageSwitcher) tr.getChildAt(position);
+                    } else {
                         img[i] = new ImageSwitcher(context);
                         img[i].setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT, 1f));
 
@@ -270,19 +242,18 @@ public class Visual extends FeedbackClass
         });
     }
 
-    private Activity getActivity(View view)
-    {
+    private Activity getActivity(View view) {
         Context context = view.getContext();
         while (context instanceof ContextWrapper) {
             if (context instanceof Activity) {
-                return (Activity)context;
+                return (Activity) context;
             }
-            context = ((ContextWrapper)context).getBaseContext();
+            context = ((ContextWrapper) context).getBaseContext();
         }
 
         //alternative method
         View content = view.findViewById(android.R.id.content);
-        if(content != null)
+        if (content != null)
             return (Activity) content.getContext();
         else
             return null;

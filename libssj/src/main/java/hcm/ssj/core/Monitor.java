@@ -31,24 +31,19 @@ package hcm.ssj.core;
  * Monitor class to synchronize threads.<br>
  * Created by Frank Gaibler on 07.10.2015.
  */
-public class Monitor
-{
+public class Monitor {
     private static final Object monitor = new Object();
     private static boolean waiting = false;
 
     /**
      *
      */
-    public static void waitMonitor()
-    {
-        synchronized (monitor)
-        {
-            try
-            {
+    public static void waitMonitor() {
+        synchronized (monitor) {
+            try {
                 waiting = true;
                 monitor.wait();
-            } catch (InterruptedException e)
-            {
+            } catch (InterruptedException e) {
                 waiting = false;
                 e.printStackTrace();
             }
@@ -58,12 +53,9 @@ public class Monitor
     /**
      *
      */
-    public static void notifyMonitor()
-    {
-        if (waiting)
-        {
-            synchronized (monitor)
-            {
+    public static void notifyMonitor() {
+        if (waiting) {
+            synchronized (monitor) {
                 monitor.notifyAll();
             }
             waiting = false;

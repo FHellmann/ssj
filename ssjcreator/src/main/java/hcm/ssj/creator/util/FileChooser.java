@@ -37,30 +37,25 @@ import java.io.File;
  * Created by Ionut Damian on 12.12.2017.
  */
 
-public abstract class FileChooser
-{
-	private ChooserDialog chooserDialog;
+public abstract class FileChooser {
+    private final ChooserDialog chooserDialog;
 
-	public FileChooser(Activity activity, String startPath, boolean dirOnly, String... extensions)
-	{
-		chooserDialog = new ChooserDialog().with(activity);
-		chooserDialog.withStartFile(startPath);
-		chooserDialog.withFilter(dirOnly, false, extensions);
+    public FileChooser(Activity activity, String startPath, boolean dirOnly, String... extensions) {
+        chooserDialog = new ChooserDialog().with(activity);
+        chooserDialog.withStartFile(startPath);
+        chooserDialog.withFilter(dirOnly, false, extensions);
 
-		chooserDialog.withChosenListener(new ChooserDialog.Result()
-		{
-			@Override
-			public void onChoosePath(String path, File pathFile)
-			{
-				onResult(path, pathFile);
-			}
-		}).build();
-	}
+        chooserDialog.withChosenListener(new ChooserDialog.Result() {
+            @Override
+            public void onChoosePath(String path, File pathFile) {
+                onResult(path, pathFile);
+            }
+        }).build();
+    }
 
-	public void show()
-	{
-		chooserDialog.show();
-	}
+    public void show() {
+        chooserDialog.show();
+    }
 
-	public abstract void onResult(String path, File pathFile);
+    public abstract void onResult(String path, File pathFile);
 }

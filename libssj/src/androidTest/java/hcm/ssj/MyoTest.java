@@ -29,6 +29,7 @@ package hcm.ssj;
 
 import android.os.Handler;
 import android.os.Looper;
+
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -54,156 +55,136 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class MyoTest
-{
-	@Test
-	public void testChannels() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+public class MyoTest {
+    @Test
+    public void testChannels() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Sensor
-		hcm.ssj.myo.Myo sensor = new hcm.ssj.myo.Myo();
+        // Sensor
+        hcm.ssj.myo.Myo sensor = new hcm.ssj.myo.Myo();
 
-		AccelerationChannel accelerationChannel = new AccelerationChannel();
-		frame.addSensor(sensor, accelerationChannel);
+        AccelerationChannel accelerationChannel = new AccelerationChannel();
+        frame.addSensor(sensor, accelerationChannel);
 
-		DynAccelerationChannel dynAccelerationChannel = new DynAccelerationChannel();
-		frame.addSensor(sensor, dynAccelerationChannel);
+        DynAccelerationChannel dynAccelerationChannel = new DynAccelerationChannel();
+        frame.addSensor(sensor, dynAccelerationChannel);
 
-		EMGChannel emgChannel = new EMGChannel();
-		frame.addSensor(sensor, emgChannel);
+        EMGChannel emgChannel = new EMGChannel();
+        frame.addSensor(sensor, emgChannel);
 
-		// Loggers
-		Logger accLogger = new Logger();
-		frame.addConsumer(accLogger, accelerationChannel, 1, 0);
+        // Loggers
+        Logger accLogger = new Logger();
+        frame.addConsumer(accLogger, accelerationChannel, 1, 0);
 
-		Logger dynAccLogger = new Logger();
-		frame.addConsumer(dynAccLogger, dynAccelerationChannel, 1, 0);
+        Logger dynAccLogger = new Logger();
+        frame.addConsumer(dynAccLogger, dynAccelerationChannel, 1, 0);
 
-		Logger emgLogger = new Logger();
-		frame.addConsumer(emgLogger, emgChannel, 1, 0);
+        Logger emgLogger = new Logger();
+        frame.addConsumer(emgLogger, emgChannel, 1, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
-	}
+        // Stop framework
+        frame.stop();
+        frame.clear();
+    }
 
-	/**
-	 * Method to test the vibrate2-functionality of myo
-	 */
-	@Test
-	public void testVibrate()
-	{
-		Handler handler = new Handler(Looper.getMainLooper());
-		handler.postDelayed(new Runnable()
-		{
-			public void run()
-			{
-				final Hub hub = Hub.getInstance();
-				if (!hub.init(getInstrumentation().getContext(), getInstrumentation().getContext().getPackageName()))
-				{
-					Log.e("error");
-				}
-				hub.setLockingPolicy(Hub.LockingPolicy.NONE);
+    /**
+     * Method to test the vibrate2-functionality of myo
+     */
+    @Test
+    public void testVibrate() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                final Hub hub = Hub.getInstance();
+                if (!hub.init(getInstrumentation().getContext(), getInstrumentation().getContext().getPackageName())) {
+                    Log.e("error");
+                }
+                hub.setLockingPolicy(Hub.LockingPolicy.NONE);
 
-				// Disable usage data sending
-				hub.setSendUsageData(false);
+                // Disable usage data sending
+                hub.setSendUsageData(false);
 
-				Log.i("attaching...");
-				hub.attachByMacAddress("F3:41:FA:27:EB:08");
-				Log.i("attached...");
-				hub.addListener(new AbstractDeviceListener()
-				{
-					@Override
-					public void onConnect(Myo myo, long timestamp)
-					{
-						super.onAttach(myo, timestamp);
-						startVibrate(myo, hub);
-					}
-				});
+                Log.i("attaching...");
+                hub.attachByMacAddress("F3:41:FA:27:EB:08");
+                Log.i("attached...");
+                hub.addListener(new AbstractDeviceListener() {
+                    @Override
+                    public void onConnect(Myo myo, long timestamp) {
+                        super.onAttach(myo, timestamp);
+                        startVibrate(myo, hub);
+                    }
+                });
 
-			}
-		}, 1);
+            }
+        }, 1);
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		handler.postDelayed(new Runnable()
-		{
-			public void run()
-			{
-				final Hub hub = Hub.getInstance();
-				hub.shutdown();
-			}
-		}, 1);
-	}
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                final Hub hub = Hub.getInstance();
+                hub.shutdown();
+            }
+        }, 1);
+    }
 
-	private void startVibrate(Myo myo, Hub hub)
-	{
-		Log.i("connected");
-		try
-		{
-			Vibrate2Command vibrate2Command = new Vibrate2Command(hub);
+    private void startVibrate(Myo myo, Hub hub) {
+        Log.i("connected");
+        try {
+            Vibrate2Command vibrate2Command = new Vibrate2Command(hub);
 
-			Log.i("vibrate 1...");
-			myo.vibrate(Myo.VibrationType.MEDIUM);
-			Thread.sleep(3000);
+            Log.i("vibrate 1...");
+            myo.vibrate(Myo.VibrationType.MEDIUM);
+            Thread.sleep(3000);
 
-			Log.i("vibrate 2...");
-			//check strength 50
-			vibrate2Command.vibrate(myo, 1000, (byte) 50);
-			Thread.sleep(3000);
+            Log.i("vibrate 2...");
+            //check strength 50
+            vibrate2Command.vibrate(myo, 1000, (byte) 50);
+            Thread.sleep(3000);
 
-			Log.i("vibrate 3 ...");
-			//check strength 100
-			vibrate2Command.vibrate(myo, 1000, (byte) 100);
-			Thread.sleep(3000);
+            Log.i("vibrate 3 ...");
+            //check strength 100
+            vibrate2Command.vibrate(myo, 1000, (byte) 100);
+            Thread.sleep(3000);
 
-			Log.i("vibrate 4 ...");
-			//check strength 100
-			vibrate2Command.vibrate(myo, 1000, (byte) 150);
-			Thread.sleep(3000);
+            Log.i("vibrate 4 ...");
+            //check strength 100
+            vibrate2Command.vibrate(myo, 1000, (byte) 150);
+            Thread.sleep(3000);
 
-			Log.i("vibrate 5...");
-			//check strength 250
-			vibrate2Command.vibrate(myo, 1000, (byte) 200);
-			Thread.sleep(3000);
+            Log.i("vibrate 5...");
+            //check strength 250
+            vibrate2Command.vibrate(myo, 1000, (byte) 200);
+            Thread.sleep(3000);
 
-			Log.i("vibrate 6...");
-			//check strength 250
-			vibrate2Command.vibrate(myo, 1000, (byte) 250);
-			Thread.sleep(3000);
+            Log.i("vibrate 6...");
+            //check strength 250
+            vibrate2Command.vibrate(myo, 1000, (byte) 250);
+            Thread.sleep(3000);
 
-			Log.i("vibrate pattern...");
-			//check vibrate pattern
-			vibrate2Command.vibrate(myo, new int[]{500, 500, 500, 500, 500, 500}, new byte[]{25, 50, 100, (byte) 150, (byte) 200, (byte) 250});
-			Thread.sleep(3000);
-		}
-		catch (Exception e)
-		{
-			Log.e("exception in vibrate test", e);
-		}
-	}
+            Log.i("vibrate pattern...");
+            //check vibrate pattern
+            vibrate2Command.vibrate(myo, new int[]{500, 500, 500, 500, 500, 500}, new byte[]{25, 50, 100, (byte) 150, (byte) 200, (byte) 250});
+            Thread.sleep(3000);
+        } catch (Exception e) {
+            Log.e("exception in vibrate test", e);
+        }
+    }
 }

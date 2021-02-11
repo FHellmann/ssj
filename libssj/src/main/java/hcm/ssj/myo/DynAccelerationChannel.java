@@ -37,140 +37,121 @@ import hcm.ssj.core.stream.Stream;
 
 /**
  * Dynamic Acceleration which has the gravity component removed
- *
+ * <p>
  * Created by Johnny on 01.04.2015.
  */
-public class DynAccelerationChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class DynAccelerationChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected MyoListener _listener;
+    float[] _acc = new float[3];
+    float[] _ori = new float[4];
+    float[] _gravity = new float[3];
+    public DynAccelerationChannel() {
+        _name = "Myo_DynAcceleration";
+    }
 
-	public class Options extends OptionList
-	{
-		public final Option<Float> gravity = new Option<>("gravity", 9.814f, Float.class, "Frankfurt");
-		public final Option<Boolean> meterPerSecond = new Option<>("meterPerSecond", false, Boolean.class, "");
-		public final Option<Boolean> absolute = new Option<>("absolute", false, Boolean.class, "do measurements relative to the global coordinate system");
-		public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "");
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-		/**
-		 *
-		 */
-		private Options() {
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((Myo) _sensor).listener;
 
-	protected MyoListener _listener;
+        if (stream_out.num != 1) {
+            Log.w("unsupported stream format. sample number = " + stream_out.num);
+        }
+    }
 
-	float[] _acc     = new float[3];
-	float[] _ori     = new float[4];
-	float[] _gravity = new float[3];
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        float[] out = stream_out.ptrF();
 
-	public DynAccelerationChannel()
-	{
-		_name = "Myo_DynAcceleration";
-	}
+        _acc[0] = _listener.accelerationX;
+        _acc[1] = _listener.accelerationY;
+        _acc[2] = _listener.accelerationZ;
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((Myo)_sensor).listener;
+        _ori[0] = (float) _listener.orientationW;
+        _ori[1] = (float) _listener.orientationX;
+        _ori[2] = (float) _listener.orientationY;
+        _ori[3] = (float) _listener.orientationZ;
 
-		if (stream_out.num != 1)
-		{
-			Log.w("unsupported stream format. sample number = " + stream_out.num);
-		}
-	}
+        /**
+         * Determine gravity direction
+         * Code taken from http://www.varesano.net/blog/fabio/simple-gravity-compensation-9-dom-imus
+         * Author: Fabio Varesano
+         */
+        _gravity[0] = 2 * (_ori[1] * _ori[3] - _ori[0] * _ori[2]);
+        _gravity[1] = 2 * (_ori[0] * _ori[1] + _ori[2] * _ori[3]);
+        _gravity[2] = _ori[0] * _ori[0] - _ori[1] * _ori[1] - _ori[2] * _ori[2] + _ori[3] * _ori[3];
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		float[] out = stream_out.ptrF();
+        for (int k = 0; k < 3; k++) {
+            out[k] = _acc[k] - _gravity[k];
+        }
 
-		_acc[0] = _listener.accelerationX;
-		_acc[1] = _listener.accelerationY;
-		_acc[2] = _listener.accelerationZ;
-
-		_ori[0] = (float)_listener.orientationW;
-		_ori[1] = (float)_listener.orientationX;
-		_ori[2] = (float)_listener.orientationY;
-		_ori[3] = (float)_listener.orientationZ;
-
-		/**
-		 * Determine gravity direction
-		 * Code taken from http://www.varesano.net/blog/fabio/simple-gravity-compensation-9-dom-imus
-		 * Author: Fabio Varesano
-		 */
-		_gravity[0] = 2 * (_ori[1] * _ori[3] - _ori[0] * _ori[2]);
-		_gravity[1] = 2 * (_ori[0] * _ori[1] + _ori[2] * _ori[3]);
-		_gravity[2] = _ori[0] * _ori[0] - _ori[1] * _ori[1] - _ori[2] * _ori[2] + _ori[3] * _ori[3];
-
-		for (int k = 0; k < 3; k++)
-		{
-			out[k] = _acc[k] - _gravity[k];
-		}
-
-		if (options.absolute.get())
-		{
-			//TODO, need to find proper mat/vec/quat library in java
-			Log.w("not supported yet");
-			//convert to global coordinate system
+        if (options.absolute.get()) {
+            //TODO, need to find proper mat/vec/quat library in java
+            Log.w("not supported yet");
+            //convert to global coordinate system
 //                    Quaternion q(xq.x(), xq.y(), xq.z(), xq.w());
 //                    Matrix mat(q);
 //                    dynacc = mat * dynacc;
-		}
+        }
 
-		if (options.meterPerSecond.get())
-		{
-			for (int k = 0; k < 3; k++)
-			{
-				out[k] *= options.gravity.get();
-			}
-		}
+        if (options.meterPerSecond.get()) {
+            for (int k = 0; k < 3; k++) {
+                out[k] *= options.gravity.get();
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	@Override
-	public void flush(Stream stream_out) throws SSJFatalException
-	{
-	}
+    @Override
+    public void flush(Stream stream_out) throws SSJFatalException {
+    }
 
-	@Override
-	public double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    public double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-	@Override
-	public int getSampleDimension()
-	{
-		return 3;
-	}
+    @Override
+    public int getSampleDimension() {
+        return 3;
+    }
 
-	@Override
-	public int getSampleBytes()
-	{
-		return 4;
-	}
+    @Override
+    public int getSampleBytes() {
+        return 4;
+    }
 
-	@Override
-	public Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
+    @Override
+    public Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
 
-		stream_out.desc[0] = "AccX";
-		stream_out.desc[1] = "AccY";
-		stream_out.desc[2] = "AccZ";
-	}
+        stream_out.desc[0] = "AccX";
+        stream_out.desc[1] = "AccY";
+        stream_out.desc[2] = "AccZ";
+    }
+
+    public class Options extends OptionList {
+        public final Option<Float> gravity = new Option<>("gravity", 9.814f, Float.class, "Frankfurt");
+        public final Option<Boolean> meterPerSecond = new Option<>("meterPerSecond", false, Boolean.class, "");
+        public final Option<Boolean> absolute = new Option<>("absolute", false, Boolean.class, "do measurements relative to the global coordinate system");
+        public final Option<Integer> sampleRate = new Option<>("sampleRate", 50, Integer.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

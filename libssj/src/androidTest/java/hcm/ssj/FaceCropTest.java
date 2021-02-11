@@ -27,29 +27,18 @@
 
 package hcm.ssj;
 
+import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 import hcm.ssj.camera.CameraChannel;
 import hcm.ssj.camera.CameraSensor;
-import hcm.ssj.camera.ImageLoaderChannel;
-import hcm.ssj.camera.ImageLoaderSensor;
-import hcm.ssj.camera.ImageNormalizer;
-import hcm.ssj.camera.ImageResizer;
 import hcm.ssj.camera.NV21ToRGBDecoder;
 import hcm.ssj.core.Cons;
-import hcm.ssj.core.EventChannel;
 import hcm.ssj.core.Pipeline;
-import hcm.ssj.core.option.FolderPath;
 import hcm.ssj.face.FaceCrop;
-import hcm.ssj.file.FileCons;
-import hcm.ssj.ml.Classifier;
-import hcm.ssj.ml.TFLite;
-import hcm.ssj.test.EventLogger;
 
 /**
  * Tests setting up, loading, and evaluating object classification
@@ -58,57 +47,52 @@ import hcm.ssj.test.EventLogger;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class FaceCropTest
-{
-	@Test
-	public void loadInceptionModel() throws Exception
-	{
-		// Option parameters for camera sensor
-		double sampleRate = 1;
-		int width = 640;
-		int height = 480;
-		int imageRotation = 270;
+public class FaceCropTest {
+    @Test
+    public void loadInceptionModel() throws Exception {
+        // Option parameters for camera sensor
+        double sampleRate = 1;
+        int width = 640;
+        int height = 480;
+        int imageRotation = 270;
 
-		// Get pipeline instance
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
+        // Get pipeline instance
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
 
-		// Instantiate camera sensor and set options
-		CameraSensor cameraSensor = new CameraSensor();
-		cameraSensor.options.cameraType.set(Cons.CameraType.FRONT_CAMERA);
-		cameraSensor.options.width.set(width);
-		cameraSensor.options.height.set(height);
-		cameraSensor.options.previewFpsRangeMin.set(15);
-		cameraSensor.options.previewFpsRangeMax.set(15);
+        // Instantiate camera sensor and set options
+        CameraSensor cameraSensor = new CameraSensor();
+        cameraSensor.options.cameraType.set(Cons.CameraType.FRONT_CAMERA);
+        cameraSensor.options.width.set(width);
+        cameraSensor.options.height.set(height);
+        cameraSensor.options.previewFpsRangeMin.set(15);
+        cameraSensor.options.previewFpsRangeMax.set(15);
 
-		// Add sensor to the pipeline
-		CameraChannel cameraChannel = new CameraChannel();
-		cameraChannel.options.sampleRate.set(sampleRate);
-		frame.addSensor(cameraSensor, cameraChannel);
+        // Add sensor to the pipeline
+        CameraChannel cameraChannel = new CameraChannel();
+        cameraChannel.options.sampleRate.set(sampleRate);
+        frame.addSensor(cameraSensor, cameraChannel);
 
-		// Set up a NV21 decoder
-		NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
-		frame.addTransformer(decoder, cameraChannel, 1, 0);
+        // Set up a NV21 decoder
+        NV21ToRGBDecoder decoder = new NV21ToRGBDecoder();
+        frame.addTransformer(decoder, cameraChannel, 1, 0);
 
-		FaceCrop crop = new FaceCrop();
-		crop.options.rotation.set(imageRotation);
-		frame.addTransformer(crop, decoder, 1, 0);
+        FaceCrop crop = new FaceCrop();
+        crop.options.rotation.set(imageRotation);
+        frame.addTransformer(crop, decoder, 1, 0);
 
-		// Start pipeline
-		frame.start();
+        // Start pipeline
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop pipeline
-		frame.stop();
-		frame.release();
-	}
+        // Stop pipeline
+        frame.stop();
+        frame.release();
+    }
 }

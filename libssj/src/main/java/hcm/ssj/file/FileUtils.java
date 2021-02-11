@@ -28,13 +28,10 @@
 package hcm.ssj.file;
 
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.os.Environment;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,114 +45,101 @@ import hcm.ssj.core.Pipeline;
  *
  * @author Vitaly
  */
-public class FileUtils
-{
-	/**
-	 * @param dirPath Option
-	 * @param fileName Option
-	 * @return File
-	 */
-	public static File getFile(String dirPath, String fileName) throws IOException
-	{
-		boolean isURL = dirPath.startsWith("http://") || dirPath.startsWith("https://");
+public class FileUtils {
+    /**
+     * @param dirPath  Option
+     * @param fileName Option
+     * @return File
+     */
+    public static File getFile(String dirPath, String fileName) throws IOException {
+        boolean isURL = dirPath.startsWith("http://") || dirPath.startsWith("https://");
 
-		if (isURL)
-		{
-			Pipeline.getInstance().download(fileName, dirPath, FileCons.DOWNLOAD_DIR, true);
-			dirPath = FileCons.DOWNLOAD_DIR;
-		}
+        if (isURL) {
+            Pipeline.getInstance().download(fileName, dirPath, FileCons.DOWNLOAD_DIR, true);
+            dirPath = FileCons.DOWNLOAD_DIR;
+        }
 
-		if (dirPath == null)
-		{
-			Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
-			dirPath = FileCons.SSJ_EXTERNAL_STORAGE;
-		}
-		File fileDirectory = new File(dirPath);
-		if (fileName == null)
-		{
-			Log.e("file name not set");
-			return null;
-		}
-		return new File(fileDirectory, fileName);
-	}
+        if (dirPath == null) {
+            Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
+            dirPath = FileCons.SSJ_EXTERNAL_STORAGE;
+        }
+        File fileDirectory = new File(dirPath);
+        if (fileName == null) {
+            Log.e("file name not set");
+            return null;
+        }
+        return new File(fileDirectory, fileName);
+    }
 
-	/**
-	 * @throws IOException
-	 */
-	public static void copyFile(String filename, String from, String to) throws IOException
-	{
-		InputStream in = new FileInputStream(new File(from, filename));
+    /**
+     * @throws IOException
+     */
+    public static void copyFile(String filename, String from, String to) throws IOException {
+        InputStream in = new FileInputStream(new File(from, filename));
 
-		File dir = new File(to);
-		if (!dir.exists())
-			dir.mkdirs();
-		OutputStream out = new FileOutputStream(new File(dir, filename));
+        File dir = new File(to);
+        if (!dir.exists())
+            dir.mkdirs();
+        OutputStream out = new FileOutputStream(new File(dir, filename));
 
-		copyFile(in, out);
-	}
+        copyFile(in, out);
+    }
 
-	/**
-	 * @param in  InputStream
-	 * @param out OutputStream
-	 * @throws IOException
-	 */
-	public static void copyFile(InputStream in, OutputStream out) throws IOException
-	{
-		byte[] buffer = new byte[1024];
-		int read;
-		while ((read = in.read(buffer)) != -1)
-		{
-			out.write(buffer, 0, read);
-		}
-	}
+    /**
+     * @param in  InputStream
+     * @param out OutputStream
+     * @throws IOException
+     */
+    public static void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
 
-	/**
-	 * Copies an asset to a target location
-	 *
-	 * @param context
-	 * @param srcPath
-	 * @param targetPath
-	 */
-	public static void copyAsset(Context context, String srcPath, String targetPath)
-	{
-		try
-		{
-			InputStream in = context.getAssets().open(srcPath);
+    /**
+     * Copies an asset to a target location
+     *
+     * @param context
+     * @param srcPath
+     * @param targetPath
+     */
+    public static void copyAsset(Context context, String srcPath, String targetPath) {
+        try {
+            InputStream in = context.getAssets().open(srcPath);
 
-			File targetFile = new File(targetPath);
+            File targetFile = new File(targetPath);
 
-			if(!targetFile.exists())
-			{
-				new File(targetFile.getParent()).mkdirs();
-			}
+            if (!targetFile.exists()) {
+                new File(targetFile.getParent()).mkdirs();
+            }
 
-			OutputStream out = new FileOutputStream(targetFile);
+            OutputStream out = new FileOutputStream(targetFile);
 
-			// Copy files
-			copyFile(in, out);
+            // Copy files
+            copyFile(in, out);
 
-			// Close streams
-			in.close();
-			out.flush();
-			out.close();
-		}
-		catch (IOException e)
-		{
-			Log.e("Failed to copy asset " + srcPath, e);
-		}
-	}
+            // Close streams
+            in.close();
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+            Log.e("Failed to copy asset " + srcPath, e);
+        }
+    }
 
 
-	/**
-	 * Returns the extension of a given file.
-	 * @param file File to identify.
-	 * @return Extension of the file without the preceding dot.
-	 * Example: example-file.stream: "stream"
-	 */
-	public static String getFileType(File file)
-	{
-		String filename = file.getName();
-		int dotPosition = filename.lastIndexOf('.');
-		return filename.substring(dotPosition + 1);
-	}
+    /**
+     * Returns the extension of a given file.
+     *
+     * @param file File to identify.
+     * @return Extension of the file without the preceding dot.
+     * Example: example-file.stream: "stream"
+     */
+    public static String getFileType(File file) {
+        String filename = file.getName();
+        int dotPosition = filename.lastIndexOf('.');
+        return filename.substring(dotPosition + 1);
+    }
 }

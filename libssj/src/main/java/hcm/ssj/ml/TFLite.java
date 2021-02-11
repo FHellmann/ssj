@@ -46,185 +46,153 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 28.10.2019.
  */
-public class TFLite extends Model
-{
-	public class Options extends Model.Options
-	{
-		public final Option<String> inputNode = new Option<>("input", "input", String.class, "name of the input node");
-		public final Option<String> outputNode = new Option<>("output", "output", String.class, "name of the output node");
-		public final Option<long[]> shape = new Option<>("shape", new long[] {1, 224, 224, 3}, long[].class, "shape of the input tensor");
-		public final Option<Boolean> useGPU = new Option<>("useGPU", true, Boolean.class, "if true tries to use GPU for better performance");
+public class TFLite extends Model {
+    public TFLite.Options options = new TFLite.Options();
+    // An instance of the driver class to run model inference with Tensorflow Lite.
+    private Interpreter modelInterpreter;
+    // Optional GPU delegate for accleration.
+    private GpuDelegate gpuDelegate;
+    // ByteBuffer to hold input data (e.g., images), to be feed into Tensorflow Lite as inputs.
+    private ByteBuffer inputData = null;
+    // GPU Compatibility
+    private boolean gpuSupported;
 
-		private Options()
-		{
-			super();
-			addOptions();
-		}
-	}
+    public TFLite() {
+        _name = "TFLite";
+    }
 
-	public TFLite.Options options = new TFLite.Options();
+    @Override
+    public Options getOptions() {
+        return options;
+    }
 
-	// An instance of the driver class to run model inference with Tensorflow Lite.
-	private Interpreter modelInterpreter;
+    @Override
+    void init(int input_dim, int output_dim, String[] outputNames) {
+        // For images width * height * channels * bytes per pixel (e.g., 4 for float)
+        inputData = ByteBuffer.allocateDirect(input_bytes * input_dim);
+        inputData.order(ByteOrder.nativeOrder());
+    }
 
-	// Optional GPU delegate for accleration.
-	private GpuDelegate gpuDelegate;
+    @Override
+    float[] forward(Stream stream) {
+        if (!isTrained) {
+            Log.w("not trained");
+            return null;
+        }
 
-	// ByteBuffer to hold input data (e.g., images), to be feed into Tensorflow Lite as inputs.
-	private ByteBuffer inputData = null;
+        float[] floatValues = stream.ptrF();
 
-	// GPU Compatibility
-	private boolean gpuSupported;
+        return makePrediction(floatValues);
+    }
 
-	public TFLite()
-	{
-		_name = "TFLite";
-	}
+    /**
+     * Makes prediction about the given image data.
+     *
+     * @param floatValues RGB float data.
+     * @return Probability array.
+     */
+    private float[] makePrediction(float[] floatValues) {
+        float[][] prediction = new float[1][output_dim];
 
-	@Override
-	public Options getOptions()
-	{
-		return options;
-	}
+        // Fill byte buffer
+        inputData.rewind();
+        for (int i = 0; i < floatValues.length; i++) {
+            inputData.putFloat(floatValues[i]);
+        }
 
-	@Override
-	void init(int input_dim, int output_dim, String[] outputNames)
-	{
-		// For images width * height * channels * bytes per pixel (e.g., 4 for float)
-		inputData = ByteBuffer.allocateDirect(input_bytes * input_dim);
-		inputData.order(ByteOrder.nativeOrder());
-	}
+        // Run inference
+        try {
+            modelInterpreter.run(inputData, prediction);
+        } catch (Exception e) {
+            Log.e("Error while running tflite inference", e);
+        }
 
-	@Override
-	float[] forward(Stream stream)
-	{
-		if (!isTrained)
-		{
-			Log.w("not trained");
-			return null;
-		}
+        return prediction[0];
+    }
 
-		float[] floatValues = stream.ptrF();
+    @Override
+    void loadModel(File file) {
+        // Check gpu compatibility
+        CompatibilityList compatList = new CompatibilityList();
+        gpuSupported = compatList.isDelegateSupportedOnThisDevice();
 
-		return makePrediction(floatValues);
-	}
+        Log.i("GPU delegate supported: " + gpuSupported);
 
-	/**
-	 * Makes prediction about the given image data.
-	 *
-	 * @param floatValues RGB float data.
-	 * @return Probability array.
-	 */
-	private float[] makePrediction(float[] floatValues)
-	{
-		float[][] prediction = new float[1][output_dim];
+        Interpreter.Options interpreterOptions = new Interpreter.Options();
 
-		// Fill byte buffer
-		inputData.rewind();
-		for (int i = 0; i < floatValues.length; i++)
-		{
-			inputData.putFloat(floatValues[i]);
-		}
+        // Initialize interpreter with GPU delegate
+        if (gpuSupported && options.useGPU.get()) {
+            // If the device has a supported GPU, add the GPU delegate
+            gpuDelegate = new GpuDelegate(compatList.getBestOptionsForThisDevice());
+            interpreterOptions.addDelegate(gpuDelegate);
+        } else {
+            // If the GPU is not supported, enable XNNPACK acceleration
+            interpreterOptions.setUseXNNPACK(true);
+            interpreterOptions.setNumThreads(Runtime.getRuntime().availableProcessors());
+        }
 
-		// Run inference
-		try
-		{
-			modelInterpreter.run(inputData, prediction);
-		}
-		catch (Exception e)
-		{
-			Log.e("Error while running tflite inference", e);
-		}
+        modelInterpreter = new Interpreter(file, interpreterOptions);
 
-		return prediction[0];
-	}
+        isTrained = true;
+    }
 
-	@Override
-	void loadModel(File file)
-	{
-		// Check gpu compatibility
-		CompatibilityList compatList = new CompatibilityList();
-		gpuSupported = compatList.isDelegateSupportedOnThisDevice();
+    @Override
+    protected void loadOption(File file) {
+        XmlPullParser parser = Xml.newPullParser();
 
-		Log.i("GPU delegate supported: " + gpuSupported);
+        try {
+            parser.setInput(new FileReader(file));
+            parser.next();
 
-		Interpreter.Options interpreterOptions = new Interpreter.Options();
+            int eventType = parser.getEventType();
 
-		// Initialize interpreter with GPU delegate
-		if (gpuSupported && options.useGPU.get())
-		{
-			// If the device has a supported GPU, add the GPU delegate
-			gpuDelegate = new GpuDelegate(compatList.getBestOptionsForThisDevice());
-			interpreterOptions.addDelegate(gpuDelegate);
-		}
-		else
-		{
-			// If the GPU is not supported, enable XNNPACK acceleration
-			interpreterOptions.setUseXNNPACK(true);
-			interpreterOptions.setNumThreads(Runtime.getRuntime().availableProcessors());
-		}
+            // Check if option file is of the right format.
+            if (eventType != XmlPullParser.START_TAG || !parser.getName().equalsIgnoreCase("options")) {
+                Log.w("unknown or malformed trainer file");
+                return;
+            }
 
-		modelInterpreter = new Interpreter(file, interpreterOptions);
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG) {
+                    if (parser.getName().equalsIgnoreCase("item")) {
+                        String optionName = parser.getAttributeValue(null, "name");
+                        String optionValue = parser.getAttributeValue(null, "value");
 
-		isTrained = true;
-	}
+                        Object currentValue = options.getOptionValue(optionName);
+                        if (currentValue == null)
+                            options.setOptionValue(optionName, optionValue);
+                    }
+                }
+                eventType = parser.next();
+            }
+        } catch (Exception e) {
+            Log.e("Error while loading model option file", e);
+        }
+    }
 
-	@Override
-	protected void loadOption(File file)
-	{
-		XmlPullParser parser = Xml.newPullParser();
+    @Override
+    public void close() {
+        super.close();
 
-		try
-		{
-			parser.setInput(new FileReader(file));
-			parser.next();
+        // Clean up
+        if (modelInterpreter != null) {
+            modelInterpreter.close();
+        }
 
-			int eventType = parser.getEventType();
+        if (gpuDelegate != null) {
+            gpuDelegate.close();
+        }
+    }
 
-			// Check if option file is of the right format.
-			if (eventType != XmlPullParser.START_TAG || !parser.getName().equalsIgnoreCase("options"))
-			{
-				Log.w("unknown or malformed trainer file");
-				return;
-			}
+    public class Options extends Model.Options {
+        public final Option<String> inputNode = new Option<>("input", "input", String.class, "name of the input node");
+        public final Option<String> outputNode = new Option<>("output", "output", String.class, "name of the output node");
+        public final Option<long[]> shape = new Option<>("shape", new long[]{1, 224, 224, 3}, long[].class, "shape of the input tensor");
+        public final Option<Boolean> useGPU = new Option<>("useGPU", true, Boolean.class, "if true tries to use GPU for better performance");
 
-			while (eventType != XmlPullParser.END_DOCUMENT)
-			{
-				if (eventType == XmlPullParser.START_TAG)
-				{
-					if (parser.getName().equalsIgnoreCase("item"))
-					{
-						String optionName = parser.getAttributeValue(null, "name");
-						String optionValue = parser.getAttributeValue(null, "value");
-
-						Object currentValue = options.getOptionValue(optionName);
-						if(currentValue == null)
-							options.setOptionValue(optionName, optionValue);
-					}
-				}
-				eventType = parser.next();
-			}
-		}
-		catch (Exception e)
-		{
-			Log.e("Error while loading model option file", e);
-		}
-	}
-
-	@Override
-	public void close()
-	{
-		super.close();
-
-		// Clean up
-		if (modelInterpreter != null)
-		{
-			modelInterpreter.close();
-		}
-
-		if (gpuDelegate != null)
-		{
-			gpuDelegate.close();
-		}
-	}
+        private Options() {
+            super();
+            addOptions();
+        }
+    }
 }

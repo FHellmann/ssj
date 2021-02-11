@@ -45,67 +45,37 @@ import hcm.ssj.signal.Selector;
 /**
  * Generic classifier
  */
-public class Classifier extends Consumer implements IModelHandler
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the consumer
-     */
-    public class Options extends IModelHandler.Options
-    {
-        public final Option<Boolean> merge = new Option<>("merge", true, Boolean.class, "merge input streams");
-        public final Option<Boolean> bestMatchOnly = new Option<>("bestMatchOnly", true, Boolean.class, "print or send class with highest result only");
-        public final Option<Boolean> addClassNames = new Option<>("addClassNames", false, Boolean.class, "add class name to prediction result");
-        public final Option<Boolean> log = new Option<>("log", true, Boolean.class, "print results in log");
-        public final Option<String> sender = new Option<>("sender", "Classifier", String.class, "event sender name, written in every event");
-        public final Option<String> event = new Option<>("event", "Result", String.class, "event name (ignored if bestMatchOnly is true)");
-
-        private Options()
-        {
-            super();
-            addOptions();
-        }
-    }
-
+public class Classifier extends Consumer implements IModelHandler {
     public final Options options = new Options();
-
     private Selector selector = null;
     private Stream[] stream_merged;
     private Stream[] stream_selected;
     private Merge merge = null;
-
     private Model model = null;
-
-    public Classifier()
-    {
+    public Classifier() {
         _name = this.getClass().getSimpleName();
     }
 
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
     /**
-     * @param stream_in  Stream[]
+     * @param stream_in Stream[]
      */
     @Override
-    public void enter(Stream[] stream_in) throws SSJFatalException
-    {
-        if (stream_in.length > 1 && !options.merge.get())
-        {
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length > 1 && !options.merge.get()) {
             throw new SSJFatalException("sources count not supported");
         }
-        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF)
-        {
+        if (stream_in[0].type == Cons.Type.EMPTY || stream_in[0].type == Cons.Type.UNDEF) {
             throw new SSJFatalException("stream type not supported");
         }
-        if (model == null)
-        {
+        if (model == null) {
             throw new SSJFatalException("no model defined");
         }
-        if (!model.isSetup())
-        {
+        if (!model.isSetup()) {
             throw new SSJFatalException("model not initialized.");
         }
 
@@ -115,8 +85,7 @@ public class Classifier extends Consumer implements IModelHandler
 
         Stream[] input = stream_in;
 
-        if(options.merge.get())
-        {
+        if (options.merge.get()) {
             merge = new Merge();
             stream_merged = new Stream[1];
             stream_merged[0] = Stream.create(input[0].num, merge.getSampleDimension(input), input[0].sr, input[0].type);
@@ -124,17 +93,13 @@ public class Classifier extends Consumer implements IModelHandler
             input = stream_merged;
         }
 
-        try
-        {
+        try {
             model.validateInput(input);
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("model validation failed", e);
         }
 
-        if(model.getInputDim() != null)
-        {
+        if (model.getInputDim() != null) {
             selector = new Selector();
             selector.options.values.set(model.getInputDim());
             stream_selected = new Stream[1];
@@ -144,32 +109,29 @@ public class Classifier extends Consumer implements IModelHandler
     }
 
     /**
-     * @param stream_in  Stream[]
-	 * @param trigger
+     * @param stream_in Stream[]
+     * @param trigger
      */
     @Override
-    public void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
+    public void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
         Stream[] input = stream_in;
 
-        if(options.merge.get()) {
+        if (options.merge.get()) {
             merge.transform(input, stream_merged[0]);
             input = stream_merged;
         }
-        if(selector != null) {
+        if (selector != null) {
             selector.transform(input, stream_selected[0]);
             input = stream_selected;
         }
 
         float[] probs = model.forward(input[0]);
 
-        if(options.bestMatchOnly.get())
-        {
+        if (options.bestMatchOnly.get()) {
             // Get array index of element with largest probability.
             int bestLabelIdx = Util.maxIndex(probs);
 
-            if (_evchannel_out != null)
-            {
+            if (_evchannel_out != null) {
                 Event ev = Event.create(Cons.Type.FLOAT);
                 ev.sender = options.sender.get();
                 ev.name = model.getClassNames()[bestLabelIdx];
@@ -182,41 +144,32 @@ public class Classifier extends Consumer implements IModelHandler
                 _evchannel_out.pushEvent(ev);
             }
 
-            if (options.log.get())
-            {
+            if (options.log.get()) {
                 String bestMatch = String.format(Locale.GERMANY, "BEST MATCH: %s (%.2f%% likely)",
-                                                 model.getClassNames()[bestLabelIdx],
-                                                 probs[bestLabelIdx] * 100f);
+                        model.getClassNames()[bestLabelIdx],
+                        probs[bestLabelIdx] * 100f);
                 Log.i(bestMatch);
             }
-        }
-        else
-        {
-            if (_evchannel_out != null)
-            {
+        } else {
+            if (_evchannel_out != null) {
                 Event ev;
 
-                if (options.addClassNames.get())
-                {
+                if (options.addClassNames.get()) {
                     String[] class_names = model.getClassNames();
                     StringBuilder stringBuilder = new StringBuilder();
-                    for (int i = 0; i < probs.length; i++)
-                    {
+                    for (int i = 0; i < probs.length; i++) {
                         stringBuilder.append(class_names[i]);
                         stringBuilder.append(": ");
                         stringBuilder.append(String.format(Locale.ENGLISH, "%.3f", probs[i]));
 
-                        if (i < probs.length - 1)
-                        {
+                        if (i < probs.length - 1) {
                             stringBuilder.append(", ");
                         }
                     }
 
                     ev = Event.create(Cons.Type.STRING);
                     ev.setData(stringBuilder.toString());
-                }
-                else
-                {
+                } else {
                     ev = Event.create(Cons.Type.FLOAT);
                     ev.setData(probs);
                 }
@@ -231,12 +184,10 @@ public class Classifier extends Consumer implements IModelHandler
                 _evchannel_out.pushEvent(ev);
             }
 
-            if (options.log.get())
-            {
+            if (options.log.get()) {
                 String[] class_names = model.getClassNames();
                 StringBuilder stringBuilder = new StringBuilder();
-                for (int i = 0; i < probs.length; i++)
-                {
+                for (int i = 0; i < probs.length; i++) {
                     stringBuilder.append(class_names[i]);
                     stringBuilder.append(" = ");
                     stringBuilder.append(probs[i]);
@@ -249,14 +200,29 @@ public class Classifier extends Consumer implements IModelHandler
     }
 
     @Override
-    public void setModel(Model model)
-    {
-        this.model = model;
+    public Model getModel() {
+        return model;
     }
 
     @Override
-    public Model getModel()
-    {
-        return model;
+    public void setModel(Model model) {
+        this.model = model;
+    }
+
+    /**
+     * All options for the consumer
+     */
+    public class Options extends IModelHandler.Options {
+        public final Option<Boolean> merge = new Option<>("merge", true, Boolean.class, "merge input streams");
+        public final Option<Boolean> bestMatchOnly = new Option<>("bestMatchOnly", true, Boolean.class, "print or send class with highest result only");
+        public final Option<Boolean> addClassNames = new Option<>("addClassNames", false, Boolean.class, "add class name to prediction result");
+        public final Option<Boolean> log = new Option<>("log", true, Boolean.class, "print results in log");
+        public final Option<String> sender = new Option<>("sender", "Classifier", String.class, "event sender name, written in every event");
+        public final Option<String> event = new Option<>("event", "Result", String.class, "event name (ignored if bestMatchOnly is true)");
+
+        private Options() {
+            super();
+            addOptions();
+        }
     }
 }

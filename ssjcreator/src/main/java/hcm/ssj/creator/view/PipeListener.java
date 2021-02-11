@@ -32,7 +32,6 @@ package hcm.ssj.creator.view;
  * Created by Frank on 03.03.2017.
  */
 
-public interface PipeListener
-{
+public interface PipeListener {
     void viewChanged();
 }

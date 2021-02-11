@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Extends java's ThreadPoolExecutor to add uncaught exception handling
- *
+ * <p>
  * Created by Johnny on 06.04.2016.
  */
 public class ThreadPool extends java.util.concurrent.ThreadPoolExecutor {
@@ -44,7 +44,7 @@ public class ThreadPool extends java.util.concurrent.ThreadPoolExecutor {
     protected void afterExecute(Runnable r, Throwable t) {
         super.afterExecute(r, t);
 
-        if(t != null)
+        if (t != null)
             Pipeline.getInstance().error(r.getClass().getSimpleName(), "uncaught exception", t);
     }
 }

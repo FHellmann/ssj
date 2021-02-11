@@ -33,158 +33,136 @@ import java.util.List;
 /**
  * Created by Michael Dietz on 11.08.2015.
  */
-public class Matrix<T>
-{
-	public enum MATRIX_DIMENSION {
+public class Matrix<T> {
+    ArrayList<T> data;
 
-		//! rowwise
-		ROW,
-		//! columnwise
-		COL
-	};
+    private int rows;
+    private int cols;
 
-	private int rows;
-	private int cols;
+    public Matrix(int rows, int cols) {
+        reset(rows, cols);
+    }
 
-	ArrayList<T> data;
+    public void reset(int rows, int cols) {
+        if (rows * cols > 0) {
+            this.rows = rows;
+            this.cols = cols;
 
-	public Matrix(int rows, int cols)
-	{
-		reset(rows, cols);
-	}
+            data = new ArrayList<T>(rows * cols);
+            while (data.size() < rows * cols) data.add(null);
+        }
+    }
 
-	public void reset(int rows, int cols)
-	{
-		if (rows * cols > 0)
-		{
-			this.rows = rows;
-			this.cols = cols;
+    public Matrix<T> clone() {
+        Matrix<T> ret = new Matrix<>(rows, cols);
+        for (int i = 0; i < getSize(); i++) {
+            ret.setData(i, data.get(i));
+        }
 
-			data = new ArrayList<T>(rows * cols);
-			while(data.size() < rows * cols) data.add(null);
-		}
-	}
+        return ret;
+    }
 
-	public Matrix<T> clone()
-	{
-		Matrix<T> ret = new Matrix<>(rows, cols);
-		for (int i = 0; i < getSize(); i++)
-		{
-			ret.setData(i, data.get(i));
-		}
+    public List<T> getData() {
+        return data;
+    }
 
-		return ret;
-	}
+    public T getData(int index) {
+        return data.get(index);
+    }
 
-	public List<T> getData()
-	{
-		return data;
-	}
+    public T getData(int row, int col) {
+        return data.get(row * cols + col);
+    }
 
-	public T getData(int index)
-	{
-		return data.get(index);
-	}
+    public void setData(int index, T value) {
+        data.set(index, value);
+    }
 
-	public T getData(int row, int col)
-	{
-		return data.get(row * cols + col);
-	}
+    public void setData(int row, int col, T value) {
+        data.set(row * cols + col, value);
+    }
 
-	public void setData(int index, T value)
-	{
-		data.set(index, value);
-	}
+    public void fillValue(T value) {
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                setData(row, col, value);
+            }
+        }
+    }
 
-	public void setData(int row, int col, T value)
-	{
-		data.set(row * cols + col, value);
-	}
+    public int getRows() {
+        return rows;
+    }
 
-	public void fillValue(T value)
-	{
-		for (int row = 0; row < rows; row++)
-		{
-			for (int col = 0; col < cols; col++)
-			{
-				setData(row, col, value);
-			}
-		}
-	}
+    public int getCols() {
+        return cols;
+    }
 
-	public int getRows()
-	{
-		return rows;
-	}
+    public int getSize() {
+        return cols * rows;
+    }
 
-	public int getCols()
-	{
-		return cols;
-	}
+    public void transpose() {
+        if (data.isEmpty()) {
+            return;
+        }
 
-	public int getSize()
-	{
-		return cols * rows;
-	}
+        if (rows > 1 && cols > 1) {
 
-	public void transpose ()
-	{
-		if (data.isEmpty()) {
-			return;
-		}
+            Matrix<T> tmp = this.clone();
 
-		if (rows > 1 && cols > 1) {
+            int srcrows = tmp.getRows();
+            int srccols = tmp.getCols();
 
-			Matrix<T> tmp = this.clone();
+            int srcptr = 0;
+            int dstptr = 0;
 
-			int srcrows = tmp.getRows();
-			int srccols = tmp.getCols();
+            for (int i = 0; i < srccols; i++) {
+                srcptr = i;
+                for (int j = 0; j < srcrows; j++) {
+                    data.set(dstptr, tmp.getData(srcptr));
+                    srcptr += srccols;
+                    dstptr++;
+                }
+            }
+        }
 
-			int srcptr = 0;
-			int dstptr = 0;
+        int tmp = cols;
+        cols = rows;
+        rows = tmp;
+    }
 
-			for (int i = 0; i < srccols; i++)
-			{
-				srcptr = i;
-				for (int j = 0; j < srcrows; j++)
-				{
-					data.set(dstptr, tmp.getData(srcptr));
-					srcptr += srccols;
-					dstptr++;
-				}
-			}
-		}
+    public void setSubMatrix(int row, int col, Matrix<T> submaxtrix) {
+        setSubMatrix(row, col, 0, 0, submaxtrix.getRows(), submaxtrix.getCols(), submaxtrix);
+    }
 
-		int tmp = cols;
-		cols = rows;
-		rows = tmp;
-	}
+    public void setSubMatrix(int row_dst, int col_dst, int row_src, int col_src, int row_number, int col_number, Matrix<T> src) {
+        if (row_dst + row_number > rows
+                || col_dst + col_number > cols
+                || row_src + row_number > src.getRows()
+                || col_src + col_number > src.getCols())
+            return;
 
-	public void setSubMatrix(int row, int col, Matrix<T> submaxtrix)
-	{
-		setSubMatrix(row, col, 0, 0, submaxtrix.getRows(), submaxtrix.getCols(), submaxtrix);
-	}
+        int srccols = src.getCols();
+        int srcptr = row_src * srccols + col_src;
+        int dstcols = cols;
+        int dstptr = row_dst * dstcols + col_dst;
 
-	public void setSubMatrix(int row_dst, int col_dst, int row_src, int col_src, int row_number, int col_number, Matrix<T> src)
-	{
-		if (row_dst + row_number > rows
-				|| col_dst + col_number > cols
-				|| row_src + row_number > src.getRows()
-				|| col_src + col_number > src.getCols())
-			return;
+        for (int i = 0; i < row_number; i++) {
 
-		int srccols = src.getCols();
-		int srcptr = row_src * srccols + col_src;
-		int dstcols = cols;
-		int dstptr = row_dst * dstcols + col_dst;
+            for (int j = 0; j < col_number; j++)
+                data.set(dstptr + j, src.getData(srcptr + j));
 
-		for (int i = 0; i < row_number; i++) {
+            srcptr += srccols;
+            dstptr += dstcols;
+        }
+    }
 
-			for(int j = 0; j < col_number; j++)
-				data.set(dstptr + j, src.getData(srcptr + j));
+    public enum MATRIX_DIMENSION {
 
-			srcptr += srccols;
-			dstptr += dstcols;
-		}
-	}
+        //! rowwise
+        ROW,
+        //! columnwise
+        COL
+    }
 }

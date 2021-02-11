@@ -44,19 +44,17 @@ import java.util.LinkedHashMap;
  * Adapter for expandable list view. <br>
  * Created by Frank Gaibler on 02.08.2016.
  */
-class ListAdapter extends BaseExpandableListAdapter
-{
-    private Context context;
-    private String[] listDataHeader;
-    private LinkedHashMap<String, ArrayList<Class>> mapDataChild;
+class ListAdapter extends BaseExpandableListAdapter {
     private static final int PADDING = 25;
+    private final Context context;
+    private final String[] listDataHeader;
+    private final LinkedHashMap<String, ArrayList<Class>> mapDataChild;
 
     /**
      * @param context      Context
      * @param mapDataChild LinkedHashMap
      */
-    public ListAdapter(Context context, LinkedHashMap<String, ArrayList<Class>> mapDataChild)
-    {
+    public ListAdapter(Context context, LinkedHashMap<String, ArrayList<Class>> mapDataChild) {
         this.context = context;
         this.listDataHeader = mapDataChild.keySet().toArray(new String[mapDataChild.size()]);
         this.mapDataChild = mapDataChild;
@@ -68,8 +66,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return Object
      */
     @Override
-    public Object getChild(int groupPosition, int childPosition)
-    {
+    public Object getChild(int groupPosition, int childPosition) {
         return this.mapDataChild.get(this.listDataHeader[groupPosition]).get(childPosition).getSimpleName();
     }
 
@@ -79,8 +76,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return long
      */
     @Override
-    public long getChildId(int groupPosition, int childPosition)
-    {
+    public long getChildId(int groupPosition, int childPosition) {
         return childPosition;
     }
 
@@ -93,11 +89,9 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return View
      */
     @Override
-    public View getChildView(int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent)
-    {
+    public View getChildView(int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
         final String childText = (String) getChild(groupPosition, childPosition);
-        if (convertView == null)
-        {
+        if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) this.context
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(android.R.layout.simple_list_item_multiple_choice, null);
@@ -113,8 +107,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return int
      */
     @Override
-    public int getChildrenCount(int groupPosition)
-    {
+    public int getChildrenCount(int groupPosition) {
         return this.mapDataChild.get(this.listDataHeader[groupPosition]).size();
     }
 
@@ -123,8 +116,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return Object
      */
     @Override
-    public Object getGroup(int groupPosition)
-    {
+    public Object getGroup(int groupPosition) {
         return this.listDataHeader[groupPosition];
     }
 
@@ -132,8 +124,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return int
      */
     @Override
-    public int getGroupCount()
-    {
+    public int getGroupCount() {
         return this.listDataHeader.length;
     }
 
@@ -142,8 +133,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return long
      */
     @Override
-    public long getGroupId(int groupPosition)
-    {
+    public long getGroupId(int groupPosition) {
         return groupPosition;
     }
 
@@ -155,11 +145,9 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return View
      */
     @Override
-    public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent)
-    {
+    public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
         String headerTitle = (String) getGroup(groupPosition);
-        if (convertView == null)
-        {
+        if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) this.context
                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(android.R.layout.simple_expandable_list_item_1, null);
@@ -177,8 +165,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return boolean
      */
     @Override
-    public boolean hasStableIds()
-    {
+    public boolean hasStableIds() {
         return false;
     }
 
@@ -188,8 +175,7 @@ class ListAdapter extends BaseExpandableListAdapter
      * @return boolean
      */
     @Override
-    public boolean isChildSelectable(int groupPosition, int childPosition)
-    {
+    public boolean isChildSelectable(int groupPosition, int childPosition) {
         return true;
     }
 }

@@ -36,22 +36,19 @@ import hcm.ssj.feedback.feedbackmanager.classes.FeedbackClass;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class Action
-{
+public class Action {
     protected static int s_id = 0;
     public long lastExecutionTime = 0;
+    public int lock = 0;
+    public int lockSelf = 0;
     protected int id;
     protected FeedbackClass.Type type;
-	public int lock = 0;
-	public int lockSelf = 0;
 
-	protected Action()
-    {
+    protected Action() {
         id = s_id++;
     }
 
-    public static Action create(FeedbackClass.Type feedback_type, XmlPullParser xml, Context context)
-    {
+    public static Action create(FeedbackClass.Type feedback_type, XmlPullParser xml, Context context) {
         Action i = null;
         if (feedback_type == FeedbackClass.Type.Visual)
             i = new VisualAction();
@@ -66,43 +63,39 @@ public class Action
         return i;
     }
 
-    public void release()
-    {}
-
-    protected void load(XmlPullParser xml, Context context)
-    {
-		String lock_str = xml.getAttributeValue(null, "lock");
-		if(lock_str != null)
-			lock = Integer.valueOf(lock_str);
-
-		lock_str = xml.getAttributeValue(null, "lockSelf");
-		if(lock_str != null)
-			lockSelf = Integer.valueOf(lock_str);
+    public void release() {
     }
 
-    public int[] parseIntArray(String str, String delim)
-    {
-        String arr[] = str.split(delim);
-        int out[] = new int[arr.length];
-        for(int i = 0; i < arr.length; ++i)
+    protected void load(XmlPullParser xml, Context context) {
+        String lock_str = xml.getAttributeValue(null, "lock");
+        if (lock_str != null)
+            lock = Integer.valueOf(lock_str);
+
+        lock_str = xml.getAttributeValue(null, "lockSelf");
+        if (lock_str != null)
+            lockSelf = Integer.valueOf(lock_str);
+    }
+
+    public int[] parseIntArray(String str, String delim) {
+        String[] arr = str.split(delim);
+        int[] out = new int[arr.length];
+        for (int i = 0; i < arr.length; ++i)
             out[i] = Integer.valueOf(arr[i]);
 
         return out;
     }
 
-    public byte[] parseByteArray(String str, String delim)
-    {
-        String arr[] = str.split(delim);
-        byte out[] = new byte[arr.length];
-        for(int i = 0; i < arr.length; ++i)
-            out[i] = (byte)Integer.valueOf(arr[i]).intValue();
+    public byte[] parseByteArray(String str, String delim) {
+        String[] arr = str.split(delim);
+        byte[] out = new byte[arr.length];
+        for (int i = 0; i < arr.length; ++i)
+            out[i] = (byte) Integer.valueOf(arr[i]).intValue();
 
         return out;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return type.toString() + "_" + id;
     }
 }

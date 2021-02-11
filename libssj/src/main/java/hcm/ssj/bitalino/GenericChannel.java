@@ -40,89 +40,73 @@ import hcm.ssj.core.stream.Stream;
  * Outputs data from any channel of the BITalino board.
  * No data processing is performed.
  */
-public class GenericChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class GenericChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BitalinoListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Integer> channel = new Option<>("channel", 5, Integer.class, "channel id (between 0 and 5)");
-		public final Option<Integer> channelType = new Option<>("channelType", 0, Integer.class, "analogue (0) or digital (1)");
+    public GenericChannel() {
+        _name = "Bitalino_Channel";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
-	public final Options options = new Options();
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	protected BitalinoListener _listener;
+    @Override
+    public void init() throws SSJException {
+        ((Bitalino) _sensor).addChannel(options.channel.get());
+    }
 
-	public GenericChannel()
-	{
-		_name = "Bitalino_Channel";
-	}
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((Bitalino) _sensor).listener;
+    }
 
-	@Override
-	public void init() throws SSJException
-	{
-		((Bitalino)_sensor).addChannel(options.channel.get());
-	}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((Bitalino) _sensor).listener;
-	}
+        int[] out = stream_out.ptrI();
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+        if (options.channelType.get() == 0) {
+            out[0] = _listener.getAnalogData(options.channel.get());
+        } else {
+            out[0] = _listener.getDigitalData(options.channel.get());
+        }
 
-		int[] out = stream_out.ptrI();
+        return true;
+    }
 
-		if (options.channelType.get() == 0)
-		{
-			out[0] = _listener.getAnalogData(options.channel.get());
-		}
-		else
-		{
-			out[0] = _listener.getDigitalData(options.channel.get());
-		}
+    @Override
+    protected double getSampleRate() {
+        return ((Bitalino) _sensor).options.sr.get();
+    }
 
-		return true;
-	}
+    @Override
+    protected int getSampleDimension() {
+        return 1;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return ((Bitalino)_sensor).options.sr.get();
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.INT;
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 1;
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "Ch" + options.channel.get();
+    }
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.INT;
-	}
+    public class Options extends OptionList {
+        public final Option<Integer> channel = new Option<>("channel", 5, Integer.class, "channel id (between 0 and 5)");
+        public final Option<Integer> channelType = new Option<>("channelType", 0, Integer.class, "analogue (0) or digital (1)");
 
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "Ch" + options.channel.get();
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

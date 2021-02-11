@@ -32,15 +32,15 @@ import hcm.ssj.core.option.OptionList;
 /**
  * Interface for objects which work with models
  */
-public interface IModelHandler
-{
+public interface IModelHandler {
 
-	/**
-     * Standard options
-     */
-    class Options extends OptionList
-    {}
+    Model getModel();
 
     void setModel(Model model);
-	Model getModel();
+
+    /**
+     * Standard options
+     */
+    class Options extends OptionList {
+    }
 }

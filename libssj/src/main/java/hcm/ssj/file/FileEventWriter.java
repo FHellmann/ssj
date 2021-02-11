@@ -40,6 +40,7 @@ import java.util.TimeZone;
 import hcm.ssj.core.Cons;
 import hcm.ssj.core.EventHandler;
 import hcm.ssj.core.Log;
+import hcm.ssj.core.Pipeline;
 import hcm.ssj.core.SSJFatalException;
 import hcm.ssj.core.Util;
 import hcm.ssj.core.event.Event;
@@ -54,65 +55,43 @@ import static hcm.ssj.file.FileCons.FILE_EXTENSION_EVENT;
  * writes events to file
  * Created by Johnny on 05.03.2015.
  */
-public class FileEventWriter extends EventHandler implements IFileWriter
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public enum Format
-    {
-        EVENT,
-        ANNO_PLAIN
-    }
-
-    public class Options extends IFileWriter.Options
-    {
-        public final Option<Format> format = new Option<>("format", Format.EVENT, Format.class, "format of event file");
-    }
+public class FileEventWriter extends EventHandler implements IFileWriter {
     public Options options = new Options();
-
     StringBuilder _builder = new StringBuilder();
     byte[] _buffer;
-
     ArrayList<Event> unprocessedEvents = new ArrayList<>();
-
     private File file;
     private FileOutputStream fileOutputStream = null;
-
     private boolean headerWritten = false;
 
-    public FileEventWriter()
-    {
+    public FileEventWriter() {
         _name = "FileEventWriter";
     }
 
     @Override
-	public void enter() throws SSJFatalException
-    {
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new RuntimeException("no incoming event channels defined");
-		}
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter() throws SSJFatalException {
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new RuntimeException("no incoming event channels defined");
+        }
 
         _buffer = new byte[Cons.MAX_EVENT_SIZE];
         _builder.delete(0, _builder.length());
 
         //create file
-        if (options.filePath.get() == null)
-        {
+        if (options.filePath.get() == null) {
             Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
             options.filePath.set(new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE));
         }
         File fileDirectory = Util.createDirectory(options.filePath.parseWildcards());
 
-        if (options.fileName.get() == null)
-        {
+        if (options.fileName.get() == null) {
             String defaultName = "events";
-            switch(options.format.get())
-            {
+            switch (options.format.get()) {
                 case EVENT:
                     defaultName += "." + FILE_EXTENSION_EVENT;
                     break;
@@ -132,14 +111,12 @@ public class FileEventWriter extends EventHandler implements IFileWriter
     }
 
     @Override
-    public synchronized void notify(Event event)
-    {
+    public synchronized void notify(Event event) {
         //write header
-        if(!headerWritten && options.format.get() == Format.EVENT)
-        {
+        if (!headerWritten && options.format.get() == Format.EVENT) {
             _builder.delete(0, _builder.length());
             _builder.append("<events ssi-v=\"2\" ssj-v=\"");
-            _builder.append(_frame.getVersion());
+            _builder.append(Pipeline.getVersion());
             _builder.append("\">");
             _builder.append(FileCons.DELIMITER_LINE);
 
@@ -160,26 +137,19 @@ public class FileEventWriter extends EventHandler implements IFileWriter
 
         _builder.delete(0, _builder.length());
 
-        if(options.format.get() == Format.EVENT)
-        {
+        if (options.format.get() == Format.EVENT) {
             Util.eventToXML(_builder, event);
             _builder.append(FileCons.DELIMITER_LINE);
 
             write(_builder.toString(), fileOutputStream);
-        }
-        else if(options.format.get() == Format.ANNO_PLAIN)
-        {
-            if(event.state == Event.State.CONTINUED) {
+        } else if (options.format.get() == Format.ANNO_PLAIN) {
+            if (event.state == Event.State.CONTINUED) {
                 unprocessedEvents.add(event);
-            }
-            else
-            {
+            } else {
                 //search for event start
                 Event start = null;
-                for(int j = 0; j < unprocessedEvents.size(); j++)
-                {
-                    if(unprocessedEvents.get(j).name.equals(event.name))
-                    {
+                for (int j = 0; j < unprocessedEvents.size(); j++) {
+                    if (unprocessedEvents.get(j).name.equals(event.name)) {
                         start = unprocessedEvents.get(j);
                         unprocessedEvents.remove(j);
                         break;
@@ -195,10 +165,9 @@ public class FileEventWriter extends EventHandler implements IFileWriter
         }
     }
 
-    public void flush() throws SSJFatalException
-    {
+    public void flush() throws SSJFatalException {
         //write footer
-        if(options.format.get() == Format.EVENT) {
+        if (options.format.get() == Format.EVENT) {
             _builder.delete(0, _builder.length());
             _builder.append("</events>");
             writeLine(_builder.toString(), fileOutputStream);
@@ -207,21 +176,16 @@ public class FileEventWriter extends EventHandler implements IFileWriter
         fileOutputStream = closeStream(fileOutputStream);
     }
 
-
     /**
      * @param stream FileOutputStream
      * @return FileOutputStream
      */
-    private FileOutputStream closeStream(FileOutputStream stream)
-    {
-        if (stream != null)
-        {
-            try
-            {
+    private FileOutputStream closeStream(FileOutputStream stream) {
+        if (stream != null) {
+            try {
                 stream.close();
                 stream = null;
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not close writer");
             }
         }
@@ -233,13 +197,10 @@ public class FileEventWriter extends EventHandler implements IFileWriter
      * @param stream FileOutputStream
      * @return FileOutputStream
      */
-    private FileOutputStream getFileConnection(File file, FileOutputStream stream)
-    {
-        try
-        {
+    private FileOutputStream getFileConnection(File file, FileOutputStream stream) {
+        try {
             stream = new FileOutputStream(file);
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             Log.e("file not found");
         }
         return stream;
@@ -249,15 +210,11 @@ public class FileEventWriter extends EventHandler implements IFileWriter
      * @param line   String
      * @param stream FileOutputStream
      */
-    private void write(String line, FileOutputStream stream)
-    {
-        if (stream != null)
-        {
-            try
-            {
+    private void write(String line, FileOutputStream stream) {
+        if (stream != null) {
+            try {
                 stream.write(line.getBytes());
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not write data");
             }
         }
@@ -267,18 +224,23 @@ public class FileEventWriter extends EventHandler implements IFileWriter
      * @param line   String
      * @param stream FileOutputStream
      */
-    private void writeLine(String line, FileOutputStream stream)
-    {
-        if (stream != null)
-        {
-            try
-            {
+    private void writeLine(String line, FileOutputStream stream) {
+        if (stream != null) {
+            try {
                 line += FileCons.DELIMITER_LINE;
                 stream.write(line.getBytes());
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.e("could not write line");
             }
         }
+    }
+
+    public enum Format {
+        EVENT,
+        ANNO_PLAIN
+    }
+
+    public class Options extends IFileWriter.Options {
+        public final Option<Format> format = new Option<>("format", Format.EVENT, Format.class, "format of event file");
     }
 }

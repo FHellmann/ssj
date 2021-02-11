@@ -46,57 +46,52 @@ import hcm.ssj.test.Logger;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class EstimoteBeaconTest
-{
-	@Test
-	public void testBeacons() throws Exception
-	{
-		// Setup
-		Pipeline frame = Pipeline.getInstance();
-		frame.options.bufferSize.set(10.0f);
-		frame.options.logtimeout.set(0.2);
+public class EstimoteBeaconTest {
+    @Test
+    public void testBeacons() throws Exception {
+        // Setup
+        Pipeline frame = Pipeline.getInstance();
+        frame.options.bufferSize.set(10.0f);
+        frame.options.logtimeout.set(0.2);
 
-		// Sensor
-		EstimoteBeacon sensor = new EstimoteBeacon();
-		sensor.options.uuid.set("B9407F30-F5F8-466E-AFF9-25556B57FE6D");
-		sensor.options.major.set(1337);
+        // Sensor
+        EstimoteBeacon sensor = new EstimoteBeacon();
+        sensor.options.uuid.set("B9407F30-F5F8-466E-AFF9-25556B57FE6D");
+        sensor.options.major.set(1337);
 
-		// Channel
-		BeaconChannel channel = new BeaconChannel();
-		channel.options.identifier.set("B9407F30-F5F8-466E-AFF9-25556B57FE6D:1337:1000");
-		frame.addSensor(sensor, channel);
+        // Channel
+        BeaconChannel channel = new BeaconChannel();
+        channel.options.identifier.set("B9407F30-F5F8-466E-AFF9-25556B57FE6D:1337:1000");
+        frame.addSensor(sensor, channel);
 
-		// Transformer
-		Butfilt filter = new Butfilt();
-		filter.options.zero.set(true);
-		filter.options.norm.set(false);
-		filter.options.low.set(0.3);
-		filter.options.order.set(1);
-		filter.options.type.set(Butfilt.Type.LOW);
-		frame.addTransformer(filter, channel, 0.2, 0);
+        // Transformer
+        Butfilt filter = new Butfilt();
+        filter.options.zero.set(true);
+        filter.options.norm.set(false);
+        filter.options.low.set(0.3);
+        filter.options.order.set(1);
+        filter.options.type.set(Butfilt.Type.LOW);
+        frame.addTransformer(filter, channel, 0.2, 0);
 
-		Merge merge = new Merge();
-		frame.addTransformer(merge, new Provider[]{channel, filter}, 0.2, 0);
+        Merge merge = new Merge();
+        frame.addTransformer(merge, new Provider[]{channel, filter}, 0.2, 0);
 
-		// Consumer
-		Logger log = new Logger();
-		frame.addConsumer(log, merge, 0.2, 0);
+        // Consumer
+        Logger log = new Logger();
+        frame.addConsumer(log, merge, 0.2, 0);
 
-		// Start framework
-		frame.start();
+        // Start framework
+        frame.start();
 
-		// Wait duration
-		try
-		{
-			Thread.sleep(TestHelper.DUR_TEST_NORMAL);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+        // Wait duration
+        try {
+            Thread.sleep(TestHelper.DUR_TEST_NORMAL);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		// Stop framework
-		frame.stop();
-		frame.clear();
-	}
+        // Stop framework
+        frame.stop();
+        frame.clear();
+    }
 }

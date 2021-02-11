@@ -31,18 +31,15 @@ package hcm.ssj.core.option;
  * Created by Ionut Damian on 11.12.2017.
  */
 
-public class FilePath
-{
-	public String value = null;
+public class FilePath {
+    public String value = null;
 
-	public FilePath(String value)
-	{
-		this.value = value;
-	}
+    public FilePath(String value) {
+        this.value = value;
+    }
 
-	@Override
-	public String toString()
-	{
-		return value;
-	}
+    @Override
+    public String toString() {
+        return value;
+    }
 }

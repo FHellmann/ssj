@@ -40,105 +40,86 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class GyroscopeChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class GyroscopeChannel extends SensorChannel {
+    public final Options options = new Options();
+    protected BandListener _listener;
 
-	public class Options extends OptionList
-	{
-		public final Option<Float> sampleRate = new Option<>("sampleRate", 62.5f, Float.class, "supported sample rates: 7.8125, 31.25, 62.5 Hz");
+    public GyroscopeChannel() {
+        _name = "MSBand_Gyroscope";
+    }
 
-		private Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-	public final Options options = new Options();
+    @Override
+    public void init() throws SSJException {
+        SampleRate sr;
+        if (options.sampleRate.get() <= 7.8125) {
+            sr = SampleRate.MS128;
+        } else if (options.sampleRate.get() <= 31.25) {
+            sr = SampleRate.MS32;
+        } else {
+            sr = SampleRate.MS16;
+        }
 
-	protected BandListener _listener;
+        ((MSBand) _sensor).configureChannel(MSBand.Channel.Gyroscope, true, sr.ordinal());
+    }
 
-	public GyroscopeChannel()
-	{
-		_name = "MSBand_Gyroscope";
-	}
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+        _listener = ((MSBand) _sensor).listener;
+    }
 
-	@Override
-	public void init() throws SSJException
-	{
-		SampleRate sr;
-		if (options.sampleRate.get() <= 7.8125)
-		{
-			sr = SampleRate.MS128;
-		}
-		else if (options.sampleRate.get() <= 31.25)
-		{
-			sr = SampleRate.MS32;
-		}
-		else
-		{
-			sr = SampleRate.MS16;
-		}
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        if (!_listener.isConnected()) {
+            return false;
+        }
 
-		((MSBand)_sensor).configureChannel(MSBand.Channel.Gyroscope, true, sr.ordinal());
-	}
+        float[] out = stream_out.ptrF();
+        out[0] = _listener.getAngularVelocityX();
+        out[1] = _listener.getAngularVelocityY();
+        out[2] = _listener.getAngularVelocityZ();
+        out[3] = _listener.getAngularAccelerationX();
+        out[4] = _listener.getAngularAccelerationY();
+        out[5] = _listener.getAngularAccelerationZ();
 
-	@Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-		_listener = ((MSBand) _sensor).listener;
-	}
+        return true;
+    }
 
-	@Override
-	protected boolean process(Stream stream_out) throws SSJFatalException
-	{
-		if (!_listener.isConnected())
-		{
-			return false;
-		}
+    @Override
+    protected double getSampleRate() {
+        return options.sampleRate.get();
+    }
 
-		float[] out = stream_out.ptrF();
-		out[0] = _listener.getAngularVelocityX();
-		out[1] = _listener.getAngularVelocityY();
-		out[2] = _listener.getAngularVelocityZ();
-		out[3] = _listener.getAngularAccelerationX();
-		out[4] = _listener.getAngularAccelerationY();
-		out[5] = _listener.getAngularAccelerationZ();
+    @Override
+    protected int getSampleDimension() {
+        return 6;
+    }
 
-		return true;
-	}
+    @Override
+    protected Cons.Type getSampleType() {
+        return Cons.Type.FLOAT;
+    }
 
-	@Override
-	protected double getSampleRate()
-	{
-		return options.sampleRate.get();
-	}
+    @Override
+    protected void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        stream_out.desc[0] = "AngularVelX";
+        stream_out.desc[1] = "AngularVelY";
+        stream_out.desc[2] = "AngularVelZ";
+        stream_out.desc[3] = "AngularAccX";
+        stream_out.desc[4] = "AngularAccY";
+        stream_out.desc[5] = "AngularAccZ";
+    }
 
-	@Override
-	protected int getSampleDimension()
-	{
-		return 6;
-	}
+    public class Options extends OptionList {
+        public final Option<Float> sampleRate = new Option<>("sampleRate", 62.5f, Float.class, "supported sample rates: 7.8125, 31.25, 62.5 Hz");
 
-	@Override
-	protected Cons.Type getSampleType()
-	{
-		return Cons.Type.FLOAT;
-	}
-
-	@Override
-	protected void describeOutput(Stream stream_out)
-	{
-		stream_out.desc = new String[stream_out.dim];
-		stream_out.desc[0] = "AngularVelX";
-		stream_out.desc[1] = "AngularVelY";
-		stream_out.desc[2] = "AngularVelZ";
-		stream_out.desc[3] = "AngularAccX";
-		stream_out.desc[4] = "AngularAccY";
-		stream_out.desc[5] = "AngularAccZ";
-	}
+        private Options() {
+            addOptions();
+        }
+    }
 }

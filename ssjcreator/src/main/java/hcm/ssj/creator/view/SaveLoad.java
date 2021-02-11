@@ -48,8 +48,7 @@ import hcm.ssj.creator.util.Util;
  * Save and load files for {@link hcm.ssj.creator.view.PipeView} placements.<br>
  * Created by Frank Gaibler on 15.03.2017.
  */
-abstract class SaveLoad
-{
+abstract class SaveLoad {
     private final static String SUFFIX = ".layout";
     private final static String ROOT = "ssjCreator";
     private final static String PIPE_GROUP = "pipeLayout";
@@ -71,32 +70,26 @@ abstract class SaveLoad
     static boolean save(Object o,
                         ArrayList<ComponentView> providers, ArrayList<ComponentView> sensors,
                         ArrayList<ComponentView> transformers, ArrayList<ComponentView> consumers,
-                        ArrayList<ComponentView> eventHandlers, ArrayList<ComponentView> models)
-    {
+                        ArrayList<ComponentView> eventHandlers, ArrayList<ComponentView> models) {
         File fileOrig = (File) o;
         File file = new File(fileOrig.getParentFile().getPath(), fileOrig.getName().replace(Util.SUFFIX, "") + SUFFIX);
-        try
-        {
+        try {
             file.createNewFile();
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             Log.e("could not create file");
             return false;
         }
         //open stream
         FileOutputStream fileOutputStream;
-        try
-        {
+        try {
             fileOutputStream = new FileOutputStream(file);
 
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             Log.e("file not found");
             return false;
         }
         XmlSerializer serializer = Xml.newSerializer();
-        try
-        {
+        try {
             //start document
             serializer.setOutput(fileOutputStream, "UTF-8");
             serializer.startDocument(null, true);
@@ -107,33 +100,27 @@ abstract class SaveLoad
             //pipe layout
             serializer.startTag(null, PIPE_GROUP);
             //sensorChannels
-            for (ComponentView componentView : providers)
-            {
+            for (ComponentView componentView : providers) {
                 addComponentView(serializer, componentView);
             }
             //sensors
-            for (ComponentView componentView : sensors)
-            {
+            for (ComponentView componentView : sensors) {
                 addComponentView(serializer, componentView);
             }
             //transformers
-            for (ComponentView componentView : transformers)
-            {
+            for (ComponentView componentView : transformers) {
                 addComponentView(serializer, componentView);
             }
             //consumers
-            for (ComponentView componentView : consumers)
-            {
+            for (ComponentView componentView : consumers) {
                 addComponentView(serializer, componentView);
             }
             //eventHandlers
-            for (ComponentView componentView : eventHandlers)
-            {
+            for (ComponentView componentView : eventHandlers) {
                 addComponentView(serializer, componentView);
             }
             //models
-            for (ComponentView componentView : models)
-            {
+            for (ComponentView componentView : models) {
                 addComponentView(serializer, componentView);
             }
             serializer.endTag(null, PIPE_GROUP);
@@ -142,17 +129,13 @@ abstract class SaveLoad
             serializer.endTag(null, ROOT);
             serializer.endDocument();
             serializer.flush();
-        } catch (IOException ex)
-        {
+        } catch (IOException ex) {
             Log.e("could not save file");
             return false;
-        } finally
-        {
-            try
-            {
+        } finally {
+            try {
                 fileOutputStream.close();
-            } catch (IOException ex)
-            {
+            } catch (IOException ex) {
                 Log.e("could not close stream");
             }
         }
@@ -163,21 +146,17 @@ abstract class SaveLoad
      * @param o Object
      * @return ArrayList
      */
-    static ArrayList<Point> load(Object o)
-    {
+    static ArrayList<Point> load(Object o) {
         File fileOrig = (File) o;
         File file = new File(fileOrig.getParentFile().getPath(), fileOrig.getName().replace(Util.SUFFIX, "") + SUFFIX);
-        if (!file.exists())
-        {
+        if (!file.exists()) {
             return null;
         }
         FileInputStream fileInputStream;
-        try
-        {
+        try {
             fileInputStream = new FileInputStream(file);
 
-        } catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             Log.e("file not found");
             return null;
         }
@@ -188,24 +167,19 @@ abstract class SaveLoad
      * @param fileInputStream FileInputStream
      * @return ArrayList
      */
-    static ArrayList<Point> load(FileInputStream fileInputStream)
-    {
-        try
-        {
+    static ArrayList<Point> load(FileInputStream fileInputStream) {
+        try {
             //check file version
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(fileInputStream, null);
             parser.nextTag();
-            if (parser.getName().equals(ROOT))
-            {
+            if (parser.getName().equals(ROOT)) {
                 String value = parser.getAttributeValue(null, VERSION);
-                if (!value.equals(VERSION_NUMBER))
-                {
+                if (!value.equals(VERSION_NUMBER)) {
                     return null;
                 }
-            } else
-            {
+            } else {
                 return null;
             }
             //load classes
@@ -213,14 +187,10 @@ abstract class SaveLoad
             String tag;
             ArrayList<Point> alPoints = new ArrayList<>();
 
-            while (!(tag = parser.getName()).equals(ROOT))
-            {
-                if (parser.getEventType() == XmlPullParser.START_TAG)
-                {
-                    switch (tag)
-                    {
-                        case COMPONENT:
-                        {
+            while (!(tag = parser.getName()).equals(ROOT)) {
+                if (parser.getEventType() == XmlPullParser.START_TAG) {
+                    switch (tag) {
+                        case COMPONENT: {
                             String x = parser.getAttributeValue(null, X);
                             String y = parser.getAttributeValue(null, Y);
                             alPoints.add(new Point(Integer.valueOf(x), Integer.valueOf(y)));
@@ -231,17 +201,13 @@ abstract class SaveLoad
                 parser.nextTag();
             }
             return alPoints;
-        } catch (IOException | XmlPullParserException ex)
-        {
+        } catch (IOException | XmlPullParserException ex) {
             Log.e("could not parse file", ex);
             return null;
-        } finally
-        {
-            try
-            {
+        } finally {
+            try {
                 fileInputStream.close();
-            } catch (IOException ex)
-            {
+            } catch (IOException ex) {
                 Log.e("could not close stream", ex);
             }
         }
@@ -251,8 +217,7 @@ abstract class SaveLoad
      * @param serializer    XmlSerializer
      * @param componentView ComponentView
      */
-    private static void addComponentView(XmlSerializer serializer, ComponentView componentView) throws IOException
-    {
+    private static void addComponentView(XmlSerializer serializer, ComponentView componentView) throws IOException {
         serializer.startTag(null, COMPONENT);
         serializer.attribute(null, X, String.valueOf(componentView.getGridX()));
         serializer.attribute(null, Y, String.valueOf(componentView.getGridY()));

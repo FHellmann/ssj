@@ -34,13 +34,12 @@ import hcm.ssj.core.stream.Stream;
  * Created by Ionut Damian on 30.11.2017.
  */
 
-public class Session
-{
-	public String name;
+public class Session {
+    public String name;
 
-	public String anno_path;
-	public String stream_path;
+    public String anno_path;
+    public String stream_path;
 
-	public Stream stream;
-	public Annotation anno;
+    public Stream stream;
+    public Annotation anno;
 }

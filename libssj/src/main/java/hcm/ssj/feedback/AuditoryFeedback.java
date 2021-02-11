@@ -40,57 +40,48 @@ import hcm.ssj.core.option.Option;
  * Created by Antonio Grieco on 06.09.2017.
  */
 
-public class AuditoryFeedback extends Feedback
-{
-	public final Options options = new Options();
-	private SoundPool player;
-	private int soundId;
+public class AuditoryFeedback extends Feedback {
+    public final Options options = new Options();
+    private SoundPool player;
+    private int soundId;
 
-	public AuditoryFeedback()
-	{
-		_name = "AuditoryFeedback";
-		Log.d("Instantiated AuditoryFeedback " + this.hashCode());
-	}
+    public AuditoryFeedback() {
+        _name = "AuditoryFeedback";
+        Log.d("Instantiated AuditoryFeedback " + this.hashCode());
+    }
 
-	@Override
-	public Feedback.Options getOptions()
-	{
-		return options;
-	}
+    @Override
+    public Feedback.Options getOptions() {
+        return options;
+    }
 
-	@Override
-	public void enterFeedback() throws SSJFatalException
-	{
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new SSJFatalException("no input channels");
-		}
+    @Override
+    public void enterFeedback() throws SSJFatalException {
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new SSJFatalException("no input channels");
+        }
 
-		player = new SoundPool(4, AudioManager.STREAM_NOTIFICATION, 0);
-		soundId = player.load(options.audioFile.get().value, 1);
-	}
+        player = new SoundPool(4, AudioManager.STREAM_NOTIFICATION, 0);
+        soundId = player.load(options.audioFile.get().value, 1);
+    }
 
-	@Override
-	public void notifyFeedback(Event event)
-	{
-		player.play(soundId, options.intensity.get(), options.intensity.get(), 1, 0, 1);
-	}
+    @Override
+    public void notifyFeedback(Event event) {
+        player.play(soundId, options.intensity.get(), options.intensity.get(), 1, 0, 1);
+    }
 
-	@Override
-	public void flush() throws SSJFatalException
-	{
-		player.release();
-	}
+    @Override
+    public void flush() throws SSJFatalException {
+        player.release();
+    }
 
-	public class Options extends Feedback.Options
-	{
-		public final Option<Float> intensity = new Option<>("intensity", 1.0f, Float.class, "intensity of auditory feedback");
-		public final Option<FilePath> audioFile = new Option<>("audioFile", null, FilePath.class, "audiofile to play");
+    public class Options extends Feedback.Options {
+        public final Option<Float> intensity = new Option<>("intensity", 1.0f, Float.class, "intensity of auditory feedback");
+        public final Option<FilePath> audioFile = new Option<>("audioFile", null, FilePath.class, "audiofile to play");
 
-		private Options()
-		{
-			super();
-			addOptions();
-		}
-	}
+        private Options() {
+            super();
+            addOptions();
+        }
+    }
 }

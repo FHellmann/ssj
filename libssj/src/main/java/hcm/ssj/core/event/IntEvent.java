@@ -61,8 +61,9 @@ public class IntEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (int[])data;
+        this.data = (int[]) data;
     }
+
     public void setData(int[] data) {
         this.data = data;
     }

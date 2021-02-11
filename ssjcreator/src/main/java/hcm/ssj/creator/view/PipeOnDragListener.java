@@ -52,20 +52,13 @@ import hcm.ssj.feedback.FeedbackCollection;
  * On drag listener for pipe <br>
  * Created by Frank on 03.03.2017.
  */
-class PipeOnDragListener implements View.OnDragListener
-{
+class PipeOnDragListener implements View.OnDragListener {
     private final Context context;
     private ImageView recycleBin;
     private boolean dropped;
     private float xCoord, yCoord;
 
-    private enum Result
-    {
-        NOTHING, PLACED, DELETED, CONNECTED
-    }
-
-    PipeOnDragListener(Context context)
-    {
+    PipeOnDragListener(Context context) {
         this.context = context;
     }
 
@@ -73,27 +66,22 @@ class PipeOnDragListener implements View.OnDragListener
      * @param pipeView PipeView
      * @param event    DragEvent
      */
-    private void cleanup(final PipeView pipeView, final DragEvent event)
-    {
+    private void cleanup(final PipeView pipeView, final DragEvent event) {
         //remove view from owner
         ComponentView componentView = (ComponentView) event.getLocalState();
         Result result = Result.NOTHING;
-        try
-        {
+        try {
             result = handleCollision(pipeView, componentView);
-        } finally
-        {
+        } finally {
             //remove recycle bin
             ViewParent viewParent = recycleBin.getParent();
-            if (viewParent != null && viewParent instanceof ViewGroup)
-            {
+            if (viewParent != null && viewParent instanceof ViewGroup) {
                 ((ViewGroup) viewParent).removeView(recycleBin);
             }
             recycleBin.invalidate();
             recycleBin = null;
             componentView.invalidate();
-            switch (result)
-            {
+            switch (result) {
                 case NOTHING:
                     break;
                 case PLACED:
@@ -108,10 +96,8 @@ class PipeOnDragListener implements View.OnDragListener
                     pipeView.placeElements();
                     //inform listeners after delay to avoid null pointer exception on tab deletion
                     Handler handler = new Handler(Looper.getMainLooper());
-                    Runnable runnable = new Runnable()
-                    {
-                        public void run()
-                        {
+                    Runnable runnable = new Runnable() {
+                        public void run() {
                             pipeView.informListeners();
                         }
                     };
@@ -128,43 +114,35 @@ class PipeOnDragListener implements View.OnDragListener
      * @param componentView ComponentView
      * @return Result
      */
-    private Result handleCollision(final PipeView pipeView, final ComponentView componentView)
-    {
+    private Result handleCollision(final PipeView pipeView, final ComponentView componentView) {
         Result result = Result.NOTHING;
         //check collision
         Rect rectBin = new Rect();
         recycleBin.getHitRect(rectBin);
         //delete element
-        if (rectBin.contains((int) xCoord, (int) yCoord))
-        {
+        if (rectBin.contains((int) xCoord, (int) yCoord)) {
             pipeView.getGrid().setGridValue(componentView.getGridX(), componentView.getGridY(), false);
             PipelineBuilder.getInstance().remove(componentView.getElement());
-            if(componentView.getElement() instanceof FeedbackCollection)
-            {
-                openFeedbackCollectionDeleteDialog(pipeView, (FeedbackCollection)componentView.getElement());
+            if (componentView.getElement() instanceof FeedbackCollection) {
+                openFeedbackCollectionDeleteDialog(pipeView, (FeedbackCollection) componentView.getElement());
             }
             result = Result.DELETED;
         } //reposition
-        else
-        {
+        else {
             int x = pipeView.getGridCoordinate(xCoord);
             int y = pipeView.getGridCoordinate(yCoord);
-            if (dropped)
-            {
-                if (pipeView.getGrid().isGridFree(x, y))
-                {
+            if (dropped) {
+                if (pipeView.getGrid().isGridFree(x, y)) {
                     //change position
                     pipeView.getGrid().setGridValue(componentView.getGridX(), componentView.getGridY(), false);
                     componentView.setGridX(x);
                     componentView.setGridY(y);
                     pipeView.placeElementView(componentView);
                     result = Result.PLACED;
-                } else
-                {
+                } else {
                     //check for collision to add a connection
                     boolean conn = pipeView.checkCollisionConnection(componentView.getElement(), x, y);
-                    if (conn)
-                    {
+                    if (conn) {
                         result = Result.CONNECTED;
                     }
                 }
@@ -178,14 +156,10 @@ class PipeOnDragListener implements View.OnDragListener
         AlertDialog.Builder builder = new AlertDialog.Builder(this.context);
         builder.setTitle(R.string.keep_inner_components)
                 .setPositiveButton(R.string.yes, null)
-                .setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int which)
-                    {
-                        for(Map<Feedback, FeedbackCollection.LevelBehaviour> levelMap : feedbackCollection.getFeedbackList())
-                        {
-                            for(Feedback feedback : levelMap.keySet())
-                            {
+                .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        for (Map<Feedback, FeedbackCollection.LevelBehaviour> levelMap : feedbackCollection.getFeedbackList()) {
+                            for (Feedback feedback : levelMap.keySet()) {
                                 PipelineBuilder.getInstance().remove(feedback);
                             }
                         }
@@ -200,13 +174,10 @@ class PipeOnDragListener implements View.OnDragListener
     /**
      * @param pipeView PipeView
      */
-    private void createRecycleBin(final PipeView pipeView)
-    {
-        if (recycleBin != null)
-        {
+    private void createRecycleBin(final PipeView pipeView) {
+        if (recycleBin != null) {
             ViewGroup parent = ((ViewGroup) recycleBin.getParent());
-            if (parent != null)
-            {
+            if (parent != null) {
                 parent.removeView(recycleBin);
             }
             recycleBin.invalidate();
@@ -222,8 +193,7 @@ class PipeOnDragListener implements View.OnDragListener
         // Determine scroll changes
         int scrollX = 0, scrollY = 0;
         ViewParent viewParent = pipeView.getParent();
-        if (viewParent != null && viewParent instanceof TwoDScrollView)
-        {
+        if (viewParent != null && viewParent instanceof TwoDScrollView) {
             scrollX = ((TwoDScrollView) viewParent).getScrollX();
             scrollY = ((TwoDScrollView) viewParent).getScrollY();
         }
@@ -232,7 +202,7 @@ class PipeOnDragListener implements View.OnDragListener
         int gridBoxSize = pipeView.getGridBoxSize();
 
         // Place recycle bin in the lower left corner of the canvas
-		recycleBin.layout(scrollX, height - (gridBoxSize * 3), scrollX + (gridBoxSize * 3), height);
+        recycleBin.layout(scrollX, height - (gridBoxSize * 3), scrollX + (gridBoxSize * 3), height);
 
         pipeView.addView(recycleBin);
     }
@@ -243,15 +213,11 @@ class PipeOnDragListener implements View.OnDragListener
      * @return boolean
      */
     @Override
-    public boolean onDrag(final View v, final DragEvent event)
-    {
-        if (v instanceof PipeView)
-        {
+    public boolean onDrag(final View v, final DragEvent event) {
+        if (v instanceof PipeView) {
             final PipeView pipeView = (PipeView) v;
-            switch (event.getAction())
-            {
-                case DragEvent.ACTION_DRAG_STARTED:
-                {
+            switch (event.getAction()) {
+                case DragEvent.ACTION_DRAG_STARTED: {
                     //init values
                     xCoord = 0;
                     yCoord = 0;
@@ -274,8 +240,7 @@ class PipeOnDragListener implements View.OnDragListener
                 case DragEvent.ACTION_DRAG_ENDED:
                     cleanup(pipeView, event);
                     break;
-                case DragEvent.ACTION_DRAG_LOCATION:
-                {
+                case DragEvent.ACTION_DRAG_LOCATION: {
 //                    //@todo add scroll behaviour to drag and drop
 //                    HorizontalScrollView horizontalScrollView = (HorizontalScrollView) pipeView.getParent();
 //                    if (horizontalScrollView != null)
@@ -322,5 +287,9 @@ class PipeOnDragListener implements View.OnDragListener
             return true;
         }
         return false;
+    }
+
+    private enum Result {
+        NOTHING, PLACED, DELETED, CONNECTED
     }
 }

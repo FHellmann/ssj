@@ -40,16 +40,14 @@ import hcm.ssj.core.event.Event;
 /**
  * Created by Johnny on 01.12.2014.
  */
-public class SpeechDuration extends Condition
-{
+public class SpeechDuration extends Condition {
 
     float _dur = 0;
-    boolean _shouldSum= false;
+    boolean _shouldSum = false;
 
     @Override
-    public float parseEvent(Event event)
-    {
-        if(_shouldSum)
+    public float parseEvent(Event event) {
+        if (_shouldSum)
             _dur += event.dur / 1000.0f;
         else
             _dur = event.dur / 1000.0f;
@@ -57,29 +55,22 @@ public class SpeechDuration extends Condition
         return _dur;
     }
 
-    public boolean checkEvent(Event event)
-    {
+    public boolean checkEvent(Event event) {
         if (event.name.equalsIgnoreCase(_event)
-            && event.sender.equalsIgnoreCase(_sender)
-            && event.state == Event.State.COMPLETED)
-        {
+                && event.sender.equalsIgnoreCase(_sender)
+                && event.state == Event.State.COMPLETED) {
             float value = parseEvent(event);
-            if((value == thres_lower) || (value >= thres_lower && value < thres_upper))
-                return true;
+            return (value == thres_lower) || (value >= thres_lower && value < thres_upper);
         }
 
         return false;
     }
 
     @Override
-    protected void load(XmlPullParser xml, Context context)
-    {
-        try
-        {
+    protected void load(XmlPullParser xml, Context context) {
+        try {
             xml.require(XmlPullParser.START_TAG, null, "condition");
-        }
-        catch (XmlPullParserException | IOException e)
-        {
+        } catch (XmlPullParserException | IOException e) {
             Log.e("error parsing config file", e);
         }
 

@@ -44,8 +44,7 @@ import hcm.ssj.file.FileCons;
  * Created by Frank Gaibler on 26.01.2016.
  */
 @SuppressWarnings("deprecation")
-public class CameraUtil
-{
+public class CameraUtil {
     /**
      * Returns the first codec capable of encoding the specified MIME type, or null if no
      * match was found.
@@ -53,21 +52,16 @@ public class CameraUtil
      * @param mimeType String
      * @return MediaCodecInfo
      */
-    public static MediaCodecInfo selectCodec(String mimeType)
-    {
+    public static MediaCodecInfo selectCodec(String mimeType) {
         int numCodecs = MediaCodecList.getCodecCount();
-        for (int i = 0; i < numCodecs; i++)
-        {
+        for (int i = 0; i < numCodecs; i++) {
             MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
-            if (!codecInfo.isEncoder())
-            {
+            if (!codecInfo.isEncoder()) {
                 continue;
             }
             String[] types = codecInfo.getSupportedTypes();
-            for (String type : types)
-            {
-                if (type.equalsIgnoreCase(mimeType))
-                {
+            for (String type : types) {
+                if (type.equalsIgnoreCase(mimeType)) {
                     return codecInfo;
                 }
             }
@@ -83,14 +77,11 @@ public class CameraUtil
      * @param mimeType  String
      * @return int
      */
-    public static int selectColorFormat(MediaCodecInfo codecInfo, String mimeType)
-    {
+    public static int selectColorFormat(MediaCodecInfo codecInfo, String mimeType) {
         MediaCodecInfo.CodecCapabilities capabilities = codecInfo.getCapabilitiesForType(mimeType);
-        for (int i = 0; i < capabilities.colorFormats.length; i++)
-        {
+        for (int i = 0; i < capabilities.colorFormats.length; i++) {
             int colorFormat = capabilities.colorFormats[i];
-            if (isRecognizedFormat(colorFormat))
-            {
+            if (isRecognizedFormat(colorFormat)) {
                 return colorFormat;
             }
         }
@@ -104,10 +95,8 @@ public class CameraUtil
      * @param colorFormat int
      * @return boolean
      */
-    private static boolean isRecognizedFormat(int colorFormat)
-    {
-        switch (colorFormat)
-        {
+    private static boolean isRecognizedFormat(int colorFormat) {
+        switch (colorFormat) {
             case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:
             case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar:
             case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar:
@@ -123,9 +112,9 @@ public class CameraUtil
     /**
      * Decodes YUVNV21 color space into a regular RGB format.
      *
-     * @param rgb Output array for RGB values.
-     * @param yuv YUV byte data to decode.
-     * @param width Width of image in pixels.
+     * @param rgb    Output array for RGB values.
+     * @param yuv    YUV byte data to decode.
+     * @param width  Width of image in pixels.
      * @param height Height of image in pixels.
      */
     public static void convertNV21ToRGB_slow(byte[] rgb, byte[] yuv, int width, int height) {
@@ -147,15 +136,14 @@ public class CameraUtil
                 int g = (int) (1.164f * (y - 16) - 0.813f * (v - 128) - 0.391f * (u - 128));
                 int b = (int) (1.164f * (y - 16) + 2.018f * (u - 128));
 
-                rgb[a++] = (byte)(r < 0 ? 0 : (r > 255 ? 255 : r)); // red
-                rgb[a++] = (byte)(g < 0 ? 0 : (g > 255 ? 255 : g)); // green
-                rgb[a++] = (byte)(b < 0 ? 0 : (b > 255 ? 255 : b)); // blue
+                rgb[a++] = (byte) (r < 0 ? 0 : (r > 255 ? 255 : r)); // red
+                rgb[a++] = (byte) (g < 0 ? 0 : (g > 255 ? 255 : g)); // green
+                rgb[a++] = (byte) (b < 0 ? 0 : (b > 255 ? 255 : b)); // blue
             }
         }
     }
 
-    public static void convertNV21ToARGBInt_slow(int[] argb, byte[] yuv, int width, int height)
-    {
+    public static void convertNV21ToARGBInt_slow(int[] argb, byte[] yuv, int width, int height) {
         final int frameSize = width * height;
         final int ii = 0;
         final int ij = 0;
@@ -174,11 +162,11 @@ public class CameraUtil
                 int g = (int) (1.164f * (y - 16) - 0.813f * (v - 128) - 0.391f * (u - 128));
                 int b = (int) (1.164f * (y - 16) + 2.018f * (u - 128));
 
-                 r = r < 0 ? 0 : (r > 255 ? 255 : r);
-                 g = g < 0 ? 0 : (g > 255 ? 255 : g);
-                 b = b < 0 ? 0 : (b > 255 ? 255 : b);
+                r = r < 0 ? 0 : (r > 255 ? 255 : r);
+                g = g < 0 ? 0 : (g > 255 ? 255 : g);
+                b = b < 0 ? 0 : (b > 255 ? 255 : b);
 
-                 argb[a++] = 0xff000000 | (r << 16) | (g << 8) | b;
+                argb[a++] = 0xff000000 | (r << 16) | (g << 8) | b;
             }
         }
     }
@@ -186,88 +174,73 @@ public class CameraUtil
     /**
      * Decodes YUVNV21 color space into a regular RGB format.
      *
-     * @param rgb Output array for RGB values.
-     * @param yuv YUV byte data to decode.
-     * @param width Width of image in pixels.
+     * @param rgb    Output array for RGB values.
+     * @param yuv    YUV byte data to decode.
+     * @param width  Width of image in pixels.
      * @param height Height of image in pixels.
      */
-    public static void convertNV21ToRGB(byte[] rgb, byte[] yuv, int width, int height)
-    {
+    public static void convertNV21ToRGB(byte[] rgb, byte[] yuv, int width, int height) {
         convertNV21ToRGB(rgb, yuv, width, height, true);
     }
 
     /**
      * Decodes YUVNV21 color space into a regular RGB format.
      *
-     * @param out Output array for RGB values.
-     * @param yuv YUV byte data to decode.
-     * @param width Width of image in pixels.
+     * @param out    Output array for RGB values.
+     * @param yuv    YUV byte data to decode.
+     * @param width  Width of image in pixels.
      * @param height Height of image in pixels.
-     * @param swap swap U with V (default = true)
+     * @param swap   swap U with V (default = true)
      */
-    public static void convertNV21ToRGB(byte[] out, byte[] yuv, int width, int height, boolean swap)
-    {
+    public static void convertNV21ToRGB(byte[] out, byte[] yuv, int width, int height, boolean swap) {
         int sz = width * height;
         int i, j;
         int Y, Cr = 0, Cb = 0;
         int outPtr = 0;
-        for (j = 0; j < height; j++)
-        {
+        for (j = 0; j < height; j++) {
             int pixPtr = j * width;
             final int jDiv2 = j >> 1;
-            for (i = 0; i < width; i++)
-            {
+            for (i = 0; i < width; i++) {
                 Y = yuv[pixPtr];
                 if (Y < 0)
                     Y += 255;
-                if ((i & 0x1) != 1)
-                {
+                if ((i & 0x1) != 1) {
                     final int cOff = sz + jDiv2 * width + (i >> 1) * 2;
                     Cb = yuv[cOff + (swap ? 0 : 1)];
-                    if (Cb < 0)
-                    {
+                    if (Cb < 0) {
                         Cb += 127;
-                    } else
-                    {
+                    } else {
                         Cb -= 128;
                     }
                     Cr = yuv[cOff + (swap ? 1 : 0)];
-                    if (Cr < 0)
-                    {
+                    if (Cr < 0) {
                         Cr += 127;
-                    } else
-                    {
+                    } else {
                         Cr -= 128;
                     }
                 }
                 int R = Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5);
-                if (R < 0)
-                {
+                if (R < 0) {
                     R = 0;
-                } else if (R > 255)
-                {
+                } else if (R > 255) {
                     R = 255;
                 }
                 int G = Y - (Cb >> 2) + (Cb >> 4) + (Cb >> 5) - (Cr >> 1) + (Cr >> 3) + (Cr >> 4) + (Cr >> 5);
-                if (G < 0)
-                {
+                if (G < 0) {
                     G = 0;
-                } else if (G > 255)
-                {
+                } else if (G > 255) {
                     G = 255;
                 }
                 int B = Y + Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6);
-                if (B < 0)
-                {
+                if (B < 0) {
                     B = 0;
-                } else if (B > 255)
-                {
+                } else if (B > 255) {
                     B = 255;
                 }
                 pixPtr++;
-                out[outPtr++] = (byte)R;
-                out[outPtr++] = (byte)G;
-                out[outPtr++] = (byte)B;
+                out[outPtr++] = (byte) R;
+                out[outPtr++] = (byte) G;
+                out[outPtr++] = (byte) B;
             }
         }
     }
@@ -275,81 +248,66 @@ public class CameraUtil
     /**
      * Decodes YUVNV21 color space into a regular RGB format.
      *
-     * @param argb Output array for RGB values.
-     * @param yuv YUV byte data to decode.
-     * @param width Width of image in pixels.
+     * @param argb   Output array for RGB values.
+     * @param yuv    YUV byte data to decode.
+     * @param width  Width of image in pixels.
      * @param height Height of image in pixels.
      */
-    public static void convertNV21ToARGBInt(int[] argb, byte[] yuv, int width, int height)
-    {
+    public static void convertNV21ToARGBInt(int[] argb, byte[] yuv, int width, int height) {
         convertNV21ToARGBInt(argb, yuv, width, height, true);
     }
 
     /**
      * Decodes YUVNV21 color space into a regular RGB format.
      *
-     * @param out Output array for RGB values.
-     * @param yuv YUV byte data to decode.
-     * @param width Width of image in pixels.
+     * @param out    Output array for RGB values.
+     * @param yuv    YUV byte data to decode.
+     * @param width  Width of image in pixels.
      * @param height Height of image in pixels.
-     * @param swap swap U with V (default = true)
+     * @param swap   swap U with V (default = true)
      */
-    public static void convertNV21ToARGBInt(int[] out, byte[] yuv, int width, int height, boolean swap)
-    {
+    public static void convertNV21ToARGBInt(int[] out, byte[] yuv, int width, int height, boolean swap) {
         int sz = width * height;
         int i, j;
         int Y, Cr = 0, Cb = 0;
-        for (j = 0; j < height; j++)
-        {
+        for (j = 0; j < height; j++) {
             int pixPtr = j * width;
             final int jDiv2 = j >> 1;
-            for (i = 0; i < width; i++)
-            {
+            for (i = 0; i < width; i++) {
                 Y = yuv[pixPtr];
                 if (Y < 0)
                     Y += 255;
-                if ((i & 0x1) != 1)
-                {
+                if ((i & 0x1) != 1) {
                     final int cOff = sz + jDiv2 * width + (i >> 1) * 2;
                     Cb = yuv[cOff + (swap ? 0 : 1)];
-                    if (Cb < 0)
-                    {
+                    if (Cb < 0) {
                         Cb += 127;
-                    } else
-                    {
+                    } else {
                         Cb -= 128;
                     }
                     Cr = yuv[cOff + (swap ? 1 : 0)];
-                    if (Cr < 0)
-                    {
+                    if (Cr < 0) {
                         Cr += 127;
-                    } else
-                    {
+                    } else {
                         Cr -= 128;
                     }
                 }
                 int R = Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5);
-                if (R < 0)
-                {
+                if (R < 0) {
                     R = 0;
-                } else if (R > 255)
-                {
+                } else if (R > 255) {
                     R = 255;
                 }
                 int G = Y - (Cb >> 2) + (Cb >> 4) + (Cb >> 5) - (Cr >> 1) + (Cr >> 3) + (Cr >> 4) + (Cr >> 5);
-                if (G < 0)
-                {
+                if (G < 0) {
                     G = 0;
-                } else if (G > 255)
-                {
+                } else if (G > 255) {
                     G = 255;
                 }
                 int B = Y + Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6);
-                if (B < 0)
-                {
+                if (B < 0) {
                     B = 0;
-                } else if (B > 255)
-                {
+                } else if (B > 255) {
                     B = 255;
                 }
                 out[pixPtr++] = 0xff000000 + (B << 16) + (G << 8) + R;
@@ -390,14 +348,14 @@ public class CameraUtil
      * Returns a transformation matrix from one reference frame into another.
      * Handles cropping (if maintaining aspect ratio is desired) and rotation.
      *
-     * @param srcWidth Width of source frame.
-     * @param srcHeight Height of source frame.
-     * @param dstWidth Width of destination frame.
-     * @param dstHeight Height of destination frame.
-     * @param applyRotation Amount of rotation to apply from one frame to another.
-     *  Must be a multiple of 90.
+     * @param srcWidth            Width of source frame.
+     * @param srcHeight           Height of source frame.
+     * @param dstWidth            Width of destination frame.
+     * @param dstHeight           Height of destination frame.
+     * @param applyRotation       Amount of rotation to apply from one frame to another.
+     *                            Must be a multiple of 90.
      * @param maintainAspectRatio If true, will ensure that scaling in x and y remains constant,
-     * cropping the image if necessary.
+     *                            cropping the image if necessary.
      * @return The transformation fulfilling the desired requirements.
      */
     public static Matrix getTransformationMatrix(
@@ -454,12 +412,10 @@ public class CameraUtil
      * @param rgbBytes RGB color bytes.
      * @return RGB color integers.
      */
-    public static int[] decodeBytes(byte[] rgbBytes, int width, int height)
-    {
+    public static int[] decodeBytes(byte[] rgbBytes, int width, int height) {
         int[] rgb = new int[width * height];
 
-        for (int i = 0; i < width * height; i++)
-        {
+        for (int i = 0; i < width * height; i++) {
             int r = rgbBytes[i * 3];
             int g = rgbBytes[i * 3 + 1];
             int b = rgbBytes[i * 3 + 2];
@@ -481,33 +437,28 @@ public class CameraUtil
      * Converts bitmap to corresponding byte array and writes it
      * to the output buffer.
      *
-     * @param bitmap Bitmap to convert to byte array.
-     * @param intOutput Integer output buffer
+     * @param bitmap     Bitmap to convert to byte array.
+     * @param intOutput  Integer output buffer
      * @param byteOutput Byte output buffer.
      */
-    public static void convertBitmapToByteArray(Bitmap bitmap, int[] intOutput, byte[] byteOutput)
-    {
+    public static void convertBitmapToByteArray(Bitmap bitmap, int[] intOutput, byte[] byteOutput) {
         bitmap.getPixels(intOutput, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
 
-        for (int i = 0; i < bitmap.getWidth() * bitmap.getHeight(); ++i)
-        {
+        for (int i = 0; i < bitmap.getWidth() * bitmap.getHeight(); ++i) {
             final int pixel = intOutput[i];
-            byteOutput[i * 3] = (byte)((pixel >> 16) & 0xFF);
-            byteOutput[i * 3 + 1] = (byte)((pixel >> 8) & 0xFF);
-            byteOutput[i * 3 + 2] = (byte)(pixel & 0xFF);
+            byteOutput[i * 3] = (byte) ((pixel >> 16) & 0xFF);
+            byteOutput[i * 3 + 1] = (byte) ((pixel >> 8) & 0xFF);
+            byteOutput[i * 3 + 2] = (byte) (pixel & 0xFF);
         }
     }
 
-	public static void convertRGBToARGBInt(int[] argb, byte[] rgb, int width, int height)
-    {
+    public static void convertRGBToARGBInt(int[] argb, byte[] rgb, int width, int height) {
         int cnt_out = 0;
         int cnt_in = 0;
-        int r,g,b;
+        int r, g, b;
 
-        for(int i = 0; i < width; i++)
-        {
-            for (int j = 0; j < height; j++)
-            {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
                 r = rgb[cnt_in++];
                 g = rgb[cnt_in++];
                 b = rgb[cnt_in++];
@@ -529,23 +480,19 @@ public class CameraUtil
      * @param width    width
      * @param height   height
      */
-    public static void decodeYV12PackedSemi(int[] rgba, byte[] yuv420sp, int width, int height)
-    {
+    public static void decodeYV12PackedSemi(int[] rgba, byte[] yuv420sp, int width, int height) {
         //@todo untested
         final int frameSize = width * height;
         int r, g, b, y1192, y, i, uvp, u, v;
-        for (int j = 0, yp = 0; j < height; j++)
-        {
+        for (int j = 0, yp = 0; j < height; j++) {
             uvp = frameSize + (j >> 1) * width;
             u = 0;
             v = 0;
-            for (i = 0; i < width; i++, yp++)
-            {
+            for (i = 0; i < width; i++, yp++) {
                 y = (0xff & ((int) yuv420sp[yp])) - 16;
                 if (y < 0)
                     y = 0;
-                if ((i & 1) == 0)
-                {
+                if ((i & 1) == 0) {
                     v = (0xff & yuv420sp[uvp++]) - 128;
                     u = (0xff & yuv420sp[uvp++]) - 128;
                 }

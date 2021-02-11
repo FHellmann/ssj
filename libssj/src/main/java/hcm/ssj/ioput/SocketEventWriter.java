@@ -38,6 +38,7 @@ import java.util.Arrays;
 import hcm.ssj.core.Cons;
 import hcm.ssj.core.EventHandler;
 import hcm.ssj.core.Log;
+import hcm.ssj.core.Pipeline;
 import hcm.ssj.core.SSJFatalException;
 import hcm.ssj.core.Util;
 import hcm.ssj.core.event.Event;
@@ -48,58 +49,36 @@ import hcm.ssj.file.FileCons;
 /**
  * Created by Johnny on 05.03.2015.
  */
-public class SocketEventWriter extends EventHandler
-{
+public class SocketEventWriter extends EventHandler {
     public final static int SOCKET_TYPE_UDP = 0;
     public final static int SOCKET_TYPE_TCP = 1;
-
-    public class Options extends OptionList
-    {
-        public final Option<Integer> port = new Option<>("port", 34300, Integer.class, "port");
-        public final Option<Integer> type = new Option<>("type", SOCKET_TYPE_UDP, Integer.class, "connection type (0 = UDP, 1 = TCP)");
-        public final Option<String> ip = new Option<>("ip", "127.0.0.1", String.class, "remote ip address");
-        public final Option<Boolean> sendAsMap = new Option<>("sendAsMap", false, Boolean.class, "send values as map event");
-        public final Option<String> mapKeys = new Option<>("mapKeys", "", String.class, "key for each dimension separated by comma");
-
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
     public Options options = new Options();
-
+    StringBuilder _builder = new StringBuilder();
+    byte[] _buffer;
+    int[] _evID;
+    String[] userMapKeys;
     private DatagramSocket _socket_udp;
     private Socket _socket_tcp;
     private InetAddress _addr;
     private DataOutputStream _out;
-
-    StringBuilder _builder = new StringBuilder();
-    byte[] _buffer;
-    int _evID[];
-    String[] userMapKeys;
-
     private boolean _connected = false;
 
-    public SocketEventWriter()
-    {
+    public SocketEventWriter() {
         _name = "SocketEventWriter";
         _doWakeLock = true;
     }
 
     @Override
-	public void enter() throws SSJFatalException
-    {
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
+    public void enter() throws SSJFatalException {
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
             throw new SSJFatalException("no incoming event channels defined");
-		}
+        }
 
         //start client
         String protocol = "";
         try {
             _addr = InetAddress.getByName(options.ip.get());
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case SOCKET_TYPE_UDP:
                     _socket_udp = new DatagramSocket();
                     protocol = "UDP";
@@ -110,9 +89,7 @@ public class SocketEventWriter extends EventHandler
                     protocol = "TCP";
                     break;
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("error in setting up connection", e);
         }
 
@@ -120,35 +97,30 @@ public class SocketEventWriter extends EventHandler
         _evID = new int[_evchannel_in.size()];
         Arrays.fill(_evID, 0);
 
-        if (options.sendAsMap.get() && options.mapKeys.get() != null && !options.mapKeys.get().equalsIgnoreCase(""))
-        {
+        if (options.sendAsMap.get() && options.mapKeys.get() != null && !options.mapKeys.get().equalsIgnoreCase("")) {
             userMapKeys = options.mapKeys.get().split(",");
         }
 
-        Log.i("Streaming data to " + _addr.getHostName() +"@"+ options.port.get() +"("+ protocol +")");
+        Log.i("Streaming data to " + _addr.getHostName() + "@" + options.port.get() + "(" + protocol + ")");
         _connected = true;
     }
 
     @Override
-    protected void process() throws SSJFatalException
-    {
-        if (!_connected)
-        {
+    protected void process() throws SSJFatalException {
+        if (!_connected) {
             return;
         }
 
         _builder.delete(0, _builder.length());
 
         _builder.append("<events ssi-v=\"2\" ssj-v=\"");
-        _builder.append(_frame.getVersion());
+        _builder.append(Pipeline.getVersion());
         _builder.append("\">");
 
         int count = 0;
-        for(int i = 0; i < _evchannel_in.size(); ++i)
-        {
+        for (int i = 0; i < _evchannel_in.size(); ++i) {
             Event ev = _evchannel_in.get(i).getEvent(_evID[i], false);
-            if (ev == null)
-            {
+            if (ev == null) {
                 continue;
             }
 
@@ -160,13 +132,11 @@ public class SocketEventWriter extends EventHandler
             _builder.append(FileCons.DELIMITER_LINE);
         }
 
-        if(count > 0)
-        {
-            _builder.append( "</events>");
+        if (count > 0) {
+            _builder.append("</events>");
             byte[] data;
-            try
-            {
-                switch(options.type.get()) {
+            try {
+                switch (options.type.get()) {
                     case SOCKET_TYPE_UDP:
                         data = _builder.toString().getBytes();
                         DatagramPacket pack = new DatagramPacket(data, data.length, _addr, options.port.get());
@@ -179,20 +149,17 @@ public class SocketEventWriter extends EventHandler
                         break;
                 }
 
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 Log.w("failed sending data", e);
             }
         }
     }
 
-    public void flush() throws SSJFatalException
-    {
+    public void flush() throws SSJFatalException {
         _connected = false;
 
         try {
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case SOCKET_TYPE_UDP:
                     _socket_udp.close();
                     _socket_udp = null;
@@ -208,8 +175,19 @@ public class SocketEventWriter extends EventHandler
     }
 
     @Override
-    public OptionList getOptions()
-    {
+    public OptionList getOptions() {
         return options;
+    }
+
+    public class Options extends OptionList {
+        public final Option<Integer> port = new Option<>("port", 34300, Integer.class, "port");
+        public final Option<Integer> type = new Option<>("type", SOCKET_TYPE_UDP, Integer.class, "connection type (0 = UDP, 1 = TCP)");
+        public final Option<String> ip = new Option<>("ip", "127.0.0.1", String.class, "remote ip address");
+        public final Option<Boolean> sendAsMap = new Option<>("sendAsMap", false, Boolean.class, "send values as map event");
+        public final Option<String> mapKeys = new Option<>("mapKeys", "", String.class, "key for each dimension separated by comma");
+
+        private Options() {
+            addOptions();
+        }
     }
 }

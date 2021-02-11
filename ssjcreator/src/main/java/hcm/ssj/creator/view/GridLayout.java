@@ -34,28 +34,24 @@ import java.util.Arrays;
  * Created by Frank on 03.03.2017.
  */
 
-class GridLayout
-{
+class GridLayout {
     private final boolean[][] grid;
 
-    GridLayout(int width, int height)
-    {
+    GridLayout(int width, int height) {
         grid = new boolean[width][height];
     }
 
     /**
      * @return int
      */
-    int getWidth()
-    {
+    int getWidth() {
         return grid.length;
     }
 
     /**
      * @return int
      */
-    int getHeight()
-    {
+    int getHeight() {
         return grid[0].length;
     }
 
@@ -64,8 +60,7 @@ class GridLayout
      * @param y int
      * @return boolean
      */
-    boolean getValue(int x, int y)
-    {
+    boolean getValue(int x, int y) {
         return grid[x][y];
     }
 
@@ -76,8 +71,7 @@ class GridLayout
      * @param y int
      * @return boolean
      */
-    boolean isGridFree(int x, int y)
-    {
+    boolean isGridFree(int x, int y) {
         //check for valid input
         return x + 1 < grid.length && y + 1 < grid[0].length &&
                 //check grid
@@ -89,11 +83,9 @@ class GridLayout
      * @param y      int
      * @param placed boolean
      */
-    void setGridValue(int x, int y, boolean placed)
-    {
+    void setGridValue(int x, int y, boolean placed) {
         //check for valid input
-        if (x>= 0 && x + 1 < grid.length && y >= 0 && y + 1 < grid[0].length)
-        {
+        if (x >= 0 && x + 1 < grid.length && y >= 0 && y + 1 < grid[0].length) {
             grid[x][y] = placed;
             grid[x + 1][y] = placed;
             grid[x][y + 1] = placed;
@@ -104,10 +96,8 @@ class GridLayout
     /**
      *
      */
-    void clear()
-    {
-        for (boolean[] booleans : grid)
-        {
+    void clear() {
+        for (boolean[] booleans : grid) {
             Arrays.fill(booleans, false);
         }
     }

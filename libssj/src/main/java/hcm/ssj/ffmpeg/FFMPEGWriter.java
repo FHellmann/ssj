@@ -57,215 +57,181 @@ import hcm.ssj.file.IFileWriter;
  * Created by Michael Dietz on 04.09.2017.
  */
 
-public class FFMPEGWriter extends Consumer implements IFileWriter
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class FFMPEGWriter extends Consumer implements IFileWriter {
+    public final Options options = new Options();
+    private FFmpegFrameRecorder writer;
+    private Frame imageFrame;
+    private int pixelFormat;
+    private int width;
+    private int height;
+    private int bufferSize;
+    private byte[] frameBuffer;
+    private int frameInterval;
+    private long frameTime;
+    private long startTime;
+    public FFMPEGWriter() {
+        _name = this.getClass().getSimpleName();
+    }
 
-	/**
-	 * FFMPEG writer options
-	 */
-	public class Options extends IFileWriter.Options
-	{
-		public final Option<String> url = new Option<>("url", null, String.class, "streaming address, e.g. udp://<ip:port>. If set, path is ignored.");
-		public final Option<Boolean> stream = new Option<>("stream", false, Boolean.class, "Set this flag for very fast decoding in streaming applications (forces h264 codec)");
-		public final Option<String> format = new Option<>("format", "mp4", String.class, "Default output format (e.g. mp4, h264, ...), set to 'mpegts' in streaming applications");
-		public final Option<Integer> bitRate = new Option<>("bitRate", 500, Integer.class, "Bitrate in kB/s");
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
 
-		/**
-		 *
-		 */
-		protected Options()
-		{
-			addOptions();
-		}
-	}
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        if (stream_in.length != 1) {
+            throw new SSJFatalException("Stream count not supported");
+        }
+        if (stream_in[0].type != Cons.Type.IMAGE) {
+            throw new SSJFatalException("Stream type not supported");
+        }
 
-	public final Options options = new Options();
+        frameInterval = (int) (1.0 / stream_in[0].sr * 1000 + 0.5);
 
-	private FFmpegFrameRecorder writer;
-	private Frame imageFrame;
-	private int pixelFormat;
+        width = ((ImageStream) stream_in[0]).width;
+        height = ((ImageStream) stream_in[0]).height;
 
-	private int width;
-	private int height;
-	private int bufferSize;
-	private byte[] frameBuffer;
-	private int frameInterval;
-	private long frameTime;
-	private long startTime;
+        // Set output address (path/url)
+        String address = options.url.get();
 
-	public FFMPEGWriter()
-	{
-		_name = this.getClass().getSimpleName();
-	}
+        if (address == null) {
+            if (options.filePath.get() == null) {
+                Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
+                options.filePath.set(new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE));
+            }
 
-	@Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-	{
-		if (stream_in.length != 1)
-		{
-			throw new SSJFatalException("Stream count not supported");
-		}
-		if (stream_in[0].type != Cons.Type.IMAGE)
-		{
-			throw new SSJFatalException("Stream type not supported");
-		}
+            if (options.fileName.get() == null) {
+                String defaultName = TextUtils.join("_", stream_in[0].desc) + ".mp4";
+                Log.w("file name not set, setting to " + defaultName);
+                options.fileName.set(defaultName);
+            }
 
-		frameInterval = (int) (1.0 / stream_in[0].sr * 1000 + 0.5);
+            // Parse wildcards
+            final String parsedPath = options.filePath.parseWildcards();
 
-		width = ((ImageStream) stream_in[0]).width;
-		height = ((ImageStream) stream_in[0]).height;
+            // Create dir
+            Util.createDirectory(parsedPath);
 
-		// Set output address (path/url)
-		String address = options.url.get();
+            address = parsedPath + File.separator + options.fileName.get();
+        }
 
-		if (address == null)
-		{
-			if (options.filePath.get() == null)
-			{
-				Log.w("file path not set, setting to default " + FileCons.SSJ_EXTERNAL_STORAGE);
-				options.filePath.set(new FolderPath(FileCons.SSJ_EXTERNAL_STORAGE));
-			}
+        writer = new FFmpegFrameRecorder(address, width, height, 0);
+        writer.setFormat(options.format.get());
+        writer.setFrameRate(stream_in[0].sr);
+        writer.setVideoBitrate(options.bitRate.get() * 1000);
 
-			if (options.fileName.get() == null)
-			{
-				String defaultName = TextUtils.join("_", stream_in[0].desc) + ".mp4";
-				Log.w("file name not set, setting to " + defaultName);
-				options.fileName.set(defaultName);
-			}
+        // Streaming options
+        if (options.stream.get()) {
+            writer.setVideoCodec(avcodec.AV_CODEC_ID_H264);
+            writer.setVideoOption("tune", "zerolatency");
+            writer.setVideoOption("preset", "ultrafast");
+            writer.setVideoOption("crf", "23");
+            writer.setVideoOption("x264opts", "bframes=0:force-cfr:no-mbtree:sliced-threads:sync-lookahead=0:rc-lookahead=0:intra-refresh=1:keyint=1");
+            writer.setInterleaved(true);
 
-			// Parse wildcards
-			final String parsedPath = options.filePath.parseWildcards();
+            // Keyframe interval
+            writer.setGopSize((int) stream_in[0].sr);
+        }
 
-			// Create dir
-			Util.createDirectory(parsedPath);
+        bufferSize = width * height;
 
-			address = parsedPath + File.separator + options.fileName.get();
-		}
+        // Initialize frame
+        switch (((ImageStream) stream_in[0]).format) {
+            case ImageFormat.NV21:
+                imageFrame = new Frame(width, height, Frame.DEPTH_UBYTE, 2);
+                pixelFormat = avutil.AV_PIX_FMT_NV21; // was AV_PIX_FMT_NONE for javacv 1.3.3
+                bufferSize *= 1.5;
+                break;
+            case ImageFormat.FLEX_RGB_888:
+                imageFrame = new Frame(width, height, Frame.DEPTH_UBYTE, 3);
+                pixelFormat = avutil.AV_PIX_FMT_RGB24;
+                bufferSize *= 3;
+                break;
+            case ImageFormat.FLEX_RGBA_8888:
+                imageFrame = new Frame(width, height, Frame.DEPTH_UBYTE, 4);
+                pixelFormat = avutil.AV_PIX_FMT_RGBA;
+                bufferSize *= 4;
+                break;
+        }
 
-		writer = new FFmpegFrameRecorder(address, width, height, 0);
-		writer.setFormat(options.format.get());
-		writer.setFrameRate(stream_in[0].sr);
-		writer.setVideoBitrate(options.bitRate.get() * 1000);
+        frameBuffer = new byte[bufferSize];
 
-		// Streaming options
-		if (options.stream.get())
-		{
-			writer.setVideoCodec(avcodec.AV_CODEC_ID_H264);
-			writer.setVideoOption("tune", "zerolatency");
-			writer.setVideoOption("preset", "ultrafast");
-			writer.setVideoOption("crf", "23");
-			writer.setVideoOption("x264opts", "bframes=0:force-cfr:no-mbtree:sliced-threads:sync-lookahead=0:rc-lookahead=0:intra-refresh=1:keyint=1");
-			writer.setInterleaved(true);
+        frameTime = 0;
+        startTime = 0;
 
-			// Keyframe interval
-			writer.setGopSize((int) stream_in[0].sr);
-		}
+        try {
+            writer.start();
+        } catch (FrameRecorder.Exception e) {
+            Log.e("Error while starting writer", e);
+        }
+    }
 
-		bufferSize = width * height;
+    @Override
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        // Get bytes
+        byte[] in = stream_in[0].ptrB();
 
-		// Initialize frame
-		switch (((ImageStream) stream_in[0]).format)
-		{
-			case ImageFormat.NV21:
-				imageFrame = new Frame(width, height, Frame.DEPTH_UBYTE, 2);
-				pixelFormat = avutil.AV_PIX_FMT_NV21 ; // was AV_PIX_FMT_NONE for javacv 1.3.3
-				bufferSize *= 1.5;
-				break;
-			case ImageFormat.FLEX_RGB_888:
-				imageFrame = new Frame(width, height, Frame.DEPTH_UBYTE, 3);
-				pixelFormat = avutil.AV_PIX_FMT_RGB24;
-				bufferSize *= 3;
-				break;
-			case ImageFormat.FLEX_RGBA_8888:
-				imageFrame = new Frame(width, height, Frame.DEPTH_UBYTE, 4);
-				pixelFormat = avutil.AV_PIX_FMT_RGBA;
-				bufferSize *= 4;
-				break;
-		}
+        if (startTime == 0) {
+            startTime = System.currentTimeMillis() - (stream_in[0].num - 1) * frameInterval;
+        }
 
-		frameBuffer = new byte[bufferSize];
+        frameTime = System.currentTimeMillis() - (stream_in[0].num - 1) * frameInterval;
 
-		frameTime = 0;
-		startTime = 0;
+        // Loop through frames
+        for (int i = 0; i < stream_in[0].num; i++) {
+            if (in.length > bufferSize) {
+                System.arraycopy(in, i * bufferSize, frameBuffer, 0, bufferSize);
+            } else {
+                frameBuffer = in;
+            }
 
-		try
-		{
-			writer.start();
-		}
-		catch (FrameRecorder.Exception e)
-		{
-			Log.e("Error while starting writer", e);
-		}
-	}
+            writeFrame(frameBuffer, frameTime + i * frameInterval);
+        }
+    }
 
-	@Override
-	protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-	{
-		// Get bytes
-		byte[] in = stream_in[0].ptrB();
+    private void writeFrame(byte[] frameData, long time) {
+        try {
+            // Update frame
+            ((ByteBuffer) imageFrame.image[0].position(0)).put(frameData);
 
-		if (startTime == 0)
-		{
-			startTime = System.currentTimeMillis() - (stream_in[0].num - 1) * frameInterval;
-		}
+            // Update timestamp
+            long t = 1000 * (time - startTime);
+            if (t > writer.getTimestamp()) {
+                writer.setTimestamp(t);
+            }
 
-		frameTime = System.currentTimeMillis() - (stream_in[0].num - 1) * frameInterval;
+            // Write frame
+            writer.record(imageFrame, pixelFormat);
+        } catch (FrameRecorder.Exception e) {
+            Log.e("Error while writing frame", e);
+        }
+    }
 
-		// Loop through frames
-		for (int i = 0; i < stream_in[0].num; i++)
-		{
-			if (in.length > bufferSize)
-			{
-				System.arraycopy(in, i * bufferSize, frameBuffer, 0, bufferSize);
-			}
-			else
-			{
-				frameBuffer = in;
-			}
+    @Override
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+        try {
+            writer.stop();
+            writer.release();
+        } catch (FrameRecorder.Exception e) {
+            Log.e("Error while stopping writer", e);
+        }
+    }
 
-			writeFrame(frameBuffer, frameTime + i * frameInterval);
-		}
-	}
+    /**
+     * FFMPEG writer options
+     */
+    public class Options extends IFileWriter.Options {
+        public final Option<String> url = new Option<>("url", null, String.class, "streaming address, e.g. udp://<ip:port>. If set, path is ignored.");
+        public final Option<Boolean> stream = new Option<>("stream", false, Boolean.class, "Set this flag for very fast decoding in streaming applications (forces h264 codec)");
+        public final Option<String> format = new Option<>("format", "mp4", String.class, "Default output format (e.g. mp4, h264, ...), set to 'mpegts' in streaming applications");
+        public final Option<Integer> bitRate = new Option<>("bitRate", 500, Integer.class, "Bitrate in kB/s");
 
-	private void writeFrame(byte[] frameData, long time)
-	{
-		try
-		{
-			// Update frame
-			((ByteBuffer) imageFrame.image[0].position(0)).put(frameData);
-
-			// Update timestamp
-			long t = 1000 * (time - startTime);
-			if (t > writer.getTimestamp())
-			{
-				writer.setTimestamp(t);
-			}
-
-			// Write frame
-			writer.record(imageFrame, pixelFormat);
-		}
-		catch (FrameRecorder.Exception e)
-		{
-			Log.e("Error while writing frame", e);
-		}
-	}
-
-	@Override
-	public void flush(Stream[] stream_in) throws SSJFatalException
-	{
-		try
-		{
-			writer.stop();
-			writer.release();
-		}
-		catch (FrameRecorder.Exception e)
-		{
-			Log.e("Error while stopping writer", e);
-		}
-	}
+        /**
+         *
+         */
+        protected Options() {
+            addOptions();
+        }
+    }
 }

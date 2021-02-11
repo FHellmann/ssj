@@ -39,26 +39,23 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
  * Created by Johnny on 04.05.2017.
  */
 
-public class TestHelper
-{
-	public static final int DUR_TEST_LONG = 2 * 60 * 1000;
-	public static final int DUR_TEST_NORMAL = 30 * 1000;
-	public static final int DUR_TEST_SHORT = 10 * 1000;
+public class TestHelper {
+    public static final int DUR_TEST_LONG = 2 * 60 * 1000;
+    public static final int DUR_TEST_NORMAL = 30 * 1000;
+    public static final int DUR_TEST_SHORT = 10 * 1000;
 
-	public static void copyAssetToFile(String assetName, File dst) throws IOException
-	{
-		InputStream in = getInstrumentation().getContext().getResources().getAssets().open(assetName);
-		OutputStream out = new FileOutputStream(dst);
+    public static void copyAssetToFile(String assetName, File dst) throws IOException {
+        InputStream in = getInstrumentation().getContext().getResources().getAssets().open(assetName);
+        OutputStream out = new FileOutputStream(dst);
 
-		byte[] buffer = new byte[1024];
-		int read;
-		while ((read = in.read(buffer)) != -1)
-		{
-			out.write(buffer, 0, read);
-		}
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
 
-		in.close();
-		out.flush();
-		out.close();
-	}
+        in.close();
+        out.flush();
+        out.close();
+    }
 }

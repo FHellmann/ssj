@@ -47,8 +47,101 @@ import hcm.ssj.core.stream.Stream;
  */
 public class BluetoothWriter extends Consumer {
 
-    public class Options extends OptionList
-    {
+    public final Options options = new Options();
+    private BluetoothConnection _conn;
+    private byte[] _data;
+    private boolean _connected = false;
+
+    public BluetoothWriter() {
+        _name = "BluetoothWriter";
+    }
+
+    @Override
+    public void enter(Stream[] stream_in) throws SSJFatalException {
+        try {
+            switch (options.connectionType.get()) {
+                case SERVER:
+                    _conn = new BluetoothServer(UUID.nameUUIDFromBytes(options.connectionName.get().getBytes()), options.serverName.get());
+                    _conn.connect(stream_in.length > 1); //use object output streams if we are sending more than one stream
+                    break;
+                case CLIENT:
+                    _conn = new BluetoothClient(UUID.nameUUIDFromBytes(options.connectionName.get().getBytes()), options.serverName.get(), options.serverAddr.get());
+                    _conn.connect(stream_in.length > 1); //use object output streams if we are sending more than one stream
+                    break;
+            }
+        } catch (Exception e) {
+            throw new SSJFatalException("error in setting up connection " + options.connectionName, e);
+        }
+
+        BluetoothDevice dev = _conn.getRemoteDevice();
+        if (dev == null) {
+            Log.e("cannot retrieve remote device");
+            return;
+        }
+
+        if (stream_in.length == 1) {
+            _data = new byte[stream_in[0].tot];
+        }
+
+        Log.i("connected to " + dev.getName() + " @ " + dev.getAddress());
+        _connected = true;
+    }
+
+    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException {
+        if (!_connected || !_conn.isConnected()) {
+            return;
+        }
+
+        try {
+            if (stream_in.length == 1) {
+                Util.arraycopy(stream_in[0].ptr(), 0, _data, 0, _data.length);
+                _conn.output().write(_data);
+            } else if (stream_in.length > 1) {
+                ((ObjectOutputStream) _conn.output()).reset();
+                ((ObjectOutputStream) _conn.output()).writeObject(stream_in);
+            }
+            _conn.notifyDataTranferResult(true);
+
+        } catch (IOException e) {
+            Log.w("failed sending data", e);
+            _conn.notifyDataTranferResult(false);
+        }
+    }
+
+    public void flush(Stream[] stream_in) throws SSJFatalException {
+        _connected = false;
+
+        try {
+            _conn.disconnect();
+        } catch (IOException e) {
+            Log.e("failed closing connection", e);
+        }
+    }
+
+    @Override
+    public void forcekill() {
+        try {
+            _conn.disconnect();
+        } catch (IOException e) {
+            Log.e("failed closing connection", e);
+        }
+
+        super.forcekill();
+    }
+
+    @Override
+    public void clear() {
+        _conn.clear();
+        _conn = null;
+        super.clear();
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    public class Options extends OptionList {
         public final Option<String> serverName = new Option<>("serverName", "SSJ_BLServer", String.class, "");
         public final Option<String> serverAddr = new Option<>("serverAddr", null, String.class, "if this is a client");
         public final Option<String> connectionName = new Option<>("connectionName", "SSJ", String.class, "must match that of the peer");
@@ -61,113 +154,4 @@ public class BluetoothWriter extends Consumer {
             addOptions();
         }
     }
-
-    public final Options options = new Options();
-
-    private BluetoothConnection _conn;
-    private byte[] _data;
-
-    private boolean _connected = false;
-
-    public BluetoothWriter() {
-        _name = "BluetoothWriter";
-    }
-
-    @Override
-	public void enter(Stream[] stream_in) throws SSJFatalException
-	{
-        try {
-            switch(options.connectionType.get())
-            {
-                case SERVER:
-                    _conn = new BluetoothServer(UUID.nameUUIDFromBytes(options.connectionName.get().getBytes()), options.serverName.get());
-                    _conn.connect(stream_in.length > 1); //use object output streams if we are sending more than one stream
-                    break;
-                case CLIENT:
-                    _conn = new BluetoothClient(UUID.nameUUIDFromBytes(options.connectionName.get().getBytes()), options.serverName.get(), options.serverAddr.get());
-                    _conn.connect(stream_in.length > 1); //use object output streams if we are sending more than one stream
-                    break;
-            }
-        } catch (Exception e)
-        {
-            throw new SSJFatalException("error in setting up connection "+ options.connectionName, e);
-        }
-
-        BluetoothDevice dev = _conn.getRemoteDevice();
-        if(dev == null) {
-            Log.e("cannot retrieve remote device");
-            return;
-        }
-
-		if (stream_in.length == 1)
-		{
-			_data = new byte[stream_in[0].tot];
-		}
-
-        Log.i("connected to " + dev.getName() + " @ " + dev.getAddress());
-        _connected = true;
-    }
-
-    protected void consume(Stream[] stream_in, Event trigger) throws SSJFatalException
-    {
-        if (!_connected || !_conn.isConnected())
-        {
-            return;
-        }
-
-        try {
-            if(stream_in.length == 1)
-            {
-                Util.arraycopy(stream_in[0].ptr(), 0, _data, 0, _data.length);
-                _conn.output().write(_data);
-            }
-            else if(stream_in.length > 1)
-            {
-                ((ObjectOutputStream)_conn.output()).reset();
-                ((ObjectOutputStream)_conn.output()).writeObject(stream_in);
-            }
-            _conn.notifyDataTranferResult(true);
-
-        } catch (IOException e) {
-            Log.w("failed sending data", e);
-            _conn.notifyDataTranferResult(false);
-        }
-    }
-
-    public void flush(Stream[] stream_in) throws SSJFatalException
-    {
-        _connected = false;
-
-        try {
-            _conn.disconnect();
-        } catch (IOException e) {
-            Log.e("failed closing connection", e);
-        }
-    }
-
-    @Override
-    public void forcekill()
-    {
-        try {
-            _conn.disconnect();
-        } catch (IOException e) {
-            Log.e("failed closing connection", e);
-        }
-
-        super.forcekill();
-    }
-
-    @Override
-    public void clear()
-    {
-        _conn.clear();
-        _conn = null;
-        super.clear();
-    }
-
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
 }

@@ -42,64 +42,40 @@ import hcm.ssj.core.stream.Stream;
  * A general transformer to calculate the median for every dimension in the provided streams.<br>
  * Created by Frank Gaibler on 09.09.2015.
  */
-public class Median extends Transformer
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	/**
-     * All options for the transformer
-     */
-    public class Options extends OptionList
-    {
-        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
-
+public class Median extends Transformer {
     public final Options options = new Options();
     //helper variables
     private float[][] floats;
     private float[][] dimensions;
-
     /**
      *
      */
-    public Median()
-    {
+    public Median() {
         _name = this.getClass().getSimpleName();
     }
 
-    /**
-	 * @param stream_in  Stream[]
-	 * @param stream_out Stream
-	 */
     @Override
-    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    /**
+     * @param stream_in  Stream[]
+     * @param stream_out Stream
+     */
+    @Override
+    public void enter(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         //no check for a specific type to allow for different providers
-        if (stream_in.length < 1 || stream_in[0].dim < 1)
-        {
+        if (stream_in.length < 1 || stream_in[0].dim < 1) {
             Log.e("invalid input stream");
             return;
         }
         floats = new float[stream_in.length][];
-        for (int i = 0; i < floats.length; i++)
-        {
+        for (int i = 0; i < floats.length; i++) {
             floats[i] = new float[stream_in[i].num * stream_in[i].dim];
         }
         dimensions = new float[stream_in.length][];
-        for (int i = 0; i < dimensions.length; i++)
-        {
+        for (int i = 0; i < dimensions.length; i++) {
             dimensions[i] = new float[stream_in[i].num];
         }
     }
@@ -109,8 +85,7 @@ public class Median extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void flush(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         super.flush(stream_in, stream_out);
         floats = null;
         dimensions = null;
@@ -121,25 +96,19 @@ public class Median extends Transformer
      * @param stream_out Stream
      */
     @Override
-    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException
-    {
+    public void transform(Stream[] stream_in, Stream stream_out) throws SSJFatalException {
         float[] out = stream_out.ptrF();
-        for (int i = 0, t = 0; i < stream_in.length; i++)
-        {
+        for (int i = 0, t = 0; i < stream_in.length; i++) {
             Util.castStreamPointerToFloat(stream_in[i], floats[i]);
-            if (stream_in[i].dim > 1)
-            {
+            if (stream_in[i].dim > 1) {
                 int size = stream_in[i].num * stream_in[i].dim;
-                for (int j = 0; j < stream_in[i].dim; j++)
-                {
-                    for (int k = j, l = 0; k < size; k += stream_in[i].dim, l++)
-                    {
+                for (int j = 0; j < stream_in[i].dim; j++) {
+                    for (int k = j, l = 0; k < size; k += stream_in[i].dim, l++) {
                         dimensions[i][l] = floats[i][k];
                     }
                     out[t++] = getMedian(dimensions[i]);
                 }
-            } else
-            {
+            } else {
                 out[t++] = getMedian(floats[i]);
             }
         }
@@ -149,15 +118,12 @@ public class Median extends Transformer
      * @param in float[]
      * @return float
      */
-    private float getMedian(float[] in)
-    {
+    private float getMedian(float[] in) {
         Arrays.sort(in);
         int n = in.length;
-        if (n % 2 == 0)
-        {
+        if (n % 2 == 0) {
             return (in[n / 2] + in[(n / 2) - 1]) / 2;
-        } else
-        {
+        } else {
             return in[(n - 1) / 2];
         }
     }
@@ -167,11 +133,9 @@ public class Median extends Transformer
      * @return int
      */
     @Override
-    public int getSampleDimension(Stream[] stream_in)
-    {
+    public int getSampleDimension(Stream[] stream_in) {
         int overallDimension = 0;
-        for (Stream stream : stream_in)
-        {
+        for (Stream stream : stream_in) {
             overallDimension += stream.dim;
         }
         return overallDimension;
@@ -182,8 +146,7 @@ public class Median extends Transformer
      * @return int
      */
     @Override
-    public int getSampleBytes(Stream[] stream_in)
-    {
+    public int getSampleBytes(Stream[] stream_in) {
         return Util.sizeOf(Cons.Type.FLOAT);
     }
 
@@ -192,8 +155,7 @@ public class Median extends Transformer
      * @return Cons.Type
      */
     @Override
-    public Cons.Type getSampleType(Stream[] stream_in)
-    {
+    public Cons.Type getSampleType(Stream[] stream_in) {
         return Cons.Type.FLOAT;
     }
 
@@ -202,8 +164,7 @@ public class Median extends Transformer
      * @return int
      */
     @Override
-    public int getSampleNumber(int sampleNumber_in)
-    {
+    public int getSampleNumber(int sampleNumber_in) {
         return 1;
     }
 
@@ -212,27 +173,35 @@ public class Median extends Transformer
      * @param stream_out Stream
      */
     @Override
-    protected void describeOutput(Stream[] stream_in, Stream stream_out)
-    {
+    protected void describeOutput(Stream[] stream_in, Stream stream_out) {
         int overallDimension = getSampleDimension(stream_in);
         stream_out.desc = new String[overallDimension];
-        if (options.outputClass.get() != null)
-        {
-            if (overallDimension == options.outputClass.get().length)
-            {
+        if (options.outputClass.get() != null) {
+            if (overallDimension == options.outputClass.get().length) {
                 System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
                 return;
-            } else
-            {
+            } else {
                 Log.w("invalid option outputClass length");
             }
         }
-        for (int i = 0, k = 0; i < stream_in.length; i++)
-        {
-            for (int j = 0; j < stream_in[i].dim; j++, k++)
-            {
+        for (int i = 0, k = 0; i < stream_in.length; i++) {
+            for (int j = 0; j < stream_in[i].dim; j++, k++) {
                 stream_out.desc[k] = "median" + i + "." + j;
             }
+        }
+    }
+
+    /**
+     * All options for the transformer
+     */
+    public class Options extends OptionList {
+        public final Option<String[]> outputClass = new Option<>("outputClass", null, String[].class, "Describes the output names for every dimension in e.g. a graph");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
         }
     }
 }

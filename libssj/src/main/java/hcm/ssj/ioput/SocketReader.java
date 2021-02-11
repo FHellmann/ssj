@@ -49,71 +49,46 @@ import hcm.ssj.core.option.OptionList;
  * Audio Sensor - get data from audio interface and forwards it
  * Created by Johnny on 05.03.2015.
  */
-public class SocketReader extends Sensor
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        public Option<String> ip = new Option<>("ip", null, String.class, "");
-        public Option<Integer> port = new Option<>("port", 0, Integer.class, "");
-        public final Option<Cons.SocketType> type = new Option<>("type", Cons.SocketType.UDP, Cons.SocketType.class, "");
-
-        /**
-         *
-         */
-        private Options()
-        {
-            addOptions();
-        }
-    }
+public class SocketReader extends Sensor {
     public final Options options = new Options();
-
+    boolean _connected = false;
+    byte[] _buffer;
     private DatagramSocket _socket_udp = null;
     private ServerSocket _server_tcp = null;
     private Socket _client_tcp = null;
     private DataInputStream _in;
 
-    boolean _connected = false;
-    byte[] _buffer;
-
-    public SocketReader()
-    {
+    public SocketReader() {
         _name = "SocketReader";
     }
 
     @Override
-	public boolean connect() throws SSJFatalException
-    {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public boolean connect() throws SSJFatalException {
         _connected = false;
         _socket_udp = null;
         _server_tcp = null;
         _client_tcp = null;
 
-        Log.i("setting up socket ("+options.ip.get() + "@" + options.port.get() +" / "+ options.type.get().toString() +")");
+        Log.i("setting up socket (" + options.ip.get() + "@" + options.port.get() + " / " + options.type.get().toString() + ")");
 
-        if (options.ip.get() == null)
-        {
-            try
-            {
+        if (options.ip.get() == null) {
+            try {
                 options.ip.set(Util.getIPAddress(true));
-            }
-            catch (SocketException e)
-            {
+            } catch (SocketException e) {
                 throw new SSJFatalException("unable to determine local IP address", e);
             }
         }
 
-        try
-        {
+        try {
             InetAddress addr = InetAddress.getByName(options.ip.get());
             InetSocketAddress saddr = new InetSocketAddress(addr, options.port.get());
 
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case UDP:
                     _socket_udp = new DatagramSocket(null);
                     _socket_udp.setReuseAddress(true);
@@ -126,9 +101,7 @@ public class SocketReader extends Sensor
                     _in = new DataInputStream(_client_tcp.getInputStream());
                     break;
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new SSJFatalException("ERROR: cannot bind/connect socket", e);
         }
 
@@ -141,15 +114,13 @@ public class SocketReader extends Sensor
     }
 
     @Override
-    protected void update() throws SSJFatalException
-    {
-        if (!_connected)
-        {
+    protected void update() throws SSJFatalException {
+        if (!_connected) {
             return;
         }
 
         try {
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case UDP:
                     DatagramPacket packet = new DatagramPacket(_buffer, _buffer.length);
                     _socket_udp.receive(packet);
@@ -164,26 +135,24 @@ public class SocketReader extends Sensor
         }
     }
 
-
     @Override
-	public void disconnect() throws SSJFatalException
-    {
+    public void disconnect() throws SSJFatalException {
         _connected = false;
 
         try {
-            switch(options.type.get()) {
+            switch (options.type.get()) {
                 case UDP:
-                    if(_socket_udp != null) {
+                    if (_socket_udp != null) {
                         _socket_udp.close();
                         _socket_udp = null;
                     }
                     break;
                 case TCP:
-                    if(_client_tcp != null) {
+                    if (_client_tcp != null) {
                         _client_tcp.close();
                         _client_tcp = null;
                     }
-                    if(_server_tcp != null) {
+                    if (_server_tcp != null) {
                         _server_tcp.close();
                         _server_tcp = null;
                     }
@@ -194,8 +163,20 @@ public class SocketReader extends Sensor
         }
     }
 
-    public byte[] getData()
-    {
+    public byte[] getData() {
         return _buffer;
+    }
+
+    public class Options extends OptionList {
+        public final Option<Cons.SocketType> type = new Option<>("type", Cons.SocketType.UDP, Cons.SocketType.class, "");
+        public Option<String> ip = new Option<>("ip", null, String.class, "");
+        public Option<Integer> port = new Option<>("port", 0, Integer.class, "");
+
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
     }
 }

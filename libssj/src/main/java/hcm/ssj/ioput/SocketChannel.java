@@ -39,16 +39,77 @@ import hcm.ssj.core.stream.Stream;
 /**
  * Created by Johnny on 05.03.2015.
  */
-public class SocketChannel extends SensorChannel
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
+public class SocketChannel extends SensorChannel {
+    public final Options options = new Options();
 
-	public class Options extends OptionList
-    {
+    public SocketChannel() {
+        _name = "SocketReader_Data";
+    }
+
+    @Override
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter(Stream stream_out) throws SSJFatalException {
+
+        if (options.sr.get() == 0 || options.bytes.get() == 0 || options.dim.get() == 0 || options.type.get() == Cons.Type.UNDEF) {
+            Log.e("input channel not configured");
+        }
+    }
+
+    @Override
+    protected boolean process(Stream stream_out) throws SSJFatalException {
+        byte[] data = ((SocketReader) _sensor).getData();
+
+        if (data.length != stream_out.tot) {
+            Log.w("data mismatch");
+            return false;
+        }
+
+        Util.arraycopy(data, 0, stream_out.ptr(), 0, stream_out.tot);
+        return true;
+    }
+
+    @Override
+    public int getSampleDimension() {
+        return options.dim.get();
+    }
+
+    @Override
+    public double getSampleRate() {
+        return options.sr.get();
+    }
+
+    @Override
+    public int getSampleBytes() {
+        return options.bytes.get();
+    }
+
+    @Override
+    public int getSampleNumber() {
+        return options.num.get();
+    }
+
+    @Override
+    public Cons.Type getSampleType() {
+        return options.type.get();
+    }
+
+    @Override
+    public void describeOutput(Stream stream_out) {
+        stream_out.desc = new String[stream_out.dim];
+        if (options.outputClass.get() == null || stream_out.dim != options.outputClass.get().length) {
+            Log.w("incomplete definition of output classes");
+            for (int i = 0; i < stream_out.desc.length; i++)
+                stream_out.desc[i] = "SocketData";
+        } else {
+            System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
+        }
+    }
+
+    public class Options extends OptionList {
         public final Option<Integer> bytes = new Option<>("bytes", 0, Integer.class, "");
         public final Option<Integer> dim = new Option<>("dim", 0, Integer.class, "");
         public final Option<Double> sr = new Option<>("sr", 0., Double.class, "");
@@ -61,84 +122,6 @@ public class SocketChannel extends SensorChannel
          */
         private Options() {
             addOptions();
-        }
-    }
-
-    public final Options options = new Options();
-
-    public SocketChannel()
-    {
-        _name = "SocketReader_Data";
-    }
-
-    @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
-
-		if (options.sr.get() == 0 || options.bytes.get() == 0 || options.dim.get() == 0 || options.type.get() == Cons.Type.UNDEF)
-		{
-			Log.e("input channel not configured");
-		}
-    }
-
-    @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
-        byte[] data = ((SocketReader)_sensor).getData();
-
-        if(data.length != stream_out.tot)
-        {
-            Log.w("data mismatch");
-            return false;
-        }
-
-        Util.arraycopy(data, 0, stream_out.ptr(), 0, stream_out.tot);
-        return true;
-    }
-
-    @Override
-    public int getSampleDimension()
-    {
-        return options.dim.get();
-    }
-
-    @Override
-    public double getSampleRate()
-    {
-        return options.sr.get();
-    }
-
-    @Override
-    public int getSampleBytes()
-    {
-        return options.bytes.get();
-    }
-
-    @Override
-    public int getSampleNumber()
-    {
-        return options.num.get();
-    }
-
-    @Override
-    public Cons.Type getSampleType()
-    {
-        return options.type.get();
-    }
-
-    @Override
-    public void describeOutput(Stream stream_out)
-    {
-        stream_out.desc = new String[stream_out.dim];
-        if(options.outputClass.get() == null || stream_out.dim != options.outputClass.get().length)
-        {
-            Log.w("incomplete definition of output classes");
-            for(int i = 0; i < stream_out.desc.length; i++)
-                stream_out.desc[i] = "SocketData";
-        }
-        else
-        {
-            System.arraycopy(options.outputClass.get(), 0, stream_out.desc, 0, options.outputClass.get().length);
         }
     }
 }

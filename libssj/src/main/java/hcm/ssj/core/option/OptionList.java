@@ -34,22 +34,19 @@ import java.util.LinkedHashSet;
  * Derivable option list for SSJ.<br>
  * Created by Frank Gaibler on 04.03.2016.
  */
-public abstract class OptionList
-{
+public abstract class OptionList {
     protected LinkedHashSet<Option> hashSetOptions = new LinkedHashSet<>();
 
     /**
      *
      */
-    protected OptionList()
-    {
+    protected OptionList() {
     }
 
     /**
      * @return Option[]
      */
-    public final Option[] getOptions()
-    {
+    public final Option[] getOptions() {
         return hashSetOptions.toArray(new Option[hashSetOptions.size()]);
     }
 
@@ -58,12 +55,9 @@ public abstract class OptionList
      * @param value Object
      * @return boolean
      */
-    public final boolean setOptionValue(String name, String value)
-    {
-        for (Option option : hashSetOptions)
-        {
-            if (option.getName().equals(name))
-            {
+    public final boolean setOptionValue(String name, String value) {
+        for (Option option : hashSetOptions) {
+            if (option.getName().equals(name)) {
                 option.setValue(value);
                 return true;
             }
@@ -75,12 +69,9 @@ public abstract class OptionList
      * @param name String
      * @return Object
      */
-    public final Object getOptionValue(String name)
-    {
-        for (Option option : hashSetOptions)
-        {
-            if (option.getName().equals(name))
-            {
+    public final Object getOptionValue(String name) {
+        for (Option option : hashSetOptions) {
+            if (option.getName().equals(name)) {
                 return option.get();
             }
         }
@@ -90,26 +81,19 @@ public abstract class OptionList
     /**
      *
      */
-    protected final void addOptions()
-    {
+    protected final void addOptions() {
         //only add on latest subclass
-        if (super.getClass().isAssignableFrom(this.getClass()))
-        {
+        if (super.getClass().isAssignableFrom(this.getClass())) {
             Field[] fields = this.getClass().getFields();
-            for (Field field : fields)
-            {
-                if (field.getType().isAssignableFrom(Option.class))
-                {
-                    try
-                    {
+            for (Field field : fields) {
+                if (field.getType().isAssignableFrom(Option.class)) {
+                    try {
                         Option option = (Option) field.get(this);
                         //only add instantiated options
-                        if (option != null)
-                        {
+                        if (option != null) {
                             add(option);
                         }
-                    } catch (IllegalAccessException ex)
-                    {
+                    } catch (IllegalAccessException ex) {
                         ex.printStackTrace();
                     }
                 }
@@ -120,8 +104,7 @@ public abstract class OptionList
     /**
      * @param option Option
      */
-    public void add(Option option)
-    {
+    public void add(Option option) {
         hashSetOptions.add(option);
     }
 }

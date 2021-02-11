@@ -40,21 +40,18 @@ import hcm.ssj.core.event.Event;
  */
 public class EventChannel {
 
-    protected String _name = "EventChannel";
-
-    private ArrayList<EventListener> _listeners = new ArrayList<>();
-    private LinkedList<Event> _events = new LinkedList<>();
-    private int _event_id = 0;
-
     final private Object _lock = new Object();
+    protected String _name = "EventChannel";
     protected boolean _terminate = false;
-
     protected Pipeline _frame;
     PowerManager powerManager;
+    private final ArrayList<EventListener> _listeners = new ArrayList<>();
+    private final LinkedList<Event> _events = new LinkedList<>();
+    private int _event_id = 0;
 
     public EventChannel() {
         _frame = Pipeline.getInstance();
-        powerManager = (PowerManager)SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
+        powerManager = (PowerManager) SSJApplication.getAppContext().getSystemService(Context.POWER_SERVICE);
     }
 
     public void reset() {
@@ -69,7 +66,7 @@ public class EventChannel {
 
     public void addEventListener(EventListener listener) {
 
-        if(_listeners.contains(listener))
+        if (_listeners.contains(listener))
             return;
 
         _listeners.add(listener);
@@ -157,8 +154,7 @@ public class EventChannel {
                 _frame.threadPool.execute(new Runnable() {
                     @Override
                     public void run() {
-                        if(listener == null)
-                        {
+                        if (listener == null) {
                             Log.e("error reacting to event: listener == null, listeners = " + _listeners.size());
                             return;
                         }

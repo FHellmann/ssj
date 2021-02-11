@@ -61,8 +61,9 @@ public class FloatEvent extends Event {
     }
 
     public void setData(Object data) {
-        this.data = (float[])data;
+        this.data = (float[]) data;
     }
+
     public void setData(float[] data) {
         this.data = data;
     }

@@ -40,59 +40,42 @@ import hcm.ssj.core.option.OptionList;
 /**
  * Outputs all incoming events using logcat
  */
-public class EventLogger extends EventHandler
-{
-	@Override
-	public OptionList getOptions()
-	{
-		return options;
-	}
-
-	public class Options extends OptionList
-    {
-        /**
-         *
-         */
-        private Options() {addOptions();}
-    }
+public class EventLogger extends EventHandler {
     public final Options options = new Options();
-
-    public EventLogger()
-    {
-        _name = "EventLogger";
-        _doWakeLock = true;
-        Log.d("Instantiated EventLogger "+this.hashCode());
-    }
-
     int _lastBehavEventID;
 
-    @Override
-	public void enter() throws SSJFatalException
-    {
-        _lastBehavEventID = -1;
-
-		if (_evchannel_in == null || _evchannel_in.size() == 0)
-		{
-			throw new RuntimeException("no input channels");
-		}
+    public EventLogger() {
+        _name = "EventLogger";
+        _doWakeLock = true;
+        Log.d("Instantiated EventLogger " + this.hashCode());
     }
 
     @Override
-    protected void process() throws SSJFatalException
-    {
-        for(EventChannel ch : _evchannel_in)
-        {
+    public OptionList getOptions() {
+        return options;
+    }
+
+    @Override
+    public void enter() throws SSJFatalException {
+        _lastBehavEventID = -1;
+
+        if (_evchannel_in == null || _evchannel_in.size() == 0) {
+            throw new RuntimeException("no input channels");
+        }
+    }
+
+    @Override
+    protected void process() throws SSJFatalException {
+        for (EventChannel ch : _evchannel_in) {
             Event ev = ch.getEvent(_lastBehavEventID + 1, true);
-            if (ev == null)
-            {
+            if (ev == null) {
                 return;
             }
 
             _lastBehavEventID = ev.id;
 
             String msg = "";
-            switch(ev.type)
-            {
+            switch (ev.type) {
                 case BYTE:
                     msg = Arrays.toString(ev.ptrB());
                     break;
@@ -123,8 +106,7 @@ public class EventLogger extends EventHandler
                 case MAP:
                     Map<String, String> map = ev.ptrMap();
 
-                    for (String key: map.keySet())
-                    {
+                    for (String key : map.keySet()) {
                         msg += key + "=" + map.get(key) + " ";
                     }
 
@@ -135,8 +117,16 @@ public class EventLogger extends EventHandler
         }
     }
 
-
     @Override
-    public void flush() throws SSJFatalException
-    {}
+    public void flush() throws SSJFatalException {
+    }
+
+    public class Options extends OptionList {
+        /**
+         *
+         */
+        private Options() {
+            addOptions();
+        }
+    }
 }

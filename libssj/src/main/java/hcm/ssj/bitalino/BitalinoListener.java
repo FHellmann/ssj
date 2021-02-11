@@ -33,64 +33,54 @@ import info.plux.pluxapi.bitalino.bth.OnBITalinoDataAvailable;
 /**
  * Created by Michael Dietz on 06.07.2016.
  */
-public class BitalinoListener implements OnBITalinoDataAvailable
-{
-	private final int TIMEOUT = 10000; //in ms
+public class BitalinoListener implements OnBITalinoDataAvailable {
+    private final int TIMEOUT = 10000; //in ms
 
-	BITalinoFrame lastDataFrame = null;
-	private long lastDataTimestamp = 0;
+    BITalinoFrame lastDataFrame = null;
+    private long lastDataTimestamp = 0;
 
-	private int[] analog = new int[6];
-	private int[] digital = new int[4];
+    private final int[] analog = new int[6];
+    private final int[] digital = new int[4];
 
-	public BitalinoListener()
-	{
-		reset();
-	}
+    public BitalinoListener() {
+        reset();
+    }
 
-	public void reset()
-	{
-		lastDataFrame = null;
-		lastDataTimestamp = 0;
-	}
+    public void reset() {
+        lastDataFrame = null;
+        lastDataTimestamp = 0;
+    }
 
-	public int getAnalogData(int pos)
-	{
-		return analog[pos];
-	}
+    public int getAnalogData(int pos) {
+        return analog[pos];
+    }
 
-	public int getDigitalData(int pos)
-	{
-		return digital[pos];
-	}
+    public int getDigitalData(int pos) {
+        return digital[pos];
+    }
 
-	synchronized void dataReceived()
-	{
-		lastDataTimestamp = System.currentTimeMillis();
-	}
+    synchronized void dataReceived() {
+        lastDataTimestamp = System.currentTimeMillis();
+    }
 
-	public boolean isConnected()
-	{
-		return System.currentTimeMillis() - lastDataTimestamp < TIMEOUT;
-	}
+    public boolean isConnected() {
+        return System.currentTimeMillis() - lastDataTimestamp < TIMEOUT;
+    }
 
-	public boolean hasReceivedData()
-	{
-		return lastDataTimestamp != 0;
-	}
+    public boolean hasReceivedData() {
+        return lastDataTimestamp != 0;
+    }
 
-	@Override
-	public void onBITalinoDataAvailable(BITalinoFrame biTalinoFrame)
-	{
-		synchronized (this)
-		{
-			dataReceived();
+    @Override
+    public void onBITalinoDataAvailable(BITalinoFrame biTalinoFrame) {
+        synchronized (this) {
+            dataReceived();
 
-			for (int i = 0; i < analog.length; i++)
-				analog[i] = biTalinoFrame.getAnalog(i);
+            for (int i = 0; i < analog.length; i++)
+                analog[i] = biTalinoFrame.getAnalog(i);
 
-			for (int i = 0; i < digital.length; i++)
-				digital[i] = biTalinoFrame.getDigital(i);
-		}
-	}
+            for (int i = 0; i < digital.length; i++)
+                digital[i] = biTalinoFrame.getDigital(i);
+        }
+    }
 }

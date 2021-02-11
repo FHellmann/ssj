@@ -39,12 +39,11 @@ import hcm.ssj.creator.view.PipeView;
  * Canvas tab for main activity.<br>
  * Created by Frank Gaibler on 23.09.2016.
  */
-class Canvas implements ITab
-{
+class Canvas implements ITab {
     //tab
-    private View view;
-    private String title;
-    private int icon;
+    private final View view;
+    private final String title;
+    private final int icon;
     //canvas
     private PipeView pipeView = null;
     private PipeListener listener = null;
@@ -52,8 +51,7 @@ class Canvas implements ITab
     /**
      * @param context Context
      */
-    Canvas(Context context)
-    {
+    Canvas(Context context) {
         //view
         pipeView = new PipeView(context);
         pipeView.setWillNotDraw(false);
@@ -71,12 +69,10 @@ class Canvas implements ITab
 
     /**
      * @param appAction Util.AppAction
-     * @param o            Object
+     * @param o         Object
      */
-    void actualizeContent(Util.AppAction appAction, Object o)
-    {
-        if (pipeView != null)
-        {
+    void actualizeContent(Util.AppAction appAction, Object o) {
+        if (pipeView != null) {
             pipeView.recalculate(appAction, o);
         }
     }
@@ -84,10 +80,8 @@ class Canvas implements ITab
     /**
      *
      */
-    void cleanUp()
-    {
-        if (pipeView != null && listener != null)
-        {
+    void cleanUp() {
+        if (pipeView != null && listener != null) {
             pipeView.removeViewListener(listener);
             listener = null;
         }
@@ -96,8 +90,7 @@ class Canvas implements ITab
     /**
      * @param listener PipeListener
      */
-    void init(PipeListener listener)
-    {
+    void init(PipeListener listener) {
         this.listener = listener;
         pipeView.addViewListener(this.listener);
     }
@@ -106,8 +99,7 @@ class Canvas implements ITab
      * @return View
      */
     @Override
-    public View getView()
-    {
+    public View getView() {
         return view;
     }
 
@@ -115,8 +107,7 @@ class Canvas implements ITab
      * @return String
      */
     @Override
-    public String getTitle()
-    {
+    public String getTitle() {
         return title;
     }
 
@@ -124,8 +115,7 @@ class Canvas implements ITab
      * @return int
      */
     @Override
-    public int getIcon()
-    {
+    public int getIcon() {
         return icon;
     }
 }

@@ -39,18 +39,7 @@ import hcm.ssj.core.stream.Stream;
  */
 public class BVPAndisChannel extends SensorChannel {
 
-    public class Options extends OptionList
-    {
-        public final Option<Float> sampleRate = new Option<>("sampleRate", 100f, Float.class, "sensor sample rate in Hz");
-        public final Option<Integer> dimensions = new Option<>("dimensions", 5, Integer.class, "number of dimensions");
-
-        private Options()
-        {
-            addOptions();
-        }
-    }
     public Options options = new Options();
-
     protected BLESensorListener _listener;
 
     public BVPAndisChannel() {
@@ -58,17 +47,14 @@ public class BVPAndisChannel extends SensorChannel {
     }
 
     @Override
-	public void enter(Stream stream_out) throws SSJFatalException
-	{
+    public void enter(Stream stream_out) throws SSJFatalException {
 
         _listener = ((BLESensor) _sensor).listener;
 
     }
 
-
     @Override
-    protected boolean process(Stream stream_out) throws SSJFatalException
-    {
+    protected boolean process(Stream stream_out) throws SSJFatalException {
         int dimension = getSampleDimension();
         int[] out = stream_out.ptrI();
 
@@ -113,8 +99,16 @@ public class BVPAndisChannel extends SensorChannel {
     }
 
     @Override
-    public OptionList getOptions()
-    {
+    public OptionList getOptions() {
         return options;
+    }
+
+    public class Options extends OptionList {
+        public final Option<Float> sampleRate = new Option<>("sampleRate", 100f, Float.class, "sensor sample rate in Hz");
+        public final Option<Integer> dimensions = new Option<>("dimensions", 5, Integer.class, "number of dimensions");
+
+        private Options() {
+            addOptions();
+        }
     }
 }

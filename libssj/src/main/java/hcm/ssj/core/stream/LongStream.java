@@ -32,12 +32,10 @@ import hcm.ssj.core.Cons;
 /**
  * Created by Johnny on 11.06.2015.
  */
-public class LongStream extends Stream
-{
+public class LongStream extends Stream {
     private long[] _ptr;
 
-    public LongStream(int num, int dim, double sr)
-    {
+    public LongStream(int num, int dim, double sr) {
         super(num, dim, sr);
 
         this.bytes = 8;
@@ -48,33 +46,27 @@ public class LongStream extends Stream
     }
 
     @Override
-    public long[] ptr()
-{
-    return _ptr;
-}
-    public long[] ptrL()
-    {
+    public long[] ptr() {
         return _ptr;
     }
 
-    public void adjust(int num)
-    {
-        if(num < this.num)
-        {
+    public long[] ptrL() {
+        return _ptr;
+    }
+
+    public void adjust(int num) {
+        if (num < this.num) {
             this.num = num;
             this.tot = num * dim * bytes;
-        }
-        else
-        {
+        } else {
             this.num = num;
             this.tot = num * dim * bytes;
             _ptr = new long[num * dim];
         }
     }
 
-    public LongStream select(int[] new_dims)
-    {
-        if(dim == new_dims.length)
+    public LongStream select(int[] new_dims) {
+        if (dim == new_dims.length)
             return this;
 
         LongStream slice = new LongStream(num, new_dims.length, sr);
@@ -83,9 +75,8 @@ public class LongStream extends Stream
         long[] src = this.ptr();
         long[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
-            for(int i = 0; i < new_dims.length; i++)
+        while (srcPos < num * dim) {
+            for (int i = 0; i < new_dims.length; i++)
                 dst[dstPos++] = src[srcPos + new_dims[i]];
 
             srcPos += dim;
@@ -94,9 +85,8 @@ public class LongStream extends Stream
         return slice;
     }
 
-    public LongStream select(int new_dim)
-    {
-        if(dim == 1)
+    public LongStream select(int new_dim) {
+        if (dim == 1)
             return this;
 
         LongStream slice = new LongStream(num, 1, sr);
@@ -105,8 +95,7 @@ public class LongStream extends Stream
         long[] src = this.ptr();
         long[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
+        while (srcPos < num * dim) {
             dst[dstPos++] = src[srcPos + new_dim];
             srcPos += dim;
         }
@@ -115,8 +104,7 @@ public class LongStream extends Stream
     }
 
     @Override
-    public Stream clone()
-    {
+    public Stream clone() {
         LongStream copy = new LongStream(num, dim, sr);
         System.arraycopy(_ptr, 0, copy._ptr, 0, _ptr.length);
 

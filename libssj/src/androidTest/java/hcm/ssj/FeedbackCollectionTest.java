@@ -55,200 +55,167 @@ import static junit.framework.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class FeedbackCollectionTest
-{
-	private Pipeline pipeline;
-	private FeedbackCollection feedbackCollection;
-	private List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackList;
+public class FeedbackCollectionTest {
+    private Pipeline pipeline;
+    private FeedbackCollection feedbackCollection;
+    private List<Map<Feedback, FeedbackCollection.LevelBehaviour>> feedbackList;
 
-	@Before
-	public void prepareEnvironment() throws SSJException
-	{
-		pipeline = Pipeline.getInstance();
-		pipeline.options.countdown.set(0);
+    @Before
+    public void prepareEnvironment() throws SSJException {
+        pipeline = Pipeline.getInstance();
+        pipeline.options.countdown.set(0);
 
-		AndroidSensor sensor = new AndroidSensor();
-		AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
-		sensorChannel.options.sensorType.set(SensorType.LINEAR_ACCELERATION);
-		pipeline.addSensor(sensor, sensorChannel);
+        AndroidSensor sensor = new AndroidSensor();
+        AndroidSensorChannel sensorChannel = new AndroidSensorChannel();
+        sensorChannel.options.sensorType.set(SensorType.LINEAR_ACCELERATION);
+        pipeline.addSensor(sensor, sensorChannel);
 
-		OverallActivation overallActivation = new OverallActivation();
-		pipeline.addTransformer(overallActivation, sensorChannel);
+        OverallActivation overallActivation = new OverallActivation();
+        pipeline.addTransformer(overallActivation, sensorChannel);
 
-		MvgAvgVar mvgAvgVar = new MvgAvgVar();
-		mvgAvgVar.options.window.set(0.05);
-		pipeline.addTransformer(mvgAvgVar, overallActivation);
+        MvgAvgVar mvgAvgVar = new MvgAvgVar();
+        mvgAvgVar.options.window.set(0.05);
+        pipeline.addTransformer(mvgAvgVar, overallActivation);
 
-		FloatsEventSender floatsEventSender = new FloatsEventSender();
-		pipeline.addConsumer(floatsEventSender, mvgAvgVar);
+        FloatsEventSender floatsEventSender = new FloatsEventSender();
+        pipeline.addConsumer(floatsEventSender, mvgAvgVar);
 
 
-		feedbackCollection = new FeedbackCollection();
-		feedbackCollection.options.progression.set(1.0f);
-		feedbackCollection.options.regression.set(1.5f);
-		pipeline.registerEventListener(feedbackCollection, floatsEventSender);
-		// LEVEL 0
-		AndroidTactileFeedback androidTactileFeedback1 = new AndroidTactileFeedback();
-		pipeline.registerInFeedbackCollection(androidTactileFeedback1, feedbackCollection, 0, FeedbackCollection.LevelBehaviour.Regress);
-		AndroidTactileFeedback androidTactileFeedback2 = new AndroidTactileFeedback();
-		pipeline.registerInFeedbackCollection(androidTactileFeedback2, feedbackCollection, 0, FeedbackCollection.LevelBehaviour.Neutral);
-		AndroidTactileFeedback androidTactileFeedback3 = new AndroidTactileFeedback();
-		pipeline.registerInFeedbackCollection(androidTactileFeedback3, feedbackCollection, 0, FeedbackCollection.LevelBehaviour.Progress);
-		// LEVEL 1
-		AndroidTactileFeedback androidTactileFeedback4 = new AndroidTactileFeedback();
-		pipeline.registerInFeedbackCollection(androidTactileFeedback4, feedbackCollection, 1, FeedbackCollection.LevelBehaviour.Regress);
-		AndroidTactileFeedback androidTactileFeedback5 = new AndroidTactileFeedback();
-		pipeline.registerInFeedbackCollection(androidTactileFeedback5, feedbackCollection, 1, FeedbackCollection.LevelBehaviour.Neutral);
-		AndroidTactileFeedback androidTactileFeedback6 = new AndroidTactileFeedback();
-		pipeline.registerInFeedbackCollection(androidTactileFeedback6, feedbackCollection, 1, FeedbackCollection.LevelBehaviour.Progress);
+        feedbackCollection = new FeedbackCollection();
+        feedbackCollection.options.progression.set(1.0f);
+        feedbackCollection.options.regression.set(1.5f);
+        pipeline.registerEventListener(feedbackCollection, floatsEventSender);
+        // LEVEL 0
+        AndroidTactileFeedback androidTactileFeedback1 = new AndroidTactileFeedback();
+        pipeline.registerInFeedbackCollection(androidTactileFeedback1, feedbackCollection, 0, FeedbackCollection.LevelBehaviour.Regress);
+        AndroidTactileFeedback androidTactileFeedback2 = new AndroidTactileFeedback();
+        pipeline.registerInFeedbackCollection(androidTactileFeedback2, feedbackCollection, 0, FeedbackCollection.LevelBehaviour.Neutral);
+        AndroidTactileFeedback androidTactileFeedback3 = new AndroidTactileFeedback();
+        pipeline.registerInFeedbackCollection(androidTactileFeedback3, feedbackCollection, 0, FeedbackCollection.LevelBehaviour.Progress);
+        // LEVEL 1
+        AndroidTactileFeedback androidTactileFeedback4 = new AndroidTactileFeedback();
+        pipeline.registerInFeedbackCollection(androidTactileFeedback4, feedbackCollection, 1, FeedbackCollection.LevelBehaviour.Regress);
+        AndroidTactileFeedback androidTactileFeedback5 = new AndroidTactileFeedback();
+        pipeline.registerInFeedbackCollection(androidTactileFeedback5, feedbackCollection, 1, FeedbackCollection.LevelBehaviour.Neutral);
+        AndroidTactileFeedback androidTactileFeedback6 = new AndroidTactileFeedback();
+        pipeline.registerInFeedbackCollection(androidTactileFeedback6, feedbackCollection, 1, FeedbackCollection.LevelBehaviour.Progress);
 
-		feedbackList = feedbackCollection.getFeedbackList();
-	}
+        feedbackList = feedbackCollection.getFeedbackList();
+    }
 
-	@Test
-	public void testNoProgression()
-	{
-		try
-		{
-			pipeline.start();
+    @Test
+    public void testNoProgression() {
+        try {
+            pipeline.start();
 
-			Thread.sleep((int) ((feedbackCollection.options.progression.get() * 1000) * 1.5));
+            Thread.sleep((int) ((feedbackCollection.options.progression.get() * 1000) * 1.5));
 
-			pipeline.stop();
-			pipeline.release();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+            pipeline.stop();
+            pipeline.release();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		checkLevelActive(0);
-	}
+        checkLevelActive(0);
+    }
 
-	@Test
-	public void testProgression()
-	{
+    @Test
+    public void testProgression() {
 
-		for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(0).entrySet())
-		{
-			if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Regress) ||
-					feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral))
-			{
-				((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.progression.get() * 1000) * 2);
-			}
-		}
+        for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(0).entrySet()) {
+            if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Regress) ||
+                    feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral)) {
+                ((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.progression.get() * 1000) * 2);
+            }
+        }
 
-		try
-		{
-			pipeline.start();
+        try {
+            pipeline.start();
 
-			Thread.sleep((int) ((feedbackCollection.options.progression.get() * 1000) * 1.5));
+            Thread.sleep((int) ((feedbackCollection.options.progression.get() * 1000) * 1.5));
 
-			pipeline.stop();
-			pipeline.release();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+            pipeline.stop();
+            pipeline.release();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		checkLevelActive(1);
-	}
+        checkLevelActive(1);
+    }
 
-	@Test
-	public void testNoRegression()
-	{
-		for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(0).entrySet())
-		{
-			if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Regress) ||
-					feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral))
-			{
-				((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.progression.get() * 1000) * 2);
-			}
-		}
-		try
-		{
-			pipeline.start();
+    @Test
+    public void testNoRegression() {
+        for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(0).entrySet()) {
+            if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Regress) ||
+                    feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral)) {
+                ((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.progression.get() * 1000) * 2);
+            }
+        }
+        try {
+            pipeline.start();
 
-			Thread.sleep((int) ((feedbackCollection.options.progression.get() * 1000) * 1.5));
+            Thread.sleep((int) ((feedbackCollection.options.progression.get() * 1000) * 1.5));
 
-			checkLevelActive(1);
+            checkLevelActive(1);
 
-			Thread.sleep((int) ((feedbackCollection.options.regression.get() * 1000) * 1.5));
+            Thread.sleep((int) ((feedbackCollection.options.regression.get() * 1000) * 1.5));
 
-			pipeline.stop();
-			pipeline.release();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+            pipeline.stop();
+            pipeline.release();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		checkLevelActive(1);
-	}
+        checkLevelActive(1);
+    }
 
-	@Test
-	public void testRegression()
-	{
-		for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(0).entrySet())
-		{
-			if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Regress) ||
-					feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral))
-			{
-				((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.progression.get() * 1000) * 2);
-			}
-		}
-		for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(1).entrySet())
-		{
-			if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Progress) ||
-					feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral))
-			{
-				((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.regression.get() * 1000) * 2);
-			}
-		}
+    @Test
+    public void testRegression() {
+        for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(0).entrySet()) {
+            if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Regress) ||
+                    feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral)) {
+                ((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.progression.get() * 1000) * 2);
+            }
+        }
+        for (Map.Entry<Feedback, FeedbackCollection.LevelBehaviour> feedbackLevelBehaviourEntry : feedbackList.get(1).entrySet()) {
+            if (feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Progress) ||
+                    feedbackLevelBehaviourEntry.getValue().equals(FeedbackCollection.LevelBehaviour.Neutral)) {
+                ((AndroidTactileFeedback) feedbackLevelBehaviourEntry.getKey()).options.lock.set((int) (feedbackCollection.options.regression.get() * 1000) * 2);
+            }
+        }
 
-		try
-		{
-			pipeline.start();
+        try {
+            pipeline.start();
 
-			Thread.sleep((int) (feedbackCollection.options.progression.get() * 1000) + 200);
+            Thread.sleep((int) (feedbackCollection.options.progression.get() * 1000) + 200);
 
-			checkLevelActive(1);
+            checkLevelActive(1);
 
-			Thread.sleep((int) (feedbackCollection.options.regression.get() * 1000) + 200);
+            Thread.sleep((int) (feedbackCollection.options.regression.get() * 1000) + 200);
 
-			pipeline.stop();
-			pipeline.release();
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+            pipeline.stop();
+            pipeline.release();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-		checkLevelActive(0);
-	}
+        checkLevelActive(0);
+    }
 
-	private void checkLevelActive(int level)
-	{
-		for (int i = 0; i < feedbackList.size(); i++)
-		{
-			for (Feedback feedback : feedbackList.get(i).keySet())
-			{
-				if (i == level)
-				{
-					assertTrue(feedback.isActive());
-				}
-				else
-				{
-					assertFalse(feedback.isActive());
-				}
-			}
-		}
-	}
+    private void checkLevelActive(int level) {
+        for (int i = 0; i < feedbackList.size(); i++) {
+            for (Feedback feedback : feedbackList.get(i).keySet()) {
+                if (i == level) {
+                    assertTrue(feedback.isActive());
+                } else {
+                    assertFalse(feedback.isActive());
+                }
+            }
+        }
+    }
 
-	@After
-	public void clearPipeline()
-	{
-		Pipeline.getInstance().clear();
-	}
+    @After
+    public void clearPipeline() {
+        Pipeline.getInstance().clear();
+    }
 }

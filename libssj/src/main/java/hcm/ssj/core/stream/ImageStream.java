@@ -34,14 +34,12 @@ import hcm.ssj.core.Cons;
 /**
  * Created by Johnny on 11.06.2015.
  */
-public class ImageStream extends ByteStream
-{
+public class ImageStream extends ByteStream {
     public int width;
     public int height;
     public int format;
 
-    public ImageStream(int num, int dim, double sr)
-    {
+    public ImageStream(int num, int dim, double sr) {
         super(num, dim, sr);
         this.type = Cons.Type.IMAGE;
         this.width = 0;
@@ -49,8 +47,7 @@ public class ImageStream extends ByteStream
         this.format = ImageFormat.NV21;
     }
 
-    public ImageStream(int num, int dim, double sr, int width, int height, int format)
-    {
+    public ImageStream(int num, int dim, double sr, int width, int height, int format) {
         super(num, dim, sr);
         this.type = Cons.Type.IMAGE;
         this.width = width;
@@ -58,9 +55,8 @@ public class ImageStream extends ByteStream
         this.format = format;
     }
 
-    public ImageStream select(int[] new_dims)
-    {
-        if(dim == new_dims.length)
+    public ImageStream select(int[] new_dims) {
+        if (dim == new_dims.length)
             return this;
 
         ImageStream slice = new ImageStream(num, new_dims.length, sr, width, height, format);
@@ -69,9 +65,8 @@ public class ImageStream extends ByteStream
         byte[] src = this.ptr();
         byte[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
-            for(int i = 0; i < new_dims.length; i++)
+        while (srcPos < num * dim) {
+            for (int i = 0; i < new_dims.length; i++)
                 dst[dstPos++] = src[srcPos + new_dims[i]];
 
             srcPos += dim;
@@ -80,9 +75,8 @@ public class ImageStream extends ByteStream
         return slice;
     }
 
-    public ImageStream select(int new_dim)
-    {
-        if(dim == 1)
+    public ImageStream select(int new_dim) {
+        if (dim == 1)
             return this;
 
         ImageStream slice = new ImageStream(num, 1, sr, width, height, format);
@@ -91,8 +85,7 @@ public class ImageStream extends ByteStream
         byte[] src = this.ptr();
         byte[] dst = slice.ptr();
         int srcPos = 0, dstPos = 0;
-        while(srcPos < num * dim)
-        {
+        while (srcPos < num * dim) {
             dst[dstPos++] = src[srcPos + new_dim];
             srcPos += dim;
         }
@@ -101,8 +94,7 @@ public class ImageStream extends ByteStream
     }
 
     @Override
-    public Stream clone()
-    {
+    public Stream clone() {
         ImageStream copy = new ImageStream(num, dim, sr, width, height, format);
         System.arraycopy(_ptr, 0, copy._ptr, 0, _ptr.length);
 
