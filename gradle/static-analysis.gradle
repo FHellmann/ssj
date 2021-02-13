@@ -26,7 +26,7 @@
  */
 
 apply plugin: 'com.novoda.static-analysis'
-apply plugin: 'io.gitlab.arturbosch.detekt'
+// Gradle 6.0 or greater: apply plugin: 'com.github.spotbugs'
 
 staticAnalysis {
     penalty failFast
@@ -55,10 +55,6 @@ staticAnalysis {
         checkReleaseBuilds false
         disable 'GradleDependency', 'PluralsCandidate', 'UnusedResources', 'ObsoleteLintCustomCheck',
                 'IconDipSize'
-    }
-    detekt {
-        config = rootProject.files('gradle/tools/detekt.yml')
-        filters = '.*test.*,.*/resources/.*,.*/tmp/.*'
     }
 }
 

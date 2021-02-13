@@ -29,7 +29,7 @@ apply plugin: 'com.android.application'
 apply from: rootProject.file('gradle/version.gradle')
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 28
     buildToolsVersion '28.0.3'
 
     lintOptions {
@@ -41,7 +41,7 @@ android {
     defaultConfig {
         applicationId "hcm.ssj.creator"
         minSdkVersion 19
-        targetSdkVersion 29
+        targetSdkVersion 28
         versionName getVerName()
         versionCode getVerCode()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -107,13 +107,13 @@ repositories {
 }
 
 dependencies {
-    androidTestImplementation 'androidx.test:core:1.0.0'
-    androidTestImplementation 'androidx.annotation:annotation:1.0.0'
-    androidTestImplementation 'androidx.test:runner:1.2.0'
-    androidTestImplementation 'androidx.test:rules:1.2.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.0.0'
-    androidTestImplementation 'androidx.test.ext:truth:1.0.0'
-    androidTestImplementation 'com.google.truth:truth:0.42'
+    androidTestImplementation 'androidx.test:core:1.3.0'
+    androidTestImplementation 'androidx.annotation:annotation:1.1.0'
+    androidTestImplementation 'androidx.test:runner:1.3.0'
+    androidTestImplementation 'androidx.test:rules:1.3.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.ext:truth:1.3.0'
+    androidTestImplementation 'com.google.truth:truth:1.0'
 
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'com.google.android.material:material:1.0.0'

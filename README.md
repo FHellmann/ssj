@@ -37,6 +37,18 @@ implementation 'com.github.hcmlab:libssj:0.7.6'
 * White-paper: <a href="https://www.frontiersin.org/articles/10.3389/fict.2018.00013/full">frontiersin.org</a>
 * Api (Javadoc): http://hcmlab.github.io/ssj/api
 
+#### How-To
+To set-up a simple processing pipeline pick a RxSsjSupplier from RxSsjSuppliers or create one on your own by implementing the RxSsjSupplier interface. Afterwards, just follow the reactiveX stream concept, e.g.:
+```java
+final ConnectableFlowable<RxSsjEvent> cf = RxSsjSuppliers.ANDROID_ACCELEROMETER.open(null) // Open Stream from Accelerometer on Android Device
+        .compose(RxSsjTransformers.COUNT) // Add any Transformers to transform values
+        .publish();
+// Split Stream into 2 seperate Streams from the same origin
+cf.filter(RxSsjEvent::hasAccuracyChanged).subscribe(RxSsjConsumers.LOGGER); // Log on accuracy change
+cf.map(RxSsjEvent::getSensorValues).filter(Optional::isPresent).map(Optional::get).subscribe(floats -> process(floats)); // Do something with the values
+cf.connect();
+```
+
 ### About
 The Social Signal Processing for Java/Android (SSJ) framework is being developed at the Lab for Human Centered Multimedia of the University of Augsburg. The authors of the framework are: <a href="https://www.informatik.uni-augsburg.de/lehrstuehle/hcm/staff/_formerstaff/damian/">Ionut Damian</a>, <a href="https://www.informatik.uni-augsburg.de/lehrstuehle/hcm/staff/dietz/">Michael Dietz</a>, <a href="https://www.informatik.uni-augsburg.de/lehrstuehle/hcm/staff/_formerstudents/gaibler/">Frank Gaibler</a>, <a href="https://www.informatik.uni-augsburg.de/lehrstuehle/hcm/staff/_formerstudents/langerenken/">Daniel Langerenken</a>, <a href="https://www.informatik.uni-augsburg.de/lehrstuehle/hcm/staff/flutura/">Simon Flutura</a>, <a href="https://www.informatik.uni-augsburg.de/lehrstuehle/hcm/staff/_formerstudents/krumins/">Vitalijs Krumins</a>, Antonio Grieco.
 
