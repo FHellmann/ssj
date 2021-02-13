@@ -9,6 +9,8 @@ import java.util.Arrays;
 import de.uni.augsburg.hcai.ssj.supplier.RxSsjSupplier;
 
 /**
+ * An immutable object to represent an incoming event of data.
+ *
  * @author Fabio Hellmann
  */
 public class RxSsjEvent {
