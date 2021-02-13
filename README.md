@@ -40,11 +40,11 @@ implementation 'com.github.hcmlab:libssj:0.7.6'
 #### How-To
 To set-up a simple processing pipeline pick a RxSsjSupplier from RxSsjSuppliers or create one on your own by implementing the RxSsjSupplier interface. Afterwards, just follow the reactiveX stream concept, e.g.:
 ```java
-final ConnectableFlowable<RxSsjEvent> cf = RxSsjSuppliers.ANDROID_ACCELEROMETER.open(null) // Open Stream from Accelerometer on Android Device
-        .compose(RxSsjTransformers.COUNT) // Add any Transformers to transform values
+final ConnectableFlowable<RxSsjEvent> cf = RxAndroidSuppliers.TYPE_ACCELEROMETER.open(null) // Open Stream from Accelerometer on Android Device
+        .compose(RxMathTransformers.COUNT) // Add any Transformers to transform values
         .publish();
 // Split Stream into 2 seperate Streams from the same origin
-cf.filter(RxSsjEvent::hasAccuracyChanged).subscribe(RxSsjConsumers.LOGGER); // Log on accuracy change
+cf.filter(RxSsjEvent::hasAccuracyChanged).subscribe(RxLoggerConsumers.LOG_INFO); // Log on accuracy change
 cf.map(RxSsjEvent::getSensorValues).filter(Optional::isPresent).map(Optional::get).subscribe(floats -> process(floats)); // Do something with the values
 cf.connect();
 ```
